@@ -1,0 +1,57 @@
+{
+  "name": "hellobooks-mcp-public",
+  "version": "0.1.0",
+  "description": "Public read-only MCP server exposing HelloBooks plans, integrations, country support, and compliance capabilities to AI agents.",
+  "license": "MIT",
+  "author": "HelloBooks <hello@hellobooks.ai>",
+  "homepage": "https://hellobooks.ai/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public.git"
+  },
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "hellobooks-mcp-public": "dist/stdio.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/http.js",
+    "start:stdio": "node dist/stdio.js",
+    "dev": "tsx watch src/http.ts",
+    "dev:stdio": "tsx src/stdio.ts",
+    "test": "node --test --import tsx test/*.test.ts",
+    "lint": "tsc --noEmit",
+    "audit:public-data": "node --import tsx scripts/audit-public-data.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.18.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "hellobooks",
+    "accounting",
+    "ai-agent",
+    "anthropic",
+    "claude"
+  ],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}
