@@ -13,7 +13,7 @@ country support, compliance frameworks — instead of relying on stale web snipp
 ### Claude Code / Claude Desktop / Cursor
 
 ```bash
-claude mcp add --transport http hellobooks https://mcp.hellobooks.ai/mcp
+claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp
 ```
 
 Or, for local development:
