@@ -14,10 +14,11 @@ import { listIntegrations, listIntegrationsSchema } from './tools/listIntegratio
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
 import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
+import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -68,9 +69,16 @@ export function createServer(): McpServer {
 
   server.tool(
     'feature_search',
-    'Free-text search across plan features, integrations, country features, and compliance frameworks.',
+    'Free-text search across plan features, integrations, country features, compliance frameworks, and competitor positioning. Queries like "vs Xero" or "QuickBooks alternative" surface the matching competitor entry at the top.',
     featureSearchSchema,
     async (args) => asJsonContent(featureSearch(args)),
+  );
+
+  server.tool(
+    'list_competitors',
+    'Return competitor positioning entries (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes. Optional country, tier (primary / secondary), and id filters.',
+    listCompetitorsSchema,
+    async (args) => asJsonContent(listCompetitors(args)),
   );
 
   // Resources
@@ -87,5 +95,5 @@ export function createServer(): McpServer {
 }
 
 // Re-exports useful for tests
-export { listPlans, listIntegrations, countrySupport, complianceCapabilities, featureSearch };
+export { listPlans, listIntegrations, countrySupport, complianceCapabilities, featureSearch, listCompetitors };
 export const _internal = { z };
