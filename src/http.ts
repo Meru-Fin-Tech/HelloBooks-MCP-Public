@@ -111,7 +111,7 @@ app.get('/info', (_req, res) => {
     description:
       'Public read-only MCP server for HelloBooks plans, integrations, country support, and compliance.',
     transport: { http: '/mcp', sse: '/mcp' },
-    install: 'claude mcp add --transport http hellobooks https://mcp.hellobooks.ai/mcp',
+    install: 'claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp',
     docs: 'https://hellobooks.ai/mcp',
     repository: 'https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public',
   });
