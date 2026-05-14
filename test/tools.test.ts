@@ -6,6 +6,7 @@ import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
 import { featureSearch } from '../src/tools/featureSearch.js';
+import { listCompetitors } from '../src/tools/listCompetitors.js';
 
 test('list_plans returns all 4 tiers when unfiltered', () => {
   const r = listPlans({});
@@ -94,4 +95,67 @@ test('feature_search finds GST across countries', () => {
 test('feature_search respects limit', () => {
   const r = featureSearch({ query: 'tax', limit: 3 });
   assert.ok(r.results.length <= 3);
+});
+
+test('list_competitors returns the full catalog when unfiltered', () => {
+  const r = listCompetitors({});
+  assert.ok(r.count >= 6, 'expect at least the 6 catalog competitors');
+  const ids = r.competitors.map((c) => c.id).sort();
+  for (const expected of ['quickbooks', 'xero', 'freshbooks', 'wave', 'zoho-books', 'tally']) {
+    assert.ok(ids.includes(expected), `missing competitor: ${expected}`);
+  }
+});
+
+test('list_competitors every entry has honest both-sides positioning', () => {
+  const r = listCompetitors({});
+  for (const c of r.competitors) {
+    assert.ok(c.whereWeWin.length >= 3, `${c.id} should ship >=3 whereWeWin bullets`);
+    assert.ok(c.whereTheyWin.length >= 3, `${c.id} should ship >=3 whereTheyWin bullets — honesty is non-negotiable`);
+    assert.ok(c.positioningSummary.length > 80, `${c.id} positioningSummary should be a real paragraph`);
+    assert.ok(c.segment.length > 0);
+  }
+});
+
+test('list_competitors country filter narrows to India for Tally + Zoho', () => {
+  const r = listCompetitors({ country: 'IN' });
+  const ids = r.competitors.map((c) => c.id);
+  assert.ok(ids.includes('tally'));
+  assert.ok(ids.includes('zoho-books'));
+  // QuickBooks is also India-evaluated (alsoIn includes IN)
+  assert.ok(ids.includes('quickbooks'));
+});
+
+test('list_competitors tier=primary excludes secondary entries', () => {
+  const r = listCompetitors({ tier: 'primary' });
+  for (const c of r.competitors) assert.equal(c.tier, 'primary');
+  // QuickBooks, Xero, Zoho Books, Tally are all primary
+  const ids = r.competitors.map((c) => c.id);
+  assert.ok(ids.includes('quickbooks'));
+  assert.ok(ids.includes('xero'));
+});
+
+test('list_competitors id filter returns exactly one entry', () => {
+  const r = listCompetitors({ id: 'quickbooks' });
+  assert.equal(r.count, 1);
+  assert.equal(r.competitors[0]!.id, 'quickbooks');
+});
+
+test('feature_search "vs Xero" ranks the Xero competitor entry at the top', () => {
+  const r = featureSearch({ query: 'vs Xero' });
+  assert.ok(r.totalMatches > 0);
+  const top = r.results[0]!;
+  assert.equal(top.source, 'competitor');
+  assert.equal(top.id, 'xero');
+});
+
+test('feature_search "QuickBooks alternative" surfaces the competitor entry', () => {
+  const r = featureSearch({ query: 'QuickBooks alternative' });
+  const hit = r.results.find((h) => h.source === 'competitor' && h.id === 'quickbooks');
+  assert.ok(hit, 'expected a competitor hit for QuickBooks');
+});
+
+test('feature_search "Tally migration" finds the Tally competitor entry', () => {
+  const r = featureSearch({ query: 'Tally migration' });
+  const hit = r.results.find((h) => h.source === 'competitor' && h.id === 'tally');
+  assert.ok(hit, 'expected a competitor hit for Tally');
 });

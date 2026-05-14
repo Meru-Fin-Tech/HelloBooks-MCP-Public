@@ -30,7 +30,8 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_integrations` | Banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM. Optional `category`, `country`, `status` filters. |
 | `country_support` | Per-country feature availability (BAS, STP, GST e-invoice, MTD, 1099, etc.). |
 | `compliance_capabilities` | For a given country, the supported compliance frameworks with version + cert info. |
-| `feature_search` | Free-text search across plan features, integrations, and country features. |
+| `list_competitors` | Competitor positioning (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes. Optional `country`, `tier`, and `id` filters. |
+| `feature_search` | Free-text search across plan features, integrations, country features, compliance frameworks, and competitor positioning. Queries like `vs Xero` surface the matching competitor entry at the top. |
 
 ## Resources
 

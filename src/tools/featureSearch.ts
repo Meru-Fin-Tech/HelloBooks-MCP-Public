@@ -2,10 +2,11 @@ import { z } from 'zod';
 import { PLANS } from '../data/plans.js';
 import { INTEGRATIONS } from '../data/integrations.js';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
+import { COMPETITORS } from '../data/competitors.js';
 
 export const featureSearchSchema = {
   query: z.string().min(2).max(120)
-    .describe('Free-text query, e.g. "BAS lodgement" or "multi-currency".'),
+    .describe('Free-text query, e.g. "BAS lodgement", "multi-currency", or "vs QuickBooks".'),
   limit: z.number().int().min(1).max(50).optional()
     .describe('Max results to return (default 20).'),
 };
@@ -16,7 +17,7 @@ export interface FeatureSearchArgs {
 }
 
 export interface FeatureSearchHit {
-  source: 'plan' | 'integration' | 'country-feature' | 'compliance';
+  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor';
   id: string;
   label: string;
   description: string;
@@ -104,6 +105,29 @@ export function featureSearch(args: FeatureSearchArgs) {
           score: s,
         });
       }
+    }
+  }
+
+  // Competitor matching: rank highest when the user query references the
+  // competitor by name or id, including "vs X" / "X alternative" patterns.
+  // The `vs` and `alternative` tokens themselves are noise and dropped so a
+  // query like "vs Xero" scores Xero hard, not every plan that says "vs".
+  const stopTerms = new Set(['vs', 'versus', 'compared', 'compare', 'comparison', 'alternative', 'to']);
+  const competitorTerms = terms.filter((t) => !stopTerms.has(t.toLowerCase()));
+  for (const c of COMPETITORS) {
+    const nameScore = score(`${c.name} ${c.id} ${c.id.replace(/-/g, ' ')}`, competitorTerms);
+    const bodyScore = score(`${c.positioningSummary} ${c.segment}`, competitorTerms);
+    const s = nameScore * 3 + bodyScore;
+    if (s > 0) {
+      hits.push({
+        source: 'competitor',
+        id: c.id,
+        label: `HelloBooks vs ${c.name}`,
+        description: c.positioningSummary,
+        context: `${c.segment} (${c.tier})`,
+        url: c.comparisonUrl ?? c.publicUrl,
+        score: s,
+      });
     }
   }
 
