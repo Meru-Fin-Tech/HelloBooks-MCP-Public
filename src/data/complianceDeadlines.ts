@@ -9,9 +9,14 @@
  * Consumers MUST treat this as a planning hint and reconcile against the
  * authority source before acting on it.
  *
- * TODO(cron): file a quarterly CI job that diffs this catalog against the
- * authority source pages (gst.gov.in, ato.gov.au, gov.uk/hmrc, irs.gov,
- * canada.ca/cra) and fails on drift so the data here cannot silently rot.
+ * Drift check: `npm run check:deadline-drift` (in `scripts/check-deadline-
+ * drift.ts`) fetches each `source` URL, scans for `annualDates` / `dueDay`,
+ * writes `drift-report.md`, and exits non-zero on drift. Wired into the
+ * internal Jenkins box as a quarterly job (Jan 1 / Apr 1 / Jul 1 / Oct 1) —
+ * authorities publish next-FY dates 1–3 months ahead of FY start, so that
+ * cadence catches rotations before consumers act on stale data. The check
+ * alerts; it does not auto-patch — bump `lastReviewed` by hand after
+ * reconciling each finding.
  */
 
 import type { CountryCode } from './plans.js';
