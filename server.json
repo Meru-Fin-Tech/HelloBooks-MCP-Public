@@ -3,7 +3,7 @@
   "name": "io.github.meru-fin-tech/hellobooks-public",
   "title": "HelloBooks (Public)",
   "description": "Read-only knowledge endpoint for HelloBooks cloud accounting/payroll/tax SaaS. Exposes plan pricing, integrations catalog, per-country compliance frameworks, and feature search.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "url": "https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public",
     "source": "github"
