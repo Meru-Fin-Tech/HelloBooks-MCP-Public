@@ -14,10 +14,11 @@ import { listIntegrations, listIntegrationsSchema } from './tools/listIntegratio
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
 import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
+import { listArticles, listArticlesSchema } from './tools/listArticles.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -68,9 +69,16 @@ export function createServer(): McpServer {
 
   server.tool(
     'feature_search',
-    'Free-text search across plan features, integrations, country features, and compliance frameworks.',
+    'Free-text search across plan features, integrations, country features, compliance frameworks, and published articles (compare pages + flagship blog posts on hellobooks.ai).',
     featureSearchSchema,
     async (args) => asJsonContent(featureSearch(args)),
+  );
+
+  server.tool(
+    'list_articles',
+    'List published articles on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Filter by country, tag or free-text query. Use this when a user asks "do you have a blog/article about X?".',
+    listArticlesSchema,
+    async (args) => asJsonContent(listArticles(args)),
   );
 
   // Resources
@@ -87,5 +95,5 @@ export function createServer(): McpServer {
 }
 
 // Re-exports useful for tests
-export { listPlans, listIntegrations, countrySupport, complianceCapabilities, featureSearch };
+export { listPlans, listIntegrations, countrySupport, complianceCapabilities, featureSearch, listArticles };
 export const _internal = { z };

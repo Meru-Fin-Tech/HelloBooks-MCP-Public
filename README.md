@@ -30,7 +30,8 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_integrations` | Banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM. Optional `category`, `country`, `status` filters. |
 | `country_support` | Per-country feature availability (BAS, STP, GST e-invoice, MTD, 1099, etc.). |
 | `compliance_capabilities` | For a given country, the supported compliance frameworks with version + cert info. |
-| `feature_search` | Free-text search across plan features, integrations, and country features. |
+| `feature_search` | Free-text search across plan features, integrations, country features, compliance frameworks, and published articles. |
+| `list_articles` | Published content on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
 
 ## Resources
 
@@ -62,7 +63,7 @@ npm run audit:public-data
 
 ```
 src/
-  data/             # Static catalogs — plans, integrations, countries, about
+  data/             # Static catalogs — plans, integrations, countries, articles, about
   tools/            # One file per MCP tool
   resources/        # MCP resource registry
   server.ts         # MCP server factory (wires tools + resources)

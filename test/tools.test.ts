@@ -6,6 +6,8 @@ import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
 import { featureSearch } from '../src/tools/featureSearch.js';
+import { listArticles } from '../src/tools/listArticles.js';
+import { ARTICLES } from '../src/data/articles.js';
 
 test('list_plans returns all 4 tiers when unfiltered', () => {
   const r = listPlans({});
@@ -94,4 +96,118 @@ test('feature_search finds GST across countries', () => {
 test('feature_search respects limit', () => {
   const r = featureSearch({ query: 'tax', limit: 3 });
   assert.ok(r.results.length <= 3);
+});
+
+// ---------------------------------------------------------------------------
+// list_articles
+// ---------------------------------------------------------------------------
+
+test('list_articles catalog is non-trivial and well-formed', () => {
+  assert.ok(ARTICLES.length >= 30, 'expected at least 30 articles in catalog');
+  for (const a of ARTICLES) {
+    assert.ok(a.id.length > 0, `${a.title}: id must be non-empty`);
+    assert.ok(a.title.length > 0, `${a.id}: title must be non-empty`);
+    assert.ok(a.excerpt.length > 30, `${a.id}: excerpt must be at least 30 chars`);
+    assert.ok(a.excerpt.length <= 320, `${a.id}: excerpt should stay under 320 chars`);
+    assert.ok(a.url.startsWith('https://hellobooks.ai/'), `${a.id}: url must be hellobooks.ai`);
+    assert.match(a.publishedAt, /^\d{4}-\d{2}-\d{2}$/, `${a.id}: publishedAt must be YYYY-MM-DD`);
+    assert.ok(['blog', 'compare', 'guide'].includes(a.kind), `${a.id}: kind invalid`);
+    assert.ok(Array.isArray(a.tags) && a.tags.length > 0, `${a.id}: must have at least one tag`);
+  }
+});
+
+test('list_articles ids are unique', () => {
+  const ids = ARTICLES.map((a) => a.id);
+  assert.equal(new Set(ids).size, ids.length, 'duplicate ids in catalog');
+});
+
+test('list_articles unfiltered returns the full catalog (subject to default limit)', () => {
+  const r = listArticles({ limit: 100 });
+  assert.equal(r.totalMatches, ARTICLES.length);
+  assert.equal(r.catalogSize, ARTICLES.length);
+});
+
+test('list_articles country=IN returns India-relevant + global articles', () => {
+  const r = listArticles({ country: 'IN', limit: 100 });
+  assert.ok(r.totalMatches > 0);
+  for (const a of r.articles) {
+    const c = a.countryRelevance ?? 'global';
+    assert.ok(c === 'IN' || c === 'global', `${a.id}: country ${c} should not match IN filter`);
+  }
+  // Sanity — at least one IN-specific article exists.
+  assert.ok(
+    r.articles.some((a) => a.countryRelevance === 'IN'),
+    'expected at least one IN article in IN filter results',
+  );
+});
+
+test('list_articles country=US returns only US + global', () => {
+  const r = listArticles({ country: 'US', limit: 100 });
+  for (const a of r.articles) {
+    const c = a.countryRelevance ?? 'global';
+    assert.ok(c === 'US' || c === 'global');
+  }
+});
+
+test('list_articles country=global returns only global articles', () => {
+  const r = listArticles({ country: 'global', limit: 100 });
+  for (const a of r.articles) {
+    assert.equal(a.countryRelevance ?? 'global', 'global');
+  }
+});
+
+test('list_articles tag filter matches case-insensitively', () => {
+  const r = listArticles({ tag: 'Tally', limit: 100 });
+  assert.ok(r.totalMatches > 0);
+  for (const a of r.articles) {
+    assert.ok(
+      a.tags.some((t) => t.toLowerCase().includes('tally')),
+      `${a.id}: should have a tally tag`,
+    );
+  }
+});
+
+test('list_articles query matches across title, excerpt, and tags', () => {
+  const r = listArticles({ query: 'QuickBooks alternative', limit: 10 });
+  assert.ok(r.totalMatches > 0);
+});
+
+test('list_articles query is multi-term AND', () => {
+  // Both terms must appear; "tally india" should pick Indian Tally posts only.
+  const r = listArticles({ query: 'tally india', limit: 100 });
+  assert.ok(r.totalMatches > 0);
+  for (const a of r.articles) {
+    const blob = `${a.title} ${a.excerpt} ${a.tags.join(' ')}`.toLowerCase();
+    assert.ok(blob.includes('tally'), `${a.id}: missing "tally"`);
+    assert.ok(blob.includes('india') || blob.includes(' in ') || a.tags.includes('in'), `${a.id}: missing india/in`);
+  }
+});
+
+test('list_articles respects limit', () => {
+  const r = listArticles({ limit: 3 });
+  assert.equal(r.articles.length, 3);
+  assert.equal(r.count, 3);
+});
+
+test('list_articles sorts newest first', () => {
+  const r = listArticles({ limit: 100 });
+  for (let i = 1; i < r.articles.length; i++) {
+    assert.ok(
+      r.articles[i - 1]!.publishedAt >= r.articles[i]!.publishedAt,
+      'articles should be sorted newest-first',
+    );
+  }
+});
+
+test('list_articles includes compare pages alongside blog posts', () => {
+  const kinds = new Set(ARTICLES.map((a) => a.kind));
+  assert.ok(kinds.has('compare'), 'catalog should include compare pages');
+  assert.ok(kinds.has('blog'), 'catalog should include blog posts');
+});
+
+test('feature_search surfaces articles in results', () => {
+  // A query that should match a compare page or flagship blog.
+  const r = featureSearch({ query: 'quickbooks alternative' });
+  assert.ok(r.totalMatches > 0, 'expected article hits for QuickBooks alternative query');
+  assert.ok(r.results.some((h) => h.source === 'article'));
 });

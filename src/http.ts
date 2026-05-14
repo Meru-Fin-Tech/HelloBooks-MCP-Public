@@ -107,9 +107,9 @@ app.get('/health', (_req, res) => {
 app.get('/info', (_req, res) => {
   res.json({
     name: 'hellobooks-mcp-public',
-    version: '0.1.0',
+    version: '0.2.0',
     description:
-      'Public read-only MCP server for HelloBooks plans, integrations, country support, and compliance.',
+      'Public read-only MCP server for HelloBooks plans, integrations, country support, compliance, and published articles.',
     transport: { http: '/mcp', sse: '/mcp' },
     install: 'claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp',
     docs: 'https://hellobooks.ai/mcp',

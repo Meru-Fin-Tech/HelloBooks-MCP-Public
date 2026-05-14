@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PLANS } from '../data/plans.js';
 import { INTEGRATIONS } from '../data/integrations.js';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
+import { ARTICLES } from '../data/articles.js';
 
 export const featureSearchSchema = {
   query: z.string().min(2).max(120)
@@ -16,7 +17,7 @@ export interface FeatureSearchArgs {
 }
 
 export interface FeatureSearchHit {
-  source: 'plan' | 'integration' | 'country-feature' | 'compliance';
+  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'article';
   id: string;
   label: string;
   description: string;
@@ -104,6 +105,22 @@ export function featureSearch(args: FeatureSearchArgs) {
           score: s,
         });
       }
+    }
+  }
+
+  for (const a of ARTICLES) {
+    const blob = `${a.title} ${a.excerpt} ${a.tags.join(' ')}`;
+    const s = score(blob, terms);
+    if (s > 0) {
+      hits.push({
+        source: 'article',
+        id: a.id,
+        label: a.title,
+        description: a.excerpt,
+        context: `${a.kind} · ${a.publishedAt}${a.countryRelevance && a.countryRelevance !== 'global' ? ` · ${a.countryRelevance}` : ''}`,
+        url: a.url,
+        score: s,
+      });
     }
   }
 
