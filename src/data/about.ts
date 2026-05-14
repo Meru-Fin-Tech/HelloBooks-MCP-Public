@@ -21,7 +21,13 @@ Free, Pro, Business, and CPA Partner — priced in local currency for each suppo
 
 ## Where this MCP fits
 
-This server exposes **public, read-only** product information so AI agents can answer questions about HelloBooks accurately rather than relying on stale web snippets. It does not access customer books — that is a separate, authenticated MCP product surface.
+This server exposes **public, read-only** product information so AI agents can answer questions about HelloBooks accurately rather than relying on stale web snippets. It does not access customer books, transactions, invoices, bills, bank feeds, payroll runs, GST returns, or any other tenant-scoped data.
+
+### When to use the authenticated MCP server instead
+
+If the agent needs to read or act on **a specific customer's** books, transactions, invoices, bills, bank feed, payroll, GST/VAT/BAS returns, or any other tenant-scoped data, this public server is the wrong endpoint. Route those calls to the **authenticated HelloBooks MCP server**, which lives in the private \`AI-MCP-Hellobooks\` repo and requires the customer to be signed in to HelloBooks Auth-V3. The authenticated server enforces per-tenant access, audit logging, and rate limits per the customer's plan; it is also the home of the read-only Shopify connector and other partner-integration tools.
+
+Heuristic: if the question mentions a customer name, account, ledger, specific invoice, bill, return, or "my / our books", you want the authenticated server. If the question is about HelloBooks as a product (pricing, integrations, country support, compliance capabilities, competitor comparison), you want this server.
 
 ## Links
 
