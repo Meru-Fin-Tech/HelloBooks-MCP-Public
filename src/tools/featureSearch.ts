@@ -4,6 +4,7 @@ import { INTEGRATIONS } from '../data/integrations.js';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
 import { COMPETITORS } from '../data/competitors.js';
 import { COMPLIANCE_DEADLINES } from '../data/complianceDeadlines.js';
+import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from '../data/paymentMethods.js';
 
 const COUNTRY_NAME: Record<string, string> = {
   IN: 'India',
@@ -18,7 +19,7 @@ const COUNTRY_NAME: Record<string, string> = {
 
 export const featureSearchSchema = {
   query: z.string().min(2).max(120)
-    .describe('Free-text query, e.g. "BAS lodgement", "multi-currency", or "vs QuickBooks".'),
+    .describe('Free-text query, e.g. "BAS lodgement", "multi-currency", "vs QuickBooks", "GSTR-3B due", or "UPI invoice cap".'),
   limit: z.number().int().min(1).max(50).optional()
     .describe('Max results to return (default 20).'),
 };
@@ -29,7 +30,7 @@ export interface FeatureSearchArgs {
 }
 
 export interface FeatureSearchHit {
-  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor' | 'deadline';
+  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor' | 'deadline' | 'payment-method';
   id: string;
   label: string;
   description: string;
@@ -174,6 +175,27 @@ export function featureSearch(args: FeatureSearchArgs) {
         context: COUNTRY_NAME[d.country] ?? d.country,
         url: d.source,
         score: s,
+      });
+    }
+  }
+
+  // Payment-method matching: name + authority + notes form the haystack.
+  // Restricted to entries whose use-cases intersect HelloBooks' AR / AP /
+  // contractor-payout scope so an unrelated payroll-only or pure-P2P rail
+  // doesn't crowd accounting-relevant search results.
+  for (const m of PAYMENT_METHODS) {
+    if (!m.useCases.some((u) => HELLOBOOKS_USE_CASES.includes(u))) continue;
+    const blob = `${m.name} ${m.authority} ${m.notes?.join(' ') ?? ''}`;
+    const s = score(blob, terms);
+    if (s > 0) {
+      const supportNote = m.helloProductSupport ? ` · ${m.helloProductSupport}` : '';
+      hits.push({
+        source: 'payment-method',
+        id: m.id,
+        label: m.name,
+        description: `${m.rail} · ${m.authority} · ${m.useCases.join('/')}${supportNote}`,
+        context: m.country,
+        score: s + 1,
       });
     }
   }

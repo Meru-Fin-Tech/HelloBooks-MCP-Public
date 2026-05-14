@@ -8,6 +8,7 @@ import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
 import { featureSearch } from '../src/tools/featureSearch.js';
 import { listCompetitors } from '../src/tools/listCompetitors.js';
 import { complianceDeadlines } from '../src/tools/complianceDeadlines.js';
+import { localPaymentMethods } from '../src/tools/paymentMethods.js';
 
 test('list_plans returns all 4 tiers when unfiltered', () => {
   const r = listPlans({});
@@ -263,4 +264,94 @@ test('feature_search "Form 941" finds the US quarterly payroll deadline', () => 
   const r = featureSearch({ query: 'Form 941' });
   const hit = r.results.find((h) => h.source === 'deadline' && h.id === 'US:form-941');
   assert.ok(hit, 'expected a deadline hit for Form 941');
+});
+
+test('local_payment_methods default scope is HelloBooks AR/AP/contractor-payout', () => {
+  const r = localPaymentMethods({});
+  assert.ok(r.count > 0);
+  const allowed = new Set(['invoice-collection', 'b2b-supplier', 'contractor-payout']);
+  for (const m of r.methods) {
+    assert.ok(
+      m.useCases.some((u) => allowed.has(u)),
+      `${m.id} is in default scope but lacks AR / AP / contractor-payout use-case`,
+    );
+  }
+  // Payroll-only WPS-SIF must be excluded by default.
+  const ids = new Set(r.methods.map((m) => m.id));
+  assert.ok(!ids.has('ae-wps-sif'), 'WPS-SIF (payroll only) should not appear in default HelloBooks scope');
+});
+
+test('local_payment_methods country=IN returns NPCI / RBI / Razorpay', () => {
+  const r = localPaymentMethods({ country: 'IN' });
+  const ids = new Set(r.methods.map((m) => m.id));
+  for (const expected of ['in-upi', 'in-rupay', 'in-razorpay', 'in-imps', 'in-neft', 'in-rtgs']) {
+    assert.ok(ids.has(expected), `expected ${expected} present`);
+  }
+});
+
+test('local_payment_methods country=GB includes BACS, FPS, CHAPS, Open Banking', () => {
+  const r = localPaymentMethods({ country: 'GB' });
+  const ids = new Set(r.methods.map((m) => m.id));
+  for (const expected of ['gb-bacs', 'gb-fps', 'gb-chaps', 'gb-open-banking']) {
+    assert.ok(ids.has(expected), `expected ${expected} present`);
+  }
+});
+
+test('local_payment_methods country=AU includes BPAY (key AR rail) and PayTo', () => {
+  const r = localPaymentMethods({ country: 'AU' });
+  const ids = new Set(r.methods.map((m) => m.id));
+  assert.ok(ids.has('au-bpay'), 'BPAY must appear in HelloBooks AU scope');
+  assert.ok(ids.has('au-payto'), 'PayTo must appear in HelloBooks AU scope');
+});
+
+test('local_payment_methods rail=instant filter works', () => {
+  const r = localPaymentMethods({ rail: 'instant' });
+  for (const m of r.methods) assert.equal(m.rail, 'instant');
+});
+
+test('local_payment_methods explicit useCase=payroll widens to payroll-only rails', () => {
+  const r = localPaymentMethods({ useCase: 'payroll' });
+  // WPS-SIF (payroll only) should now be reachable.
+  const ids = new Set(r.methods.map((m) => m.id));
+  assert.ok(ids.has('ae-wps-sif'), 'WPS-SIF should appear when useCase=payroll is explicit');
+  for (const m of r.methods) {
+    assert.ok(m.useCases.includes('payroll'));
+  }
+});
+
+test('local_payment_methods id lookup returns single entry', () => {
+  const r = localPaymentMethods({ id: 'gb-bacs' });
+  assert.equal(r.count, 1);
+  assert.equal(r.methods[0]!.name, 'BACS Direct Credit');
+  assert.equal(r.methods[0]!.authority, 'Pay.UK');
+});
+
+test('local_payment_methods every entry has a stable schema', () => {
+  const r = localPaymentMethods({});
+  for (const m of r.methods) {
+    assert.ok(typeof m.id === 'string' && m.id.length > 0);
+    assert.ok(typeof m.country === 'string' && m.country.length === 2);
+    assert.ok(typeof m.name === 'string' && m.name.length > 0);
+    assert.ok(['instant', 'same-day', 'next-day', 'multi-day'].includes(m.rail));
+    assert.ok(Array.isArray(m.useCases) && m.useCases.length > 0);
+    assert.ok(typeof m.authority === 'string' && m.authority.length > 0);
+  }
+});
+
+test('feature_search "UPI invoice" surfaces the UPI payment-method entry', () => {
+  const r = featureSearch({ query: 'UPI invoice' });
+  const hit = r.results.find((h) => h.source === 'payment-method' && h.id === 'in-upi');
+  assert.ok(hit, 'expected UPI payment-method hit for "UPI invoice"');
+});
+
+test('feature_search "BPAY recurring" surfaces BPAY entry', () => {
+  const r = featureSearch({ query: 'BPAY recurring' });
+  const hit = r.results.find((h) => h.source === 'payment-method' && h.id === 'au-bpay');
+  assert.ok(hit, 'expected BPAY hit');
+});
+
+test('feature_search "RTP supplier" surfaces RTP entry', () => {
+  const r = featureSearch({ query: 'RTP supplier' });
+  const hit = r.results.find((h) => h.source === 'payment-method' && h.id === 'us-rtp');
+  assert.ok(hit, 'expected RTP hit');
 });

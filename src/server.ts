@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 7 read-only tools and 2 resources.
+ * MCP server factory. Wires the 8 read-only tools and 2 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -16,10 +16,11 @@ import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/co
 import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
 import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.js';
 import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
+import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.3.0';
+const SERVER_VERSION = '0.4.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -70,7 +71,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'feature_search',
-    'Free-text search across plan features, integrations, country features, compliance frameworks, and competitor positioning. Queries like "vs Xero" or "QuickBooks alternative" surface the matching competitor entry at the top.',
+    'Free-text search across plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, and local payment methods. Queries like "vs Xero", "QuickBooks alternative", "GSTR-3B due", "UPI invoice", "BPAY recurring", or "RTP supplier" surface the matching entry near the top.',
     featureSearchSchema,
     async (args) => asJsonContent(featureSearch(args)),
   );
@@ -87,6 +88,13 @@ export function createServer(): McpServer {
     'When statutory returns and payroll filings are due, per country. Covers IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super Guarantee), GB (VAT MTD, RTI, Self Assessment), US (1099-NEC/MISC, W-2, Form 941/940), CA (T4, GST/HST). Optional country, frequency, and form filters. Note: dates rotate annually — every response carries a disclaimer with the per-deadline `source` URL for authority confirmation.',
     complianceDeadlinesSchema,
     async (args) => asJsonContent(complianceDeadlines(args)),
+  );
+
+  server.tool(
+    'local_payment_methods',
+    'List local bank-rail / wallet payment methods relevant to HelloBooks invoice collection (AR), B2B supplier payments (AP), and contractor payouts (UPI, RuPay, Razorpay, IMPS, NEFT, RTGS, BACS, FPS, CHAPS, Open Banking, Interac e-Transfer, EFT, PayID, PayTo, NPP, BPAY, ACH, Same Day ACH, Fedwire, RTP, Zelle, PayNow, FAST, GIRO, NZ Direct Credit, etc.). Returns rail (instant / same-day / next-day / multi-day), use-cases, issuing authority, HelloBooks support level, and operational notes (per-transaction caps, settlement windows, retirement timelines). Filter by country, useCase, rail, or id.',
+    localPaymentMethodsSchema,
+    async (args) => asJsonContent(localPaymentMethods(args)),
   );
 
   // Resources
@@ -111,5 +119,6 @@ export {
   featureSearch,
   listCompetitors,
   complianceDeadlines,
+  localPaymentMethods,
 };
 export const _internal = { z };
