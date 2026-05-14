@@ -3,6 +3,18 @@ import { PLANS } from '../data/plans.js';
 import { INTEGRATIONS } from '../data/integrations.js';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
 import { COMPETITORS } from '../data/competitors.js';
+import { COMPLIANCE_DEADLINES } from '../data/complianceDeadlines.js';
+
+const COUNTRY_NAME: Record<string, string> = {
+  IN: 'India',
+  US: 'United States',
+  CA: 'Canada',
+  GB: 'United Kingdom',
+  AU: 'Australia',
+  AE: 'United Arab Emirates',
+  SG: 'Singapore',
+  NZ: 'New Zealand',
+};
 
 export const featureSearchSchema = {
   query: z.string().min(2).max(120)
@@ -17,7 +29,7 @@ export interface FeatureSearchArgs {
 }
 
 export interface FeatureSearchHit {
-  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor';
+  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor' | 'deadline';
   id: string;
   label: string;
   description: string;
@@ -126,6 +138,41 @@ export function featureSearch(args: FeatureSearchArgs) {
         description: c.positioningSummary,
         context: `${c.segment} (${c.tier})`,
         url: c.comparisonUrl ?? c.publicUrl,
+        score: s,
+      });
+    }
+  }
+
+  // Deadline matching: queries like "when is GSTR-3B due" or "BAS deadline"
+  // should surface the matching deadline entry highly. We score against the
+  // form name + authority + applicabilityNote; date-intent stopwords ("when",
+  // "due", "deadline") are dropped so they don't soak up score from every form.
+  const deadlineStopTerms = new Set([
+    'when', 'is', 'are', 'the', 'due', 'deadline', 'date', 'dates', 'a', 'an',
+    'for', 'of', 'in', 'next', 'this',
+  ]);
+  const deadlineTerms = terms.filter((t) => !deadlineStopTerms.has(t.toLowerCase()));
+  for (const d of COMPLIANCE_DEADLINES) {
+    const nameBlob = `${d.form} ${d.id} ${d.id.replace(/-/g, ' ')}`;
+    const bodyBlob = `${d.authority} ${d.applicabilityNote ?? ''} ${d.frequency}`;
+    const nameScore = score(nameBlob, deadlineTerms);
+    const bodyScore = score(bodyBlob, deadlineTerms);
+    const s = nameScore * 3 + bodyScore;
+    if (s > 0) {
+      const dateHint = d.annualDates && d.annualDates.length > 0
+        ? `due ${d.annualDates.join(', ')}`
+        : d.dueDay
+          ? `due day ${d.dueDay} of the period`
+          : d.frequency === 'per-event'
+            ? 'per-event filing'
+            : 'see applicability note';
+      hits.push({
+        source: 'deadline',
+        id: `${d.country}:${d.id}`,
+        label: `${d.form} (${d.country})`,
+        description: `${d.authority} · ${d.frequency} · ${dateHint}`,
+        context: COUNTRY_NAME[d.country] ?? d.country,
+        url: d.source,
         score: s,
       });
     }

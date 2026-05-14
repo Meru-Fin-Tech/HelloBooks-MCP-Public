@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 5 read-only tools and 2 resources.
+ * MCP server factory. Wires the 7 read-only tools and 2 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -15,10 +15,11 @@ import { countrySupport, countrySupportSchema } from './tools/countrySupport.js'
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
 import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
 import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.js';
+import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.3.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -81,6 +82,13 @@ export function createServer(): McpServer {
     async (args) => asJsonContent(listCompetitors(args)),
   );
 
+  server.tool(
+    'compliance_deadlines',
+    'When statutory returns and payroll filings are due, per country. Covers IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super Guarantee), GB (VAT MTD, RTI, Self Assessment), US (1099-NEC/MISC, W-2, Form 941/940), CA (T4, GST/HST). Optional country, frequency, and form filters. Note: dates rotate annually — every response carries a disclaimer with the per-deadline `source` URL for authority confirmation.',
+    complianceDeadlinesSchema,
+    async (args) => asJsonContent(complianceDeadlines(args)),
+  );
+
   // Resources
   for (const r of RESOURCES) {
     server.resource(
@@ -95,5 +103,13 @@ export function createServer(): McpServer {
 }
 
 // Re-exports useful for tests
-export { listPlans, listIntegrations, countrySupport, complianceCapabilities, featureSearch, listCompetitors };
+export {
+  listPlans,
+  listIntegrations,
+  countrySupport,
+  complianceCapabilities,
+  featureSearch,
+  listCompetitors,
+  complianceDeadlines,
+};
 export const _internal = { z };

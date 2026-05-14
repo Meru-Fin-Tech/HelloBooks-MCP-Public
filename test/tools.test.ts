@@ -7,6 +7,7 @@ import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
 import { featureSearch } from '../src/tools/featureSearch.js';
 import { listCompetitors } from '../src/tools/listCompetitors.js';
+import { complianceDeadlines } from '../src/tools/complianceDeadlines.js';
 
 test('list_plans returns all 4 tiers when unfiltered', () => {
   const r = listPlans({});
@@ -158,4 +159,108 @@ test('feature_search "Tally migration" finds the Tally competitor entry', () => 
   const r = featureSearch({ query: 'Tally migration' });
   const hit = r.results.find((h) => h.source === 'competitor' && h.id === 'tally');
   assert.ok(hit, 'expected a competitor hit for Tally');
+});
+
+// ---------------------------------------------------- compliance_deadlines ---
+
+test('compliance_deadlines unfiltered returns the full catalog and every entry carries a disclaimer', () => {
+  const r = complianceDeadlines({});
+  assert.ok(r.count >= 25, `expected the catalog to ship >= 25 entries, got ${r.count}`);
+  assert.ok(r.disclaimer.length > 50, 'disclaimer must be non-trivial');
+  assert.match(r.disclaimer, /rotate|annually|extension/i);
+});
+
+test('compliance_deadlines every entry has a source URL and lastReviewed', () => {
+  const r = complianceDeadlines({});
+  for (const d of r.deadlines) {
+    assert.match(d.source, /^https?:\/\//, `${d.id} source must be a URL`);
+    assert.match(d.lastReviewed, /^\d{4}-\d{2}-\d{2}$/, `${d.id} lastReviewed must be ISO date`);
+    assert.ok(d.form.length > 0);
+    assert.ok(d.authority.length > 0);
+  }
+});
+
+test('compliance_deadlines country=IN returns India-only entries including GSTR-3B', () => {
+  const r = complianceDeadlines({ country: 'IN' });
+  assert.ok(r.count >= 9, `IN should have >= 9 deadlines, got ${r.count}`);
+  for (const d of r.deadlines) assert.equal(d.country, 'IN');
+  const forms = r.deadlines.map((d) => d.form);
+  assert.ok(forms.some((f) => f.includes('GSTR-3B')));
+  assert.ok(forms.some((f) => f.includes('Form 24Q')));
+  assert.ok(forms.some((f) => f === 'PF ECR'));
+});
+
+test('compliance_deadlines frequency=quarterly catches BAS and Form 941', () => {
+  const r = complianceDeadlines({ frequency: 'quarterly' });
+  for (const d of r.deadlines) assert.equal(d.frequency, 'quarterly');
+  const forms = r.deadlines.map((d) => d.form);
+  assert.ok(forms.some((f) => f === 'BAS'), 'AU BAS must be quarterly');
+  assert.ok(forms.some((f) => f === 'Form 941'), 'US Form 941 must be quarterly');
+});
+
+test('compliance_deadlines frequency=per-event picks up STP and PAYE RTI', () => {
+  const r = complianceDeadlines({ frequency: 'per-event' });
+  const ids = r.deadlines.map((d) => d.id);
+  assert.ok(ids.includes('stp'), 'AU STP must be per-event');
+  assert.ok(ids.includes('paye-rti'), 'GB PAYE RTI must be per-event');
+});
+
+test('compliance_deadlines form substring match is case-insensitive', () => {
+  const r1 = complianceDeadlines({ form: 'gstr' });
+  const r2 = complianceDeadlines({ form: 'GSTR' });
+  assert.equal(r1.count, r2.count);
+  assert.ok(r1.count >= 4, 'should match GSTR-1, GSTR-1 (QRMP), GSTR-3B, GSTR-3B (QRMP), GSTR-9, GSTR-9C');
+  for (const d of r1.deadlines) assert.match(d.form, /GSTR/i);
+});
+
+test('compliance_deadlines filters compose (country + form)', () => {
+  const r = complianceDeadlines({ country: 'US', form: '1099' });
+  assert.ok(r.count >= 2);
+  for (const d of r.deadlines) {
+    assert.equal(d.country, 'US');
+    assert.match(d.form, /1099/);
+  }
+});
+
+test('compliance_deadlines monthly Indian filings (PF ECR, ESI, GSTR-3B monthly) use dueDay not annualDates', () => {
+  const r = complianceDeadlines({ country: 'IN', frequency: 'monthly' });
+  for (const d of r.deadlines) {
+    assert.equal(d.frequency, 'monthly');
+    assert.ok(typeof d.dueDay === 'number', `${d.id} monthly entry must specify dueDay`);
+    assert.equal(d.annualDates, undefined, `${d.id} monthly entry should not also set annualDates`);
+  }
+});
+
+test('compliance_deadlines AU BAS lists all four quarterly cut-off dates', () => {
+  const r = complianceDeadlines({ country: 'AU', form: 'BAS' });
+  assert.equal(r.count, 1);
+  const bas = r.deadlines[0]!;
+  assert.deepEqual(bas.annualDates, ['Oct 28', 'Feb 28', 'Apr 28', 'Jul 28']);
+});
+
+test('compliance_deadlines US 1099-NEC has the unified Jan 31 deadline (not Mar 31)', () => {
+  // Spec watch-out: 1099-NEC's IRS filing is Jan 31, not Mar 31. Only other
+  // 1099 series (MISC, INT, DIV) get the Mar 31 e-file date.
+  const r = complianceDeadlines({ country: 'US', form: '1099-NEC' });
+  assert.equal(r.count, 1);
+  assert.deepEqual(r.deadlines[0]!.annualDates, ['Jan 31']);
+});
+
+test('feature_search "when is GSTR-3B due" surfaces the GSTR-3B deadline entry', () => {
+  const r = featureSearch({ query: 'when is GSTR-3B due' });
+  const hit = r.results.find((h) => h.source === 'deadline' && h.label.startsWith('GSTR-3B'));
+  assert.ok(hit, 'expected a deadline hit for GSTR-3B');
+  assert.ok(hit!.url && hit!.url.includes('gst.gov.in'));
+});
+
+test('feature_search "BAS deadline" surfaces the BAS deadline entry', () => {
+  const r = featureSearch({ query: 'BAS deadline' });
+  const hit = r.results.find((h) => h.source === 'deadline' && h.label.startsWith('BAS'));
+  assert.ok(hit, 'expected a deadline hit for BAS');
+});
+
+test('feature_search "Form 941" finds the US quarterly payroll deadline', () => {
+  const r = featureSearch({ query: 'Form 941' });
+  const hit = r.results.find((h) => h.source === 'deadline' && h.id === 'US:form-941');
+  assert.ok(hit, 'expected a deadline hit for Form 941');
 });

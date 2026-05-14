@@ -31,7 +31,8 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `country_support` | Per-country feature availability (BAS, STP, GST e-invoice, MTD, 1099, etc.). |
 | `compliance_capabilities` | For a given country, the supported compliance frameworks with version + cert info. |
 | `list_competitors` | Competitor positioning (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes. Optional `country`, `tier`, and `id` filters. |
-| `feature_search` | Free-text search across plan features, integrations, country features, compliance frameworks, and competitor positioning. Queries like `vs Xero` surface the matching competitor entry at the top. |
+| `compliance_deadlines` | When statutory returns and payroll filings are due, per country. Covers IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super Guarantee), GB (VAT MTD, RTI, Self Assessment), US (1099-NEC/MISC, W-2, Form 941/940), CA (T4, GST/HST). Optional `country`, `frequency`, and `form` filters. Dates rotate annually — every response carries a disclaimer with per-deadline `source` URLs. |
+| `feature_search` | Free-text search across plan features, integrations, country features, compliance frameworks, competitor positioning, and statutory deadlines. Queries like `vs Xero`, `QuickBooks alternative`, or `when is GSTR-3B due` surface the matching entry at the top. |
 
 ## Resources
 
