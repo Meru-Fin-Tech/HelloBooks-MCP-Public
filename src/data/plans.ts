@@ -11,7 +11,7 @@
 
 export type CountryCode = 'IN' | 'US' | 'CA' | 'GB' | 'AU' | 'AE' | 'SG' | 'NZ';
 export type CurrencyCode = 'INR' | 'USD' | 'CAD' | 'GBP' | 'AUD' | 'AED' | 'SGD' | 'NZD';
-export type PlanType = 'free' | 'pro' | 'business' | 'cpa';
+export type PlanType = 'free' | 'pro' | 'business' | 'cpa' | 'warehouse-addon' | 'manufacturing-addon';
 
 export interface PlanPrice {
   country: CountryCode;
@@ -76,6 +76,26 @@ const CPA_FEATURES = [
   'Quarterly business review',
 ];
 
+const WAREHOUSE_ADDON_FEATURES = [
+  'Multi-warehouse with bins & zones',
+  'Goods receipt notes + put-away rules',
+  'Cross-docking',
+  'Mobile warehouse + barcode scan (iOS/Android)',
+  'RMA & returns management',
+  'Allocation & reservation against open orders',
+  '3PL integration (beta)',
+];
+
+const MANUFACTURING_ADDON_FEATURES = [
+  'Multi-level Bill of Materials with versioning',
+  'Work orders with WAC valuation of finished goods',
+  'Shop floor tracking (operator clock-in, stations)',
+  'Quality control checkpoints (receive + completion)',
+  'Subcontracting with component send / FG receive',
+  'By-product & co-product output tracking',
+  'Production planning (beta) / MRP (planned)',
+];
+
 interface RegionConfig {
   country: CountryCode;
   currency: CurrencyCode;
@@ -120,7 +140,9 @@ const REGIONS: RegionConfig[] = [
     cpa: { monthly: 95.99, annual: 959.99, perClient: 7.99 } },
 ];
 
-function pricesFor(plan: Exclude<PlanType, 'free'>): PlanPrice[] {
+type RegionalPaidPlan = 'pro' | 'business' | 'cpa';
+
+function pricesFor(plan: RegionalPaidPlan): PlanPrice[] {
   return REGIONS.map((r) => {
     const tier = r[plan];
     return {
@@ -144,6 +166,18 @@ function freePrices(): PlanPrice[] {
     annual: 0,
     anchorMonthly: 0,
   }));
+}
+
+/**
+ * Add-ons are stackable per-entity SKUs priced in USD on the marketing site.
+ * They are NOT replicated across the 8 regional currencies — checkout converts
+ * at FX. We expose USD only to keep parity with hellobooks.ai/pricing/add-ons.
+ */
+function usdAddonPrice(monthly: number, annual: number): PlanPrice[] {
+  return [{
+    country: 'US', currency: 'USD', symbol: '$',
+    monthly, annual, anchorMonthly: 0,
+  }];
 }
 
 export const PLANS: Plan[] = [
@@ -182,5 +216,23 @@ export const PLANS: Plan[] = [
     features: CPA_FEATURES,
     prices: pricesFor('cpa'),
     publicSignupUrl: 'https://hellobooks.ai/contact',
+  },
+  {
+    plan: 'warehouse-addon',
+    name: 'Warehouse Add-on',
+    tagline: 'Per-entity warehouse module — stacks on any paid plan',
+    monthlyAiCredits: 0,
+    features: WAREHOUSE_ADDON_FEATURES,
+    prices: usdAddonPrice(9, 90),
+    publicSignupUrl: 'https://hellobooks.ai/warehouse',
+  },
+  {
+    plan: 'manufacturing-addon',
+    name: 'Manufacturing Add-on',
+    tagline: 'Per-entity manufacturing module — stacks on any paid plan',
+    monthlyAiCredits: 0,
+    features: MANUFACTURING_ADDON_FEATURES,
+    prices: usdAddonPrice(14, 140),
+    publicSignupUrl: 'https://hellobooks.ai/manufacturing',
   },
 ];

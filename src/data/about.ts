@@ -5,29 +5,46 @@
 
 export const ABOUT_MARKDOWN = `# HelloBooks
 
-HelloBooks is an AI-native accounting platform that automates bookkeeping for small businesses, accountants, and CPA firms across 8 countries (AU, IN, UK, US, CA, AE, SG, NZ).
+HelloBooks is an AI-native, agentic accounting platform that automates bookkeeping for small businesses, accountants, and CPA firms across 8 countries (AU, IN, UK, US, CA, AE, SG, NZ).
 
 ## What it does
 
-- **AI auto-categorization** — 95%+ accuracy on bank feed transactions, with human-in-the-loop review.
-- **Compliance** — Australian BAS + STP Phase 2, Indian GST e-invoicing + GSTR returns, UK MTD VAT, US 1099s, UAE VAT, and more.
-- **Integrations** — Plaid, Stripe, Razorpay, QuickBooks, Xero, Tally, Shopify, Shiprocket, HelloTime, HelloGrowth CRM, Gusto.
-- **Multi-entity** — Manage multiple companies and subsidiaries from one dashboard.
-- **Mobile** — Full-featured iOS and Android apps that mirror the web product.
+- **Agentic accounting (USP)** — AI takes accounting actions with human approval: reconciliation, categorization, journal posting, document Q&A, voice queries.
+- **AI auto-categorization** — 95%+ accuracy on bank feed transactions, industry/turnover/materiality-aware, with human-in-the-loop review.
+- **Multi-jurisdiction tax intelligence** — Tax-aware categorization out of the box in 4 jurisdictions: India (TDS 194-series + GST CGST/SGST/IGST/RCM + TCS 206C), UK (VAT + CIS DRC + MTD), Australia (GST + no-ABN PAYG 47% + LCT + WET), UAE (5% VAT + 9% CT + Free Zone splits).
+- **Compliance** — Australian BAS + STP Phase 2 + TPAR, Indian GST e-invoicing + e-way bills + GSTR-1/2A/2B/3B/6/7/8/9 + ITC-04 + TDS/TCS, UK MTD VAT + CIS + RTI, US 1099-NEC/MISC + multi-state sales tax + W-9, UAE FTA VAT + Corporate Tax, Canada GST/HST/PST/QST, Singapore GST + CPF, NZ GST.
+- **Integrations** — Plaid, Yodlee, Stripe, Razorpay, PayPal, QuickBooks (two-way), Xero, Tally, Zoho Books, FreshBooks, Shopify, Amazon Seller, Shiprocket, HelloTime, HelloGrowth CRM, Gusto, Google Drive, OneDrive/SharePoint, Upwork.
+- **Multi-entity** — Manage multiple legal entities under one organization with consolidated P&L / Balance Sheet and intercompany elimination.
+- **Industry modules** — POS (cloth retail, mandi, generic), Real Estate / Projects, Manufacturing (BOM, Work Orders, Shop Floor, QC, Subcontracting), Warehouse (multi-location, bins/zones, RMA, barcode-scan), TimeX payroll & attendance.
+- **Mobile** — Full-featured iOS and Android apps with mileage tracker (IRS-compliant logs).
 
 ## Plans
 
-Free, Pro, Business, and CPA Partner — priced in local currency for each supported country. See \`list_plans\` tool.
+- **Free** — 500 AI credits/month, 1 bank connection, up to 2 users.
+- **Pro** — 1,500 AI credits/month, AI auto-categorization, unlimited bank connections + users.
+- **Business** — 5,000 AI credits/month, 3-way matching, multi-entity, custom reports, public API.
+- **CPA / CA Partner** — unlimited AI credits, multi-client dashboard, white-label, 10% commission.
+- **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
+- **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
+
+Prices localized to 8 currencies. See \`list_plans\` tool.
 
 ## Where this MCP fits
 
-This server exposes **public, read-only** product information so AI agents can answer questions about HelloBooks accurately rather than relying on stale web snippets. It does not access customer books — that is a separate, authenticated MCP product surface.
+This server exposes **public, read-only** product information so AI agents can answer questions about HelloBooks accurately rather than relying on stale web snippets. It does not access customer books — that is a separate, authenticated MCP product surface (see \`AI-MCP-Hellobooks\`).
+
+The exposed surface area:
+
+- **Tools**: \`list_plans\`, \`list_integrations\`, \`country_support\`, \`compliance_capabilities\`, \`feature_search\`, \`list_features\`, \`list_feature_categories\`.
+- **Resources**: \`hellobooks://about\`, \`hellobooks://changelog\`, \`hellobooks://feature-catalog\`.
 
 ## Links
 
 - Website: https://hellobooks.ai
 - Pricing: https://hellobooks.ai/pricing
 - Integrations: https://hellobooks.ai/integration
+- Warehouse add-on: https://hellobooks.ai/warehouse
+- Manufacturing add-on: https://hellobooks.ai/manufacturing
 - Changelog: https://hellobooks.ai/changelog
 - Status: https://hellobooks.ai/status
 `;
@@ -47,6 +64,12 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-05-18', title: 'MCP feature catalog parity with website', category: 'improvement',
+    description: 'Public MCP now mirrors the full 96-feature marketing catalog. New tools: list_features, list_feature_categories. New resource: hellobooks://feature-catalog. Warehouse + Manufacturing add-on tiers added to list_plans.' },
+  { date: '2026-05-16', title: 'AP automation sprint complete', category: 'feature',
+    description: '19-PR sprint: 3-way matching FSM, approval SLA tracking, vendor bank safeguards, AP safety sprint hardening, bill activity timeline, audit drift fixes.' },
+  { date: '2026-05-13', title: 'AU + IN Stock Transfer with e-Way Bill', category: 'compliance',
+    description: 'Inter-warehouse stock transfers with auto e-Way Bill generation (IN) and proper GST handling.' },
   { date: '2026-05-08', title: 'Shopify MCP tools (read-only)', category: 'feature',
     description: '8 new MCP tools for connections, orders, payouts in the authenticated MCP server.' },
   { date: '2026-05-05', title: 'Mobile drawer + bell-icon re-enabled', category: 'feature',

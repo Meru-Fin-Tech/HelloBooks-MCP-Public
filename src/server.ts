@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 8 read-only tools and 2 resources.
+ * MCP server factory. Wires the 10 read-only tools and 3 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -17,10 +17,12 @@ import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
 import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.js';
 import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
 import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
+import { listFeatures, listFeaturesSchema } from './tools/listFeatures.js';
+import { listFeatureCategories, listFeatureCategoriesSchema } from './tools/listFeatureCategories.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.4.0';
+const SERVER_VERSION = '0.5.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -71,7 +73,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'feature_search',
-    'Free-text search across plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, and local payment methods. Queries like "vs Xero", "QuickBooks alternative", "GSTR-3B due", "UPI invoice", "BPAY recurring", or "RTP supplier" surface the matching entry near the top.',
+    'Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, and local payment methods. Queries like "vs Xero", "QuickBooks alternative", "GSTR-3B due", "UPI invoice", "BPAY recurring", "RTP supplier", or "agentic accounting" surface the matching entry near the top.',
     featureSearchSchema,
     async (args) => asJsonContent(featureSearch(args)),
   );
@@ -97,6 +99,20 @@ export function createServer(): McpServer {
     async (args) => asJsonContent(localPaymentMethods(args)),
   );
 
+  server.tool(
+    'list_features',
+    'List the full HelloBooks marketing feature catalog (96+ items). Filter by category, tier, status, marketedOnly, or substring query.',
+    listFeaturesSchema,
+    async (args) => asJsonContent(listFeatures(args)),
+  );
+
+  server.tool(
+    'list_feature_categories',
+    'List the 13 feature categories on the marketing site (Core Accounting, Invoicing, Banking, Reports, Tax & Compliance, Inventory, Warehouse, Manufacturing, AI, Integrations, Mobile, Operations, Industry Modules) with per-category counts by status.',
+    listFeatureCategoriesSchema,
+    async () => asJsonContent(listFeatureCategories({})),
+  );
+
   // Resources
   for (const r of RESOURCES) {
     server.resource(
@@ -120,5 +136,7 @@ export {
   listCompetitors,
   complianceDeadlines,
   localPaymentMethods,
+  listFeatures,
+  listFeatureCategories,
 };
 export const _internal = { z };

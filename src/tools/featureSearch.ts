@@ -5,6 +5,7 @@ import { COUNTRY_SUPPORT } from '../data/countries.js';
 import { COMPETITORS } from '../data/competitors.js';
 import { COMPLIANCE_DEADLINES } from '../data/complianceDeadlines.js';
 import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from '../data/paymentMethods.js';
+import { FEATURES } from '../data/features.js';
 
 const COUNTRY_NAME: Record<string, string> = {
   IN: 'India',
@@ -30,7 +31,15 @@ export interface FeatureSearchArgs {
 }
 
 export interface FeatureSearchHit {
-  source: 'plan' | 'integration' | 'country-feature' | 'compliance' | 'competitor' | 'deadline' | 'payment-method';
+  source:
+    | 'plan'
+    | 'integration'
+    | 'country-feature'
+    | 'compliance'
+    | 'competitor'
+    | 'deadline'
+    | 'payment-method'
+    | 'feature';
   id: string;
   label: string;
   description: string;
@@ -85,6 +94,22 @@ export function featureSearch(args: FeatureSearchArgs) {
         description: i.description,
         context: i.category,
         url: i.publicUrl,
+        score: s,
+      });
+    }
+  }
+
+  for (const f of FEATURES) {
+    const blob = `${f.label} ${f.shortDescription} ${f.category} ${f.key}`;
+    const s = score(blob, terms);
+    if (s > 0) {
+      hits.push({
+        source: 'feature',
+        id: f.key,
+        label: f.label,
+        description: f.shortDescription,
+        context: `${f.category} · ${f.tier} · ${f.status}`,
+        url: 'https://hellobooks.ai',
         score: s,
       });
     }

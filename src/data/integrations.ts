@@ -15,7 +15,9 @@ export type IntegrationCategory =
   | 'tax-compliance'
   | 'accounting-sync'
   | 'ecommerce'
-  | 'crm';
+  | 'crm'
+  | 'storage'
+  | 'freelance';
 
 export interface Integration {
   id: string;
@@ -116,4 +118,25 @@ export const INTEGRATIONS: Integration[] = [
     description: 'Native CRM with deals, contacts, and pipeline that links to invoices.',
     countries: [], status: 'live',
     publicUrl: 'https://hellobooks.ai/hellogrowth-crm' },
+
+  // Storage / document attachment
+  { id: 'google-drive', name: 'Google Drive', category: 'storage',
+    description: 'Attach receipts and supporting documents from Google Drive directly to bills and journal entries.',
+    countries: [], status: 'live',
+    publicUrl: 'https://hellobooks.ai/integration/google-drive' },
+  { id: 'onedrive-sharepoint', name: 'OneDrive / SharePoint', category: 'storage',
+    description: 'Attach documents from Microsoft OneDrive or SharePoint.',
+    countries: [], status: 'live',
+    publicUrl: 'https://hellobooks.ai/integration/onedrive' },
+
+  // Freelance / contractor spend
+  { id: 'upwork', name: 'Upwork', category: 'freelance',
+    description: 'Auto-import freelance contractor spend from Upwork with per-project mapping into the GL.',
+    countries: [], status: 'live',
+    publicUrl: 'https://hellobooks.ai/integration/upwork' },
+
+  // Additional accounting-sync partners surfaced on the marketing site
+  { id: 'freshbooks', name: 'FreshBooks', category: 'accounting-sync',
+    description: 'Bi-directional sync with FreshBooks ledgers for migration or dual-bookkeeping scenarios.',
+    countries: ['US', 'CA', 'GB', 'AU'], status: 'live' },
 ];
