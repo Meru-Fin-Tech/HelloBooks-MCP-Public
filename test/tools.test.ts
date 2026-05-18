@@ -9,24 +9,50 @@ import { featureSearch } from '../src/tools/featureSearch.js';
 import { listCompetitors } from '../src/tools/listCompetitors.js';
 import { complianceDeadlines } from '../src/tools/complianceDeadlines.js';
 import { localPaymentMethods } from '../src/tools/paymentMethods.js';
+import { listFeatures } from '../src/tools/listFeatures.js';
+import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 
-test('list_plans returns all 4 tiers when unfiltered', () => {
+test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
   const names = r.plans.map((p) => p.plan).sort();
-  assert.deepEqual(names, ['business', 'cpa', 'free', 'pro']);
-  // Each plan has prices for 8 countries
+  assert.deepEqual(names, [
+    'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
+  ]);
+  // Core plans have prices for 8 countries; add-ons are USD-only
   for (const p of r.plans) {
-    assert.equal(p.prices.length, 8);
+    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
+      assert.equal(p.prices.length, 1, `${p.plan} should be USD-only`);
+      assert.equal(p.prices[0]!.currency, 'USD');
+    } else {
+      assert.equal(p.prices.length, 8);
+    }
   }
 });
 
 test('list_plans country filter narrows to that country only', () => {
   const r = listPlans({ country: 'AU' });
   for (const p of r.plans) {
+    // Add-ons are USD-only so AU filter zeroes them out
+    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
+      assert.equal(p.prices.length, 0);
+      continue;
+    }
     assert.equal(p.prices.length, 1);
     assert.equal(p.prices[0]!.country, 'AU');
     assert.equal(p.prices[0]!.currency, 'AUD');
   }
+});
+
+test('list_plans surfaces warehouse + manufacturing add-on pricing in USD', () => {
+  const wh = listPlans({ plan: 'warehouse-addon' });
+  assert.equal(wh.plans.length, 1);
+  assert.equal(wh.plans[0]!.prices[0]!.monthly, 9);
+  assert.equal(wh.plans[0]!.prices[0]!.annual, 90);
+
+  const mfg = listPlans({ plan: 'manufacturing-addon' });
+  assert.equal(mfg.plans.length, 1);
+  assert.equal(mfg.plans[0]!.prices[0]!.monthly, 14);
+  assert.equal(mfg.plans[0]!.prices[0]!.annual, 140);
 });
 
 test('list_plans plan filter restricts to single tier', () => {
@@ -354,4 +380,58 @@ test('feature_search "RTP supplier" surfaces RTP entry', () => {
   const r = featureSearch({ query: 'RTP supplier' });
   const hit = r.results.find((h) => h.source === 'payment-method' && h.id === 'us-rtp');
   assert.ok(hit, 'expected RTP hit');
+});
+
+test('feature_search now surfaces marketing catalog features', () => {
+  const r = featureSearch({ query: 'agentic accounting' });
+  const sources = new Set(r.results.map((h) => h.source));
+  assert.ok(sources.has('feature'), 'should hit the marketing feature catalog');
+});
+
+test('list_features returns the full marketing catalog', () => {
+  const r = listFeatures({});
+  // Catalog has 96 features as of 2026-05-18 — assert >= 90 to allow growth
+  assert.ok(r.totalMatches >= 90, `expected >= 90 features, got ${r.totalMatches}`);
+});
+
+test('list_features tier filter restricts to a single tier', () => {
+  const r = listFeatures({ tier: 'manufacturing-addon' });
+  assert.ok(r.count > 0);
+  for (const f of r.features) assert.equal(f.tier, 'manufacturing-addon');
+});
+
+test('list_features marketedOnly drops non-marketed features', () => {
+  const r = listFeatures({ marketedOnly: true });
+  for (const f of r.features) assert.equal(f.marketed, true);
+});
+
+test('list_features query matches Bill of Materials', () => {
+  const r = listFeatures({ query: 'Bill of Materials' });
+  assert.ok(r.count > 0);
+  assert.ok(r.features.some((f) => f.key === 'bom'));
+});
+
+test('list_feature_categories returns 13 categories with counts', () => {
+  const r = listFeatureCategories();
+  assert.equal(r.count, 13);
+  for (const c of r.categories) {
+    assert.ok(c.featureCounts.total >= 0);
+  }
+});
+
+test('list_integrations includes the new storage + freelance categories', () => {
+  const storage = listIntegrations({ category: 'storage' });
+  assert.ok(storage.count >= 2);
+  const ids = storage.integrations.map((i) => i.id);
+  assert.ok(ids.includes('google-drive'));
+  assert.ok(ids.includes('onedrive-sharepoint'));
+
+  const freelance = listIntegrations({ category: 'freelance' });
+  assert.ok(freelance.count >= 1);
+  assert.ok(freelance.integrations.some((i) => i.id === 'upwork'));
+});
+
+test('list_integrations finds FreshBooks under accounting-sync', () => {
+  const r = listIntegrations({ category: 'accounting-sync' });
+  assert.ok(r.integrations.some((i) => i.id === 'freshbooks'));
 });

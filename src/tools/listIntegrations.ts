@@ -6,6 +6,7 @@ import type { CountryCode } from '../data/plans.js';
 const CATEGORIES: IntegrationCategory[] = [
   'banking', 'payment', 'payroll', 'time-tracking', 'shipping',
   'tax-compliance', 'accounting-sync', 'ecommerce', 'crm',
+  'storage', 'freelance',
 ];
 
 export const listIntegrationsSchema = {
