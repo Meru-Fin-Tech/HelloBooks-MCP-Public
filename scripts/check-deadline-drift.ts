@@ -184,8 +184,9 @@ async function fetchWithRetry(url: string): Promise<{ ok: boolean; status: numbe
 
 function checkDeadlineAgainstPage(d: Deadline, pageText: string): Finding[] {
   const findings: Finding[] = [];
-  if (d.annualDates && d.annualDates.length > 0) {
-    for (const date of d.annualDates) {
+  const annualDates = d.annualDates ?? [];
+  if (annualDates.length > 0) {
+    for (const date of annualDates) {
       if (!pageContainsDate(pageText, date)) {
         findings.push({
           id: d.id,

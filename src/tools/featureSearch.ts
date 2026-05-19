@@ -55,7 +55,8 @@ function describeDateHint(d: {
   dueDay?: number;
   frequency: string;
 }): string {
-  if (d.annualDates && d.annualDates.length > 0) return `due ${d.annualDates.join(', ')}`;
+  const annualDates = d.annualDates ?? [];
+  if (annualDates.length > 0) return `due ${annualDates.join(', ')}`;
   if (d.dueDay) return `due day ${d.dueDay} of the period`;
   if (d.frequency === 'per-event') return 'per-event filing';
   return 'see applicability note';
@@ -67,8 +68,8 @@ function complianceDescription(cf: { authority: string; version?: string; status
 }
 
 function articleContext(a: { kind: string; publishedAt: string; countryRelevance?: string }): string {
-  const countrySuffix =
-    a.countryRelevance && a.countryRelevance !== 'global' ? ` · ${a.countryRelevance}` : '';
+  const country = a.countryRelevance ?? 'global';
+  const countrySuffix = country !== 'global' ? ` · ${country}` : '';
   return `${a.kind} · ${a.publishedAt}${countrySuffix}`;
 }
 

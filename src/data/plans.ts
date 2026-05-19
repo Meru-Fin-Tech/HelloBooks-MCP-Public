@@ -5,7 +5,7 @@
  * Public-only data: tier names, prices, currencies, feature bullets shown on
  * the public /pricing page. Never includes customer usage, billing, account ID.
  *
- * TODO(federation): once the marketing site exposes /api/public/pricing,
+ * Federation note: once the marketing site exposes /api/public/pricing,
  * switch this module to fetch + cache from that endpoint and drop the static copy.
  */
 
