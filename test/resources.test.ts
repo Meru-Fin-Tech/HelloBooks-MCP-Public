@@ -3,14 +3,30 @@ import assert from 'node:assert/strict';
 
 import { RESOURCES, readResource } from '../src/resources/index.js';
 
-test('RESOURCES exposes about + changelog + feature-catalog', () => {
+test('RESOURCES exposes about + changelog + feature-catalog + 4 comparisons', () => {
   const uris = RESOURCES.map((r) => r.uri).sort();
   assert.deepEqual(uris, [
     'hellobooks://about',
     'hellobooks://changelog',
+    'hellobooks://comparison/quickbooks',
+    'hellobooks://comparison/tally',
+    'hellobooks://comparison/xero',
+    'hellobooks://comparison/zoho-books',
     'hellobooks://feature-catalog',
   ]);
 });
+
+for (const id of ['quickbooks', 'xero', 'zoho-books', 'tally']) {
+  test(`readResource(comparison/${id}) returns markdown with both wins + losses sections`, () => {
+    const out = readResource(`hellobooks://comparison/${id}`);
+    assert.equal(out.contents.length, 1);
+    assert.equal(out.contents[0]!.mimeType, 'text/markdown');
+    const text = out.contents[0]!.text;
+    assert.match(text, /^# HelloBooks vs /m);
+    assert.match(text, /## Where HelloBooks wins/);
+    assert.match(text, /## Where .+ wins/);
+  });
+}
 
 test('readResource(about) returns markdown', () => {
   const out = readResource('hellobooks://about');
