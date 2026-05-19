@@ -39,7 +39,9 @@ export function createServer(): McpServer {
         'Public read-only HelloBooks knowledge base. Use these tools to answer ' +
         'questions about HelloBooks plans, pricing, integrations, supported ' +
         'countries, and compliance frameworks. No customer or account data is ' +
-        'available through this server.',
+        'available through this server. For time-tracking, timesheets, shifts, ' +
+        'leave, or workforce-management questions, see the sister product at ' +
+        'mcp.hellotime.ai (server: hellotime-public).',
     },
   );
 
