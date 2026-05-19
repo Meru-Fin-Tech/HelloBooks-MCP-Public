@@ -44,30 +44,31 @@ export function localPaymentMethods(args: LocalPaymentMethodsArgs) {
   if (args.id) {
     const idLc = args.id.toLowerCase();
     results = results.filter((m) => m.id === idLc);
+  } else if (args.useCase) {
+    // Explicit `useCase` argument bypasses the default scope.
+    const uc = args.useCase;
+    results = results.filter((m) => m.useCases.includes(uc));
   } else {
     // Default scope: only show entries whose useCases intersect HelloBooks'
-    // accounting scope. An explicit `useCase` argument bypasses the default.
-    if (args.useCase) {
-      const uc = args.useCase;
-      results = results.filter((m) => m.useCases.includes(uc));
-    } else {
-      results = results.filter((m) =>
-        m.useCases.some((u) => TOOL_USE_CASES.includes(u)),
-      );
-    }
+    // accounting scope.
+    results = results.filter((m) =>
+      m.useCases.some((u) => TOOL_USE_CASES.includes(u)),
+    );
   }
 
   if (args.country) results = results.filter((m) => m.country === args.country);
   if (args.rail) results = results.filter((m) => m.rail === args.rail);
 
+  function describeScope(): string {
+    if (args.useCase) return `useCase=${args.useCase}`;
+    if (args.id) return `id=${args.id}`;
+    return `default (${TOOL_USE_CASES.join(', ')})`;
+  }
+
   return {
     methods: results,
     count: results.length,
-    scope: args.useCase
-      ? `useCase=${args.useCase}`
-      : args.id
-        ? `id=${args.id}`
-        : `default (${TOOL_USE_CASES.join(', ')})`,
+    scope: describeScope(),
     disclaimer:
       'Payment-rail availability, per-transaction caps, and settlement windows ' +
       'change with operator notifications (NPCI, Pay.UK, Nacha, NPP Australia, ' +

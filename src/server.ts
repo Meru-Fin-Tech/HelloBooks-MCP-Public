@@ -10,16 +10,27 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { listPlans, listPlansSchema } from './tools/listPlans.js';
+export { listPlans } from './tools/listPlans.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
+export { listIntegrations } from './tools/listIntegrations.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
+export { countrySupport } from './tools/countrySupport.js';
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
+export { complianceCapabilities } from './tools/complianceCapabilities.js';
 import { featureSearch, featureSearchSchema } from './tools/featureSearch.js';
+export { featureSearch } from './tools/featureSearch.js';
 import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.js';
+export { listCompetitors } from './tools/listCompetitors.js';
 import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
+export { complianceDeadlines } from './tools/complianceDeadlines.js';
 import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
+export { localPaymentMethods } from './tools/paymentMethods.js';
 import { listFeatures, listFeaturesSchema } from './tools/listFeatures.js';
+export { listFeatures } from './tools/listFeatures.js';
 import { listFeatureCategories, listFeatureCategoriesSchema } from './tools/listFeatureCategories.js';
+export { listFeatureCategories } from './tools/listFeatureCategories.js';
 import { listArticles, listArticlesSchema } from './tools/listArticles.js';
+export { listArticles } from './tools/listArticles.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
@@ -138,18 +149,6 @@ export function createServer(): McpServer {
   return server;
 }
 
-// Re-exports useful for tests
-export {
-  listPlans,
-  listIntegrations,
-  countrySupport,
-  complianceCapabilities,
-  featureSearch,
-  listCompetitors,
-  complianceDeadlines,
-  localPaymentMethods,
-  listFeatures,
-  listFeatureCategories,
-  listArticles,
-};
+// Re-exports for the eleven tool implementations are colocated with their
+// imports above using `export ... from ...` syntax (SonarQube S7763).
 export const _internal = { z };

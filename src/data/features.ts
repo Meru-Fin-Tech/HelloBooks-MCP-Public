@@ -8,7 +8,7 @@
  *
  * Sort order: by category.order, then by label.
  *
- * TODO(federation): once the marketing site exposes /api/public/feature-catalog,
+ * Federation note: once the marketing site exposes /api/public/feature-catalog,
  * switch this module to fetch + cache from that endpoint and drop the static copy.
  */
 

@@ -50,6 +50,28 @@ export interface FeatureSearchHit {
   score: number;
 }
 
+function describeDateHint(d: {
+  annualDates?: string[];
+  dueDay?: number;
+  frequency: string;
+}): string {
+  if (d.annualDates && d.annualDates.length > 0) return `due ${d.annualDates.join(', ')}`;
+  if (d.dueDay) return `due day ${d.dueDay} of the period`;
+  if (d.frequency === 'per-event') return 'per-event filing';
+  return 'see applicability note';
+}
+
+function complianceDescription(cf: { authority: string; version?: string; status: string }): string {
+  const versionSuffix = cf.version ? ` · ${cf.version}` : '';
+  return `${cf.authority}${versionSuffix} (${cf.status})`;
+}
+
+function articleContext(a: { kind: string; publishedAt: string; countryRelevance?: string }): string {
+  const countrySuffix =
+    a.countryRelevance && a.countryRelevance !== 'global' ? ` · ${a.countryRelevance}` : '';
+  return `${a.kind} · ${a.publishedAt}${countrySuffix}`;
+}
+
 function score(haystack: string, terms: string[]): number {
   const h = haystack.toLowerCase();
   let s = 0;
@@ -139,7 +161,7 @@ export function featureSearch(args: FeatureSearchArgs) {
           source: 'compliance',
           id: `${c.country}:${cf.key}`,
           label: cf.label,
-          description: `${cf.authority}${cf.version ? ` · ${cf.version}` : ''} (${cf.status})`,
+          description: complianceDescription(cf),
           context: c.countryName,
           url: c.marketingUrl,
           score: s,
@@ -155,7 +177,7 @@ export function featureSearch(args: FeatureSearchArgs) {
   const stopTerms = new Set(['vs', 'versus', 'compared', 'compare', 'comparison', 'alternative', 'to']);
   const competitorTerms = terms.filter((t) => !stopTerms.has(t.toLowerCase()));
   for (const c of COMPETITORS) {
-    const nameScore = score(`${c.name} ${c.id} ${c.id.replace(/-/g, ' ')}`, competitorTerms);
+    const nameScore = score(`${c.name} ${c.id} ${c.id.replaceAll('-', ' ')}`, competitorTerms);
     const bodyScore = score(`${c.positioningSummary} ${c.segment}`, competitorTerms);
     const s = nameScore * 3 + bodyScore;
     if (s > 0) {
@@ -181,19 +203,13 @@ export function featureSearch(args: FeatureSearchArgs) {
   ]);
   const deadlineTerms = terms.filter((t) => !deadlineStopTerms.has(t.toLowerCase()));
   for (const d of COMPLIANCE_DEADLINES) {
-    const nameBlob = `${d.form} ${d.id} ${d.id.replace(/-/g, ' ')}`;
+    const nameBlob = `${d.form} ${d.id} ${d.id.replaceAll('-', ' ')}`;
     const bodyBlob = `${d.authority} ${d.applicabilityNote ?? ''} ${d.frequency}`;
     const nameScore = score(nameBlob, deadlineTerms);
     const bodyScore = score(bodyBlob, deadlineTerms);
     const s = nameScore * 3 + bodyScore;
     if (s > 0) {
-      const dateHint = d.annualDates && d.annualDates.length > 0
-        ? `due ${d.annualDates.join(', ')}`
-        : d.dueDay
-          ? `due day ${d.dueDay} of the period`
-          : d.frequency === 'per-event'
-            ? 'per-event filing'
-            : 'see applicability note';
+      const dateHint = describeDateHint(d);
       hits.push({
         source: 'deadline',
         id: `${d.country}:${d.id}`,
@@ -236,7 +252,7 @@ export function featureSearch(args: FeatureSearchArgs) {
         id: a.id,
         label: a.title,
         description: a.excerpt,
-        context: `${a.kind} · ${a.publishedAt}${a.countryRelevance && a.countryRelevance !== 'global' ? ` · ${a.countryRelevance}` : ''}`,
+        context: articleContext(a),
         url: a.url,
         score: s,
       });
