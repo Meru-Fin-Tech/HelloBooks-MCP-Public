@@ -25,7 +25,8 @@
     "dev:stdio": "tsx src/stdio.ts",
     "test": "node --test --import tsx test/*.test.ts",
     "lint": "tsc --noEmit",
-    "audit:public-data": "node --import tsx scripts/audit-public-data.ts"
+    "audit:public-data": "node --import tsx scripts/audit-public-data.ts",
+    "audit:deadline-sources": "node --import tsx scripts/audit-deadline-sources.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.18.1",

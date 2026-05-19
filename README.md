@@ -58,7 +58,16 @@ npm run dev:stdio   # stdio transport for local MCP client testing
 npm test            # node:test runner
 npm run build
 npm run audit:public-data
+npm run audit:deadline-sources   # fetches each authority URL and flags catalog drift
 ```
+
+> **Quarterly maintenance.** The `compliance_deadlines` catalog references
+> statutory dates that authorities rotate annually. Run
+> `npm run audit:deadline-sources` on a quarterly cron (Jan 1 / Apr 1 / Jul 1
+> / Oct 1) — exits non-zero if any catalog entry's dates no longer appear on
+> its `source` page. Drift is reported for human review; the script never
+> auto-patches the catalog, since false positives are likely on JS-rendered
+> authority pages.
 
 ### Project layout
 
