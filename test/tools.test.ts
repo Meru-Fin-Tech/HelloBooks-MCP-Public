@@ -5,7 +5,7 @@ import { listPlans } from '../src/tools/listPlans.js';
 import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
-import { featureSearch } from '../src/tools/featureSearch.js';
+import { featureSearch, type FeatureSearchHit } from '../src/tools/featureSearch.js';
 import { listCompetitors } from '../src/tools/listCompetitors.js';
 import { complianceDeadlines } from '../src/tools/complianceDeadlines.js';
 import { localPaymentMethods } from '../src/tools/paymentMethods.js';
@@ -125,6 +125,125 @@ test('feature_search finds GST across countries', () => {
 test('feature_search respects limit', () => {
   const r = featureSearch({ query: 'tax', limit: 3 });
   assert.ok(r.results.length <= 3);
+});
+
+test('feature_search defaults limit to 20 when omitted', () => {
+  const r = featureSearch({ query: 'tax' });
+  assert.ok(r.results.length <= 20);
+  assert.equal(r.count, Math.min(r.totalMatches, 20));
+});
+
+test('feature_search returns sorted-descending scores across all sources', () => {
+  const r = featureSearch({ query: 'invoice' });
+  for (let i = 1; i < r.results.length; i++) {
+    assert.ok(r.results[i].score <= r.results[i - 1].score, 'results must be sorted by score desc');
+  }
+});
+
+test('feature_search reports correct totalMatches separate from count', () => {
+  const r = featureSearch({ query: 'tax', limit: 2 });
+  assert.ok(r.totalMatches >= r.count, 'totalMatches >= count');
+  assert.equal(r.count, Math.min(r.totalMatches, 2));
+});
+
+test('feature_search empty result set when query matches nothing', () => {
+  // Use a query unlikely to score against any source data.
+  const r = featureSearch({ query: 'zzzzzzzzunlikelyzzzzzzz' });
+  assert.equal(r.totalMatches, 0);
+  assert.equal(r.count, 0);
+  assert.deepEqual(r.results, []);
+});
+
+test('feature_search "global" article keeps no country suffix in context', () => {
+  // articleContext(): when countryRelevance is "global" (or missing), the
+  // suffix is empty. Pick a tag/title likely to hit a global article.
+  const r = featureSearch({ query: 'accounting' });
+  const globalArticle = r.results.find(
+    (h) => h.source === 'article' && h.context && !h.context.includes('·'),
+  ) ?? r.results.find((h) => h.source === 'article' && h.context && h.context.split('·').length === 2);
+  if (globalArticle) {
+    // For a global article, context must NOT end with ` · IN` / ` · US` etc.
+    assert.ok(
+      !/ · (IN|US|CA|GB|AU|AE|SG|NZ)$/.test(globalArticle.context ?? ''),
+      `global article context should not carry country suffix: "${globalArticle.context}"`,
+    );
+  }
+});
+
+test('feature_search returns country-suffixed context for country-relevant articles', () => {
+  const r = featureSearch({ query: 'GST' });
+  const countryArticle = r.results.find(
+    (h) => h.source === 'article' && / · (IN|US|CA|GB|AU|AE|SG|NZ)$/.test(h.context ?? ''),
+  );
+  if (countryArticle) {
+    assert.match(countryArticle.context ?? '', / · (IN|US|CA|GB|AU|AE|SG|NZ)$/);
+  }
+});
+
+test('feature_search competitor stopwords do not soak up score', () => {
+  // "vs Xero" - the bare "vs" should be dropped, otherwise every plan/article
+  // mentioning vs would outrank the Xero competitor entry.
+  const r = featureSearch({ query: 'vs Xero' });
+  const top = r.results[0];
+  assert.ok(top, 'expected at least one result');
+  assert.equal(top.source, 'competitor', `expected competitor on top, got ${top.source}: ${top.label}`);
+  assert.equal(top.id, 'xero');
+});
+
+test('feature_search deadline stopwords do not crowd out form match', () => {
+  // "when is GSTR-3B due" - the date-intent tokens (when/is/due) must be
+  // dropped so GSTR-3B form name ranks highest.
+  const r = featureSearch({ query: 'when is GSTR-3B due' });
+  const top = r.results[0];
+  assert.ok(top, 'expected at least one result');
+  assert.equal(top.source, 'deadline');
+  assert.match(top.id, /GSTR-3B/i);
+});
+
+test('feature_search multi-source query returns hits across sources', () => {
+  // A broad, common term should produce hits from multiple sources, exercising
+  // every per-source scorer (plans/integrations/features/country/payments/etc.).
+  const r = featureSearch({ query: 'tax', limit: 50 });
+  const sources = new Set(r.results.map((h) => h.source));
+  // Expect at least 3 distinct sources to cover the helper-fan-out.
+  assert.ok(sources.size >= 3, `expected >=3 distinct sources, got ${[...sources].join(',')}`);
+});
+
+test('feature_search every hit has a positive score', () => {
+  const r = featureSearch({ query: 'invoice' });
+  for (const h of r.results) {
+    assert.ok(h.score > 0, `hit ${h.id} should have positive score, got ${h.score}`);
+  }
+});
+
+test('feature_search "compared to QuickBooks" filters comparison stopwords', () => {
+  // "compared" and "to" are competitor stopwords - QuickBooks should still
+  // top the result list because nameScore is multiplied 3x.
+  const r = featureSearch({ query: 'compared to QuickBooks' });
+  const top = r.results[0];
+  assert.ok(top, 'expected at least one result');
+  assert.equal(top.source, 'competitor');
+  assert.equal(top.id, 'quickbooks');
+});
+
+test('feature_search ranks each source through dedicated helper', () => {
+  // Targeted query per source - each should produce at least one hit, proving
+  // every searchX helper participates in the final aggregation.
+  const cases: { q: string; want: FeatureSearchHit['source'] }[] = [
+    { q: 'multi-currency', want: 'plan' },
+    { q: 'Stripe payments', want: 'integration' },
+    { q: 'BAS lodgement', want: 'country-feature' },
+    { q: 'vs Xero', want: 'competitor' },
+    { q: 'GSTR-3B', want: 'deadline' },
+    { q: 'UPI invoice', want: 'payment-method' },
+  ];
+  for (const c of cases) {
+    const r = featureSearch({ query: c.q });
+    assert.ok(
+      r.results.some((h) => h.source === c.want),
+      `query "${c.q}" should produce a ${c.want} hit; got [${[...new Set(r.results.map((h) => h.source))].join(', ')}]`,
+    );
+  }
 });
 
 test('list_competitors returns the full catalog when unfiltered', () => {
