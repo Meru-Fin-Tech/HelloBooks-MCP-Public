@@ -24,6 +24,7 @@
     "dev": "tsx watch src/http.ts",
     "dev:stdio": "tsx src/stdio.ts",
     "test": "node --test --import tsx test/*.test.ts",
+    "test:coverage": "c8 --reporter=text --reporter=lcov node --test --import tsx test/*.test.ts",
     "lint": "tsc --noEmit",
     "audit:public-data": "node --import tsx scripts/audit-public-data.ts",
     "check:deadline-drift": "node --import tsx scripts/check-deadline-drift.ts"
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
+    "c8": "^10.1.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

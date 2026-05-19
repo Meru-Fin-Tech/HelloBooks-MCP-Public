@@ -65,7 +65,7 @@ export interface ChangelogEntry {
 /**
  * Last 50 changelog entries — kept in sync with /changelog on the marketing site.
  *
- * TODO(federation): replace with a fetch from
+ * Federation note: replace with a fetch from
  *   https://hellobooks.ai/api/public/changelog?limit=50
  * once the marketing backend ships that endpoint.
  */

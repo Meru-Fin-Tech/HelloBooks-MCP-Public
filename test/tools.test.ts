@@ -16,7 +16,7 @@ import { ARTICLES } from '../src/data/articles.js';
 
 test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
-  const names = r.plans.map((p) => p.plan).sort();
+  const names = r.plans.map((p) => p.plan).sort((a, b) => a.localeCompare(b));
   assert.deepEqual(names, [
     'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
   ]);
@@ -24,7 +24,7 @@ test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   for (const p of r.plans) {
     if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
       assert.equal(p.prices.length, 1, `${p.plan} should be USD-only`);
-      assert.equal(p.prices[0]!.currency, 'USD');
+      assert.equal(p.prices[0].currency, 'USD');
     } else {
       assert.equal(p.prices.length, 8);
     }
@@ -40,27 +40,27 @@ test('list_plans country filter narrows to that country only', () => {
       continue;
     }
     assert.equal(p.prices.length, 1);
-    assert.equal(p.prices[0]!.country, 'AU');
-    assert.equal(p.prices[0]!.currency, 'AUD');
+    assert.equal(p.prices[0].country, 'AU');
+    assert.equal(p.prices[0].currency, 'AUD');
   }
 });
 
 test('list_plans surfaces warehouse + manufacturing add-on pricing in USD', () => {
   const wh = listPlans({ plan: 'warehouse-addon' });
   assert.equal(wh.plans.length, 1);
-  assert.equal(wh.plans[0]!.prices[0]!.monthly, 9);
-  assert.equal(wh.plans[0]!.prices[0]!.annual, 90);
+  assert.equal(wh.plans[0].prices[0].monthly, 9);
+  assert.equal(wh.plans[0].prices[0].annual, 90);
 
   const mfg = listPlans({ plan: 'manufacturing-addon' });
   assert.equal(mfg.plans.length, 1);
-  assert.equal(mfg.plans[0]!.prices[0]!.monthly, 14);
-  assert.equal(mfg.plans[0]!.prices[0]!.annual, 140);
+  assert.equal(mfg.plans[0].prices[0].monthly, 14);
+  assert.equal(mfg.plans[0].prices[0].annual, 140);
 });
 
 test('list_plans plan filter restricts to single tier', () => {
   const r = listPlans({ plan: 'pro' });
   assert.equal(r.plans.length, 1);
-  assert.equal(r.plans[0]!.plan, 'pro');
+  assert.equal(r.plans[0].plan, 'pro');
 });
 
 test('list_integrations filters by category + country', () => {
@@ -71,9 +71,9 @@ test('list_integrations filters by category + country', () => {
     assert.ok(i.countries.length === 0 || i.countries.includes('AU'));
   }
   // STP and BAS must be in there
-  const ids = r.integrations.map((i) => i.id);
-  assert.ok(ids.includes('ato-stp'));
-  assert.ok(ids.includes('ato-bas'));
+  const ids = new Set(r.integrations.map((i) => i.id));
+  assert.ok(ids.has('ato-stp'));
+  assert.ok(ids.has('ato-bas'));
 });
 
 test('list_integrations status filter works', () => {
@@ -90,10 +90,10 @@ test('country_support returns full matrix when unfiltered', () => {
 test('country_support single country returns only that one', () => {
   const r = countrySupport({ country: 'IN' });
   assert.equal(r.count, 1);
-  assert.equal(r.countries[0]!.country, 'IN');
+  assert.equal(r.countries[0].country, 'IN');
   // GST e-invoicing must be a feature
-  const keys = r.countries[0]!.features.map((f) => f.key);
-  assert.ok(keys.includes('gst-einvoice'));
+  const keys = new Set(r.countries[0].features.map((f) => f.key));
+  assert.ok(keys.has('gst-einvoice'));
 });
 
 test('compliance_capabilities returns frameworks for AU', () => {
@@ -112,7 +112,7 @@ test('compliance_capabilities returns frameworks for GB', () => {
 test('feature_search ranks BAS results highly', () => {
   const r = featureSearch({ query: 'BAS lodgement' });
   assert.ok(r.totalMatches > 0);
-  const top = r.results[0]!;
+  const top = r.results[0];
   assert.match(`${top.label} ${top.description}`, /BAS|Activity Statement/i);
 });
 
@@ -130,9 +130,9 @@ test('feature_search respects limit', () => {
 test('list_competitors returns the full catalog when unfiltered', () => {
   const r = listCompetitors({});
   assert.ok(r.count >= 6, 'expect at least the 6 catalog competitors');
-  const ids = r.competitors.map((c) => c.id).sort();
+  const ids = new Set(r.competitors.map((c) => c.id));
   for (const expected of ['quickbooks', 'xero', 'freshbooks', 'wave', 'zoho-books', 'tally']) {
-    assert.ok(ids.includes(expected), `missing competitor: ${expected}`);
+    assert.ok(ids.has(expected), `missing competitor: ${expected}`);
   }
 });
 
@@ -148,32 +148,32 @@ test('list_competitors every entry has honest both-sides positioning', () => {
 
 test('list_competitors country filter narrows to India for Tally + Zoho', () => {
   const r = listCompetitors({ country: 'IN' });
-  const ids = r.competitors.map((c) => c.id);
-  assert.ok(ids.includes('tally'));
-  assert.ok(ids.includes('zoho-books'));
+  const ids = new Set(r.competitors.map((c) => c.id));
+  assert.ok(ids.has('tally'));
+  assert.ok(ids.has('zoho-books'));
   // QuickBooks is also India-evaluated (alsoIn includes IN)
-  assert.ok(ids.includes('quickbooks'));
+  assert.ok(ids.has('quickbooks'));
 });
 
 test('list_competitors tier=primary excludes secondary entries', () => {
   const r = listCompetitors({ tier: 'primary' });
   for (const c of r.competitors) assert.equal(c.tier, 'primary');
   // QuickBooks, Xero, Zoho Books, Tally are all primary
-  const ids = r.competitors.map((c) => c.id);
-  assert.ok(ids.includes('quickbooks'));
-  assert.ok(ids.includes('xero'));
+  const ids = new Set(r.competitors.map((c) => c.id));
+  assert.ok(ids.has('quickbooks'));
+  assert.ok(ids.has('xero'));
 });
 
 test('list_competitors id filter returns exactly one entry', () => {
   const r = listCompetitors({ id: 'quickbooks' });
   assert.equal(r.count, 1);
-  assert.equal(r.competitors[0]!.id, 'quickbooks');
+  assert.equal(r.competitors[0].id, 'quickbooks');
 });
 
 test('feature_search "vs Xero" ranks the Xero competitor entry at the top', () => {
   const r = featureSearch({ query: 'vs Xero' });
   assert.ok(r.totalMatches > 0);
-  const top = r.results[0]!;
+  const top = r.results[0];
   assert.equal(top.source, 'competitor');
   assert.equal(top.id, 'xero');
 });
@@ -229,9 +229,9 @@ test('compliance_deadlines frequency=quarterly catches BAS and Form 941', () => 
 
 test('compliance_deadlines frequency=per-event picks up STP and PAYE RTI', () => {
   const r = complianceDeadlines({ frequency: 'per-event' });
-  const ids = r.deadlines.map((d) => d.id);
-  assert.ok(ids.includes('stp'), 'AU STP must be per-event');
-  assert.ok(ids.includes('paye-rti'), 'GB PAYE RTI must be per-event');
+  const ids = new Set(r.deadlines.map((d) => d.id));
+  assert.ok(ids.has('stp'), 'AU STP must be per-event');
+  assert.ok(ids.has('paye-rti'), 'GB PAYE RTI must be per-event');
 });
 
 test('compliance_deadlines form substring match is case-insensitive', () => {
@@ -263,7 +263,7 @@ test('compliance_deadlines monthly Indian filings (PF ECR, ESI, GSTR-3B monthly)
 test('compliance_deadlines AU BAS lists all four quarterly cut-off dates', () => {
   const r = complianceDeadlines({ country: 'AU', form: 'BAS' });
   assert.equal(r.count, 1);
-  const bas = r.deadlines[0]!;
+  const bas = r.deadlines[0];
   assert.deepEqual(bas.annualDates, ['Oct 28', 'Feb 28', 'Apr 28', 'Jul 28']);
 });
 
@@ -272,14 +272,14 @@ test('compliance_deadlines US 1099-NEC has the unified Jan 31 deadline (not Mar 
   // 1099 series (MISC, INT, DIV) get the Mar 31 e-file date.
   const r = complianceDeadlines({ country: 'US', form: '1099-NEC' });
   assert.equal(r.count, 1);
-  assert.deepEqual(r.deadlines[0]!.annualDates, ['Jan 31']);
+  assert.deepEqual(r.deadlines[0].annualDates, ['Jan 31']);
 });
 
 test('feature_search "when is GSTR-3B due" surfaces the GSTR-3B deadline entry', () => {
   const r = featureSearch({ query: 'when is GSTR-3B due' });
   const hit = r.results.find((h) => h.source === 'deadline' && h.label.startsWith('GSTR-3B'));
   assert.ok(hit, 'expected a deadline hit for GSTR-3B');
-  assert.ok(hit!.url && hit!.url.includes('gst.gov.in'));
+  assert.ok(hit?.url?.includes('gst.gov.in'));
 });
 
 test('feature_search "BAS deadline" surfaces the BAS deadline entry', () => {
@@ -350,8 +350,8 @@ test('local_payment_methods explicit useCase=payroll widens to payroll-only rail
 test('local_payment_methods id lookup returns single entry', () => {
   const r = localPaymentMethods({ id: 'gb-bacs' });
   assert.equal(r.count, 1);
-  assert.equal(r.methods[0]!.name, 'BACS Direct Credit');
-  assert.equal(r.methods[0]!.authority, 'Pay.UK');
+  assert.equal(r.methods[0].name, 'BACS Direct Credit');
+  assert.equal(r.methods[0].authority, 'Pay.UK');
 });
 
 test('local_payment_methods every entry has a stable schema', () => {
@@ -424,9 +424,9 @@ test('list_feature_categories returns 13 categories with counts', () => {
 test('list_integrations includes the new storage + freelance categories', () => {
   const storage = listIntegrations({ category: 'storage' });
   assert.ok(storage.count >= 2);
-  const ids = storage.integrations.map((i) => i.id);
-  assert.ok(ids.includes('google-drive'));
-  assert.ok(ids.includes('onedrive-sharepoint'));
+  const ids = new Set(storage.integrations.map((i) => i.id));
+  assert.ok(ids.has('google-drive'));
+  assert.ok(ids.has('onedrive-sharepoint'));
 
   const freelance = listIntegrations({ category: 'freelance' });
   assert.ok(freelance.count >= 1);
@@ -533,7 +533,7 @@ test('list_articles sorts newest first', () => {
   const r = listArticles({ limit: 100 });
   for (let i = 1; i < r.articles.length; i++) {
     assert.ok(
-      r.articles[i - 1]!.publishedAt >= r.articles[i]!.publishedAt,
+      r.articles[i - 1].publishedAt >= r.articles[i].publishedAt,
       'articles should be sorted newest-first',
     );
   }

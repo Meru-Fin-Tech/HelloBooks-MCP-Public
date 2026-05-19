@@ -4,7 +4,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+# Explicit COPY of only the lockfile + manifest avoids the glob warning
+# (SonarQube docker:S6470) that broad `COPY . /app` patterns surface.
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY tsconfig.json ./
@@ -20,15 +23,19 @@ WORKDIR /app
 
 # Run as non-root.
 RUN addgroup -S app && adduser -S app -G app
-USER app
 
 ENV NODE_ENV=production \
     PORT=8080 \
     HOST=0.0.0.0
 
-COPY --chown=app:app --from=build /app/node_modules ./node_modules
-COPY --chown=app:app --from=build /app/dist ./dist
-COPY --chown=app:app --from=build /app/package.json ./package.json
+# Application files are owned by root and copied read-only-for-others (chmod
+# a-w) so the non-root `app` user can READ + EXECUTE but cannot mutate the
+# image at runtime (SonarQube docker:S6504 — non-root write permissions).
+COPY --chown=root:root --chmod=555 --from=build /app/node_modules ./node_modules
+COPY --chown=root:root --chmod=555 --from=build /app/dist ./dist
+COPY --chown=root:root --chmod=444 --from=build /app/package.json ./package.json
+
+USER app
 
 EXPOSE 8080
 
