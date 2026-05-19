@@ -1,4 +1,6 @@
 import { ABOUT_MARKDOWN, CHANGELOG } from '../data/about.js';
+import { COMPETITORS } from '../data/competitors.js';
+import type { Competitor } from '../data/competitors.js';
 import {
   FEATURES,
   FEATURE_CATEGORIES,
@@ -11,6 +13,19 @@ export interface ResourceDescriptor {
   description: string;
   mimeType: string;
 }
+
+const COMPARISON_IDS = ['quickbooks', 'xero', 'zoho-books', 'tally'] as const;
+type ComparisonId = typeof COMPARISON_IDS[number];
+
+const COMPARISON_RESOURCES: ResourceDescriptor[] = COMPARISON_IDS.map((id) => {
+  const c = competitorById(id);
+  return {
+    uri: `hellobooks://comparison/${id}`,
+    name: `HelloBooks vs ${c.name}`,
+    description: `Honest positioning comparison: where HelloBooks wins, where ${c.name} wins, and public pricing posture.`,
+    mimeType: 'text/markdown',
+  };
+});
 
 export const RESOURCES: ResourceDescriptor[] = [
   {
@@ -31,7 +46,42 @@ export const RESOURCES: ResourceDescriptor[] = [
     description: 'Full marketing feature catalog mirrored from marketing/feature-catalog.json — 96+ features across 13 categories with tier, status, marketed flag, and competitor parity.',
     mimeType: 'application/json',
   },
+  ...COMPARISON_RESOURCES,
 ];
+
+function competitorById(id: ComparisonId): Competitor {
+  const c = COMPETITORS.find((x) => x.id === id);
+  if (!c) throw new Error(`Comparison resource expects competitor "${id}" in COMPETITORS catalog.`);
+  return c;
+}
+
+function renderComparison(c: Competitor): string {
+  const wins = c.whereWeWin.map((line) => `- ${line}`).join('\n');
+  const losses = c.whereTheyWin.map((line) => `- ${line}`).join('\n');
+  const pricing = c.pricingNote ? `\n\n## Pricing posture (${c.name})\n\n${c.pricingNote}` : '';
+  const links = [
+    c.publicUrl ? `- ${c.name}: ${c.publicUrl}` : null,
+    c.comparisonUrl ? `- HelloBooks comparison page: ${c.comparisonUrl}` : null,
+  ].filter((x): x is string => x !== null).join('\n');
+  const linksSection = links ? `\n\n## Links\n\n${links}` : '';
+
+  return `# HelloBooks vs ${c.name}
+
+${c.positioningSummary}
+
+## Where HelloBooks wins
+
+${wins}
+
+## Where ${c.name} wins
+
+${losses}${pricing}${linksSection}
+
+---
+
+_Segment: ${c.segment}. Primary market: ${c.primaryCountry}. Also evaluated in: ${c.alsoIn.join(', ') || '—'}._
+`;
+}
 
 export function readResource(uri: string): { contents: { uri: string; mimeType: string; text: string }[] } {
   if (uri === 'hellobooks://about') {
@@ -74,6 +124,15 @@ export function readResource(uri: string): { contents: { uri: string; mimeType: 
         },
       ],
     };
+  }
+  for (const id of COMPARISON_IDS) {
+    if (uri === `hellobooks://comparison/${id}`) {
+      return {
+        contents: [
+          { uri, mimeType: 'text/markdown', text: renderComparison(competitorById(id)) },
+        ],
+      };
+    }
   }
   throw new Error(`Unknown resource URI: ${uri}`);
 }

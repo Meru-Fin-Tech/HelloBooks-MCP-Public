@@ -50,7 +50,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_plans',
-    'List HelloBooks pricing plans with features and prices per country.',
+    'List HelloBooks pricing plans with monthly + annual prices in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Covers four core tiers — Free, Pro, Business, CPA/CA Partner — plus two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets (AI auto-categorization, unlimited users, 3-way matching, multi-entity, custom report builder, etc.), and the public signup URL. Filter by `plan` (one of free / pro / business / cpa) or `country` (ISO code).',
     listPlansSchema,
     async (args) => asJsonContent(listPlans(args)),
   );
