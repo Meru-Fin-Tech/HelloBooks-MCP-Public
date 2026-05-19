@@ -19,6 +19,20 @@ const COUNTRY_NAME: Record<string, string> = {
   NZ: 'New Zealand',
 };
 
+// "vs X" / "X alternative" / "compared to X" — these tokens themselves are noise
+// and would otherwise score every plan/article that mentions "vs". Dropped before
+// scoring competitor names so the user-intended competitor wins.
+const COMPETITOR_STOP_TERMS = new Set([
+  'vs', 'versus', 'compared', 'compare', 'comparison', 'alternative', 'to',
+]);
+
+// Date-intent stopwords for deadline queries like "when is GSTR-3B due".
+// Stripped so they don't soak up score from every form's metadata.
+const DEADLINE_STOP_TERMS = new Set([
+  'when', 'is', 'are', 'the', 'due', 'deadline', 'date', 'dates', 'a', 'an',
+  'for', 'of', 'in', 'next', 'this',
+]);
+
 export const featureSearchSchema = {
   query: z.string().min(2).max(120)
     .describe('Free-text query, e.g. "BAS lodgement", "multi-currency", "vs QuickBooks", "GSTR-3B due", or "UPI invoice cap".'),
@@ -69,7 +83,7 @@ function complianceDescription(cf: { authority: string; version?: string; status
 
 function articleContext(a: { kind: string; publishedAt: string; countryRelevance?: string }): string {
   const country = a.countryRelevance ?? 'global';
-  const countrySuffix = country !== 'global' ? ` · ${country}` : '';
+  const countrySuffix = country === 'global' ? '' : ` · ${country}`;
   return `${a.kind} · ${a.publishedAt}${countrySuffix}`;
 }
 
@@ -86,180 +100,200 @@ function score(haystack: string, terms: string[]): number {
   return s;
 }
 
-export function featureSearch(args: FeatureSearchArgs) {
-  const limit = args.limit ?? 20;
-  const terms = args.query.trim().split(/\s+/).filter(Boolean);
-  const hits: FeatureSearchHit[] = [];
+function filterTerms(terms: string[], stop: Set<string>): string[] {
+  return terms.filter((t) => !stop.has(t.toLowerCase()));
+}
 
+function searchPlans(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const plan of PLANS) {
     for (const f of plan.features) {
       const s = score(f, terms);
-      if (s > 0) {
-        hits.push({
-          source: 'plan',
-          id: `${plan.plan}:${f}`,
-          label: f,
-          description: `Feature of the ${plan.name} plan.`,
-          context: plan.name,
-          url: plan.publicSignupUrl,
-          score: s,
-        });
-      }
+      if (s <= 0) continue;
+      hits.push({
+        source: 'plan',
+        id: `${plan.plan}:${f}`,
+        label: f,
+        description: `Feature of the ${plan.name} plan.`,
+        context: plan.name,
+        url: plan.publicSignupUrl,
+        score: s,
+      });
     }
   }
+  return hits;
+}
 
+function searchIntegrations(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const i of INTEGRATIONS) {
-    const blob = `${i.name} ${i.description} ${i.category}`;
-    const s = score(blob, terms);
-    if (s > 0) {
-      hits.push({
-        source: 'integration',
-        id: i.id,
-        label: i.name,
-        description: i.description,
-        context: i.category,
-        url: i.publicUrl,
-        score: s,
-      });
-    }
+    const s = score(`${i.name} ${i.description} ${i.category}`, terms);
+    if (s <= 0) continue;
+    hits.push({
+      source: 'integration',
+      id: i.id,
+      label: i.name,
+      description: i.description,
+      context: i.category,
+      url: i.publicUrl,
+      score: s,
+    });
   }
+  return hits;
+}
 
+function searchFeatures(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const f of FEATURES) {
-    const blob = `${f.label} ${f.shortDescription} ${f.category} ${f.key}`;
-    const s = score(blob, terms);
-    if (s > 0) {
-      hits.push({
-        source: 'feature',
-        id: f.key,
-        label: f.label,
-        description: f.shortDescription,
-        context: `${f.category} · ${f.tier} · ${f.status}`,
-        url: 'https://hellobooks.ai',
-        score: s,
-      });
-    }
+    const s = score(`${f.label} ${f.shortDescription} ${f.category} ${f.key}`, terms);
+    if (s <= 0) continue;
+    hits.push({
+      source: 'feature',
+      id: f.key,
+      label: f.label,
+      description: f.shortDescription,
+      context: `${f.category} · ${f.tier} · ${f.status}`,
+      url: 'https://hellobooks.ai',
+      score: s,
+    });
   }
+  return hits;
+}
 
+function searchCountryFeatures(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const c of COUNTRY_SUPPORT) {
     for (const f of c.features) {
       const s = score(`${f.label} ${f.description}`, terms);
-      if (s > 0) {
-        hits.push({
-          source: 'country-feature',
-          id: `${c.country}:${f.key}`,
-          label: f.label,
-          description: f.description,
-          context: c.countryName,
-          url: c.marketingUrl,
-          score: s,
-        });
-      }
-    }
-    for (const cf of c.compliance) {
-      const s = score(`${cf.label} ${cf.authority}`, terms);
-      if (s > 0) {
-        hits.push({
-          source: 'compliance',
-          id: `${c.country}:${cf.key}`,
-          label: cf.label,
-          description: complianceDescription(cf),
-          context: c.countryName,
-          url: c.marketingUrl,
-          score: s,
-        });
-      }
+      if (s <= 0) continue;
+      hits.push({
+        source: 'country-feature',
+        id: `${c.country}:${f.key}`,
+        label: f.label,
+        description: f.description,
+        context: c.countryName,
+        url: c.marketingUrl,
+        score: s,
+      });
     }
   }
+  return hits;
+}
 
-  // Competitor matching: rank highest when the user query references the
-  // competitor by name or id, including "vs X" / "X alternative" patterns.
-  // The `vs` and `alternative` tokens themselves are noise and dropped so a
-  // query like "vs Xero" scores Xero hard, not every plan that says "vs".
-  const stopTerms = new Set(['vs', 'versus', 'compared', 'compare', 'comparison', 'alternative', 'to']);
-  const competitorTerms = terms.filter((t) => !stopTerms.has(t.toLowerCase()));
+function searchCompliance(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
+  for (const c of COUNTRY_SUPPORT) {
+    for (const cf of c.compliance) {
+      const s = score(`${cf.label} ${cf.authority}`, terms);
+      if (s <= 0) continue;
+      hits.push({
+        source: 'compliance',
+        id: `${c.country}:${cf.key}`,
+        label: cf.label,
+        description: complianceDescription(cf),
+        context: c.countryName,
+        url: c.marketingUrl,
+        score: s,
+      });
+    }
+  }
+  return hits;
+}
+
+function searchCompetitors(terms: string[]): FeatureSearchHit[] {
+  const competitorTerms = filterTerms(terms, COMPETITOR_STOP_TERMS);
+  const hits: FeatureSearchHit[] = [];
   for (const c of COMPETITORS) {
     const nameScore = score(`${c.name} ${c.id} ${c.id.replaceAll('-', ' ')}`, competitorTerms);
     const bodyScore = score(`${c.positioningSummary} ${c.segment}`, competitorTerms);
     const s = nameScore * 3 + bodyScore;
-    if (s > 0) {
-      hits.push({
-        source: 'competitor',
-        id: c.id,
-        label: `HelloBooks vs ${c.name}`,
-        description: c.positioningSummary,
-        context: `${c.segment} (${c.tier})`,
-        url: c.comparisonUrl ?? c.publicUrl,
-        score: s,
-      });
-    }
+    if (s <= 0) continue;
+    hits.push({
+      source: 'competitor',
+      id: c.id,
+      label: `HelloBooks vs ${c.name}`,
+      description: c.positioningSummary,
+      context: `${c.segment} (${c.tier})`,
+      url: c.comparisonUrl ?? c.publicUrl,
+      score: s,
+    });
   }
+  return hits;
+}
 
-  // Deadline matching: queries like "when is GSTR-3B due" or "BAS deadline"
-  // should surface the matching deadline entry highly. We score against the
-  // form name + authority + applicabilityNote; date-intent stopwords ("when",
-  // "due", "deadline") are dropped so they don't soak up score from every form.
-  const deadlineStopTerms = new Set([
-    'when', 'is', 'are', 'the', 'due', 'deadline', 'date', 'dates', 'a', 'an',
-    'for', 'of', 'in', 'next', 'this',
-  ]);
-  const deadlineTerms = terms.filter((t) => !deadlineStopTerms.has(t.toLowerCase()));
+function searchDeadlines(terms: string[]): FeatureSearchHit[] {
+  const deadlineTerms = filterTerms(terms, DEADLINE_STOP_TERMS);
+  const hits: FeatureSearchHit[] = [];
   for (const d of COMPLIANCE_DEADLINES) {
     const nameBlob = `${d.form} ${d.id} ${d.id.replaceAll('-', ' ')}`;
     const bodyBlob = `${d.authority} ${d.applicabilityNote ?? ''} ${d.frequency}`;
-    const nameScore = score(nameBlob, deadlineTerms);
-    const bodyScore = score(bodyBlob, deadlineTerms);
-    const s = nameScore * 3 + bodyScore;
-    if (s > 0) {
-      const dateHint = describeDateHint(d);
-      hits.push({
-        source: 'deadline',
-        id: `${d.country}:${d.id}`,
-        label: `${d.form} (${d.country})`,
-        description: `${d.authority} · ${d.frequency} · ${dateHint}`,
-        context: COUNTRY_NAME[d.country] ?? d.country,
-        url: d.source,
-        score: s,
-      });
-    }
+    const s = score(nameBlob, deadlineTerms) * 3 + score(bodyBlob, deadlineTerms);
+    if (s <= 0) continue;
+    hits.push({
+      source: 'deadline',
+      id: `${d.country}:${d.id}`,
+      label: `${d.form} (${d.country})`,
+      description: `${d.authority} · ${d.frequency} · ${describeDateHint(d)}`,
+      context: COUNTRY_NAME[d.country] ?? d.country,
+      url: d.source,
+      score: s,
+    });
   }
+  return hits;
+}
 
-  // Payment-method matching: name + authority + notes form the haystack.
-  // Restricted to entries whose use-cases intersect HelloBooks' AR / AP /
-  // contractor-payout scope so an unrelated payroll-only or pure-P2P rail
-  // doesn't crowd accounting-relevant search results.
+function searchPaymentMethods(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const m of PAYMENT_METHODS) {
     if (!m.useCases.some((u) => HELLOBOOKS_USE_CASES.includes(u))) continue;
     const blob = `${m.name} ${m.authority} ${m.notes?.join(' ') ?? ''}`;
     const s = score(blob, terms);
-    if (s > 0) {
-      const supportNote = m.helloProductSupport ? ` · ${m.helloProductSupport}` : '';
-      hits.push({
-        source: 'payment-method',
-        id: m.id,
-        label: m.name,
-        description: `${m.rail} · ${m.authority} · ${m.useCases.join('/')}${supportNote}`,
-        context: m.country,
-        score: s + 1,
-      });
-    }
+    if (s <= 0) continue;
+    const supportNote = m.helloProductSupport ? ` · ${m.helloProductSupport}` : '';
+    hits.push({
+      source: 'payment-method',
+      id: m.id,
+      label: m.name,
+      description: `${m.rail} · ${m.authority} · ${m.useCases.join('/')}${supportNote}`,
+      context: m.country,
+      score: s + 1,
+    });
   }
+  return hits;
+}
 
+function searchArticles(terms: string[]): FeatureSearchHit[] {
+  const hits: FeatureSearchHit[] = [];
   for (const a of ARTICLES) {
-    const blob = `${a.title} ${a.excerpt} ${a.tags.join(' ')}`;
-    const s = score(blob, terms);
-    if (s > 0) {
-      hits.push({
-        source: 'article',
-        id: a.id,
-        label: a.title,
-        description: a.excerpt,
-        context: articleContext(a),
-        url: a.url,
-        score: s,
-      });
-    }
+    const s = score(`${a.title} ${a.excerpt} ${a.tags.join(' ')}`, terms);
+    if (s <= 0) continue;
+    hits.push({
+      source: 'article',
+      id: a.id,
+      label: a.title,
+      description: a.excerpt,
+      context: articleContext(a),
+      url: a.url,
+      score: s,
+    });
   }
+  return hits;
+}
 
+export function featureSearch(args: FeatureSearchArgs) {
+  const limit = args.limit ?? 20;
+  const terms = args.query.trim().split(/\s+/).filter(Boolean);
+  const hits: FeatureSearchHit[] = [
+    ...searchPlans(terms),
+    ...searchIntegrations(terms),
+    ...searchFeatures(terms),
+    ...searchCountryFeatures(terms),
+    ...searchCompliance(terms),
+    ...searchCompetitors(terms),
+    ...searchDeadlines(terms),
+    ...searchPaymentMethods(terms),
+    ...searchArticles(terms),
+  ];
   hits.sort((a, b) => b.score - a.score);
   return {
     query: args.query,
