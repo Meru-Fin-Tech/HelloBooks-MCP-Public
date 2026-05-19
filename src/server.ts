@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 10 read-only tools and 3 resources.
+ * MCP server factory. Wires the 11 read-only tools and 3 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -19,6 +19,7 @@ import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complian
 import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
 import { listFeatures, listFeaturesSchema } from './tools/listFeatures.js';
 import { listFeatureCategories, listFeatureCategoriesSchema } from './tools/listFeatureCategories.js';
+import { listArticles, listArticlesSchema } from './tools/listArticles.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
@@ -38,10 +39,12 @@ export function createServer(): McpServer {
       instructions:
         'Public read-only HelloBooks knowledge base. Use these tools to answer ' +
         'questions about HelloBooks plans, pricing, integrations, supported ' +
-        'countries, and compliance frameworks. No customer or account data is ' +
-        'available through this server. For time-tracking, timesheets, shifts, ' +
-        'leave, or workforce-management questions, see the sister product at ' +
-        'mcp.hellotime.ai (server: hellotime-public).',
+        'countries, compliance frameworks, published articles, competitor ' +
+        'positioning, filing deadlines, local payment methods, and the marketing ' +
+        'feature catalog. No customer or account data is available through this ' +
+        'server. For time-tracking, timesheets, shifts, leave, or workforce-' +
+        'management questions, see the sister product at mcp.hellotime.ai ' +
+        '(server: hellotime-public).',
     },
   );
 
@@ -75,7 +78,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'feature_search',
-    'Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, and local payment methods. Queries like "vs Xero", "QuickBooks alternative", "GSTR-3B due", "UPI invoice", "BPAY recurring", "RTP supplier", or "agentic accounting" surface the matching entry near the top.',
+    'Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, local payment methods, and published articles on hellobooks.ai. Queries like "vs Xero", "QuickBooks alternative", "GSTR-3B due", "UPI invoice", "1099 article", or "agentic accounting" surface the matching entry near the top.',
     featureSearchSchema,
     async (args) => asJsonContent(featureSearch(args)),
   );
@@ -115,6 +118,13 @@ export function createServer(): McpServer {
     async () => asJsonContent(listFeatureCategories({})),
   );
 
+  server.tool(
+    'list_articles',
+    'List published articles on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Filter by country, tag or free-text query. Use this when a user asks "do you have a blog/article about X?".',
+    listArticlesSchema,
+    async (args) => asJsonContent(listArticles(args)),
+  );
+
   // Resources
   for (const r of RESOURCES) {
     server.resource(
@@ -140,5 +150,6 @@ export {
   localPaymentMethods,
   listFeatures,
   listFeatureCategories,
+  listArticles,
 };
 export const _internal = { z };

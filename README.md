@@ -33,9 +33,10 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_competitors` | Competitor positioning (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes. Optional `country`, `tier`, and `id` filters. |
 | `compliance_deadlines` | When statutory returns and payroll filings are due, per country. Covers IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super Guarantee), GB (VAT MTD, RTI, Self Assessment), US (1099-NEC/MISC, W-2, Form 941/940), CA (T4, GST/HST). Optional `country`, `frequency`, and `form` filters. Dates rotate annually — every response carries a disclaimer with per-deadline `source` URLs. |
 | `local_payment_methods` | Local bank-rail / wallet payment methods (UPI, BACS, PayID, BPAY, ACH, RTP, Zelle, PayNow, FAST, Interac, …) with rail speed, use-cases, authority, and HelloBooks support level. Optional `country`, `useCase`, `rail`, and `id` filters. |
-| `feature_search` | Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, and local payment methods. Queries like `vs Xero`, `QuickBooks alternative`, `when is GSTR-3B due`, `UPI invoice cap`, or `agentic accounting` surface the matching entry at the top. |
+| `feature_search` | Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, local payment methods, and published articles. Queries like `vs Xero`, `QuickBooks alternative`, `when is GSTR-3B due`, `UPI invoice cap`, `do you have a blog on 1099`, or `agentic accounting` surface the matching entry at the top. |
 | `list_features` | Full 96-feature marketing catalog. Filter by `category`, `tier`, `status`, `marketedOnly`, or substring `query`. |
 | `list_feature_categories` | The 13 feature categories on the marketing site with per-category counts by status (live/beta/planned). |
+| `list_articles` | Published content on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
 
 ## Resources
 
@@ -68,7 +69,7 @@ npm run audit:public-data
 
 ```
 src/
-  data/             # Static catalogs — plans, integrations, countries, about
+  data/             # Static catalogs — plans, integrations, countries, articles, about
   tools/            # One file per MCP tool
   resources/        # MCP resource registry
   server.ts         # MCP server factory (wires tools + resources)

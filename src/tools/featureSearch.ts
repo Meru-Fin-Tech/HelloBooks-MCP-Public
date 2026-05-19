@@ -6,6 +6,7 @@ import { COMPETITORS } from '../data/competitors.js';
 import { COMPLIANCE_DEADLINES } from '../data/complianceDeadlines.js';
 import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from '../data/paymentMethods.js';
 import { FEATURES } from '../data/features.js';
+import { ARTICLES } from '../data/articles.js';
 
 const COUNTRY_NAME: Record<string, string> = {
   IN: 'India',
@@ -39,7 +40,8 @@ export interface FeatureSearchHit {
     | 'competitor'
     | 'deadline'
     | 'payment-method'
-    | 'feature';
+    | 'feature'
+    | 'article';
   id: string;
   label: string;
   description: string;
@@ -221,6 +223,22 @@ export function featureSearch(args: FeatureSearchArgs) {
         description: `${m.rail} · ${m.authority} · ${m.useCases.join('/')}${supportNote}`,
         context: m.country,
         score: s + 1,
+      });
+    }
+  }
+
+  for (const a of ARTICLES) {
+    const blob = `${a.title} ${a.excerpt} ${a.tags.join(' ')}`;
+    const s = score(blob, terms);
+    if (s > 0) {
+      hits.push({
+        source: 'article',
+        id: a.id,
+        label: a.title,
+        description: a.excerpt,
+        context: `${a.kind} · ${a.publishedAt}${a.countryRelevance && a.countryRelevance !== 'global' ? ` · ${a.countryRelevance}` : ''}`,
+        url: a.url,
+        score: s,
       });
     }
   }
