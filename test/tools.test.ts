@@ -14,11 +14,11 @@ import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 import { listArticles } from '../src/tools/listArticles.js';
 import { ARTICLES } from '../src/data/articles.js';
 
-test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
+test('list_plans returns all 5 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
   const names = r.plans.map((p) => p.plan).sort((a, b) => a.localeCompare(b));
   assert.deepEqual(names, [
-    'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
+    'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
   ]);
   // Core plans have prices for 8 countries; add-ons are USD-only
   for (const p of r.plans) {
