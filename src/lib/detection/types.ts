@@ -10,7 +10,8 @@ export type DetectionCategory =
   | 'IMBALANCE'
   | 'DUPLICATE'
   | 'ROUND_NUMBER'
-  | 'SCHEMA';
+  | 'SCHEMA'
+  | 'VARIANCE';
 
 export type DetectionSeverity =
   | 'critical'
