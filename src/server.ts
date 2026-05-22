@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 11 read-only tools and 3 resources.
+ * MCP server factory. Wires the 12 read-only tools and 3 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -11,6 +11,8 @@ import { z } from 'zod';
 
 import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
+import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
+export { listCreditPacks } from './tools/listCreditPacks.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
@@ -67,6 +69,13 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'list_credit_packs',
+    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 500, Power 1,500, Mega 5,000, Ultra 15,000 credits) priced in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or `country` (ISO code).',
+    listCreditPacksSchema,
+    async (args) => asJsonContent(listCreditPacks(args)),
+  );
+
+  server.tool(
     'list_integrations',
     'List integrations (banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM).',
     listIntegrationsSchema,
@@ -117,7 +126,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_features',
-    'List the full HelloBooks marketing feature catalog (96+ items). Filter by category, tier, status, marketedOnly, or substring query.',
+    'List the full HelloBooks marketing feature catalog (145+ items). Filter by category, tier, status, marketedOnly, or substring query.',
     listFeaturesSchema,
     async (args) => asJsonContent(listFeatures(args)),
   );
@@ -149,6 +158,6 @@ export function createServer(): McpServer {
   return server;
 }
 
-// Re-exports for the eleven tool implementations are colocated with their
+// Re-exports for the twelve tool implementations are colocated with their
 // imports above using `export ... from ...` syntax (SonarQube S7763).
 export const _internal = { z };
