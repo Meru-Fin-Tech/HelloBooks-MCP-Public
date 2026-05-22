@@ -43,11 +43,17 @@ import { analyzeXeroJournalCleanup, analyzeXeroJournalCleanupSchema } from './to
 export { analyzeXeroJournalCleanup } from './tools/analyzeXeroJournalCleanup.js';
 import { analyzeXeroJournalAnomalies, analyzeXeroJournalAnomaliesSchema } from './tools/analyzeXeroJournalAnomalies.js';
 export { analyzeXeroJournalAnomalies } from './tools/analyzeXeroJournalAnomalies.js';
+import { analyzeJournalVariance, analyzeJournalVarianceSchema } from './tools/analyzeJournalVariance.js';
+export { analyzeJournalVariance } from './tools/analyzeJournalVariance.js';
+import { compareBooksToHellobooks, compareBooksToHellobooksSchema } from './tools/compareBooksToHellobooks.js';
+export { compareBooksToHellobooks } from './tools/compareBooksToHellobooks.js';
+import { estimateMigrationEffort, estimateMigrationEffortSchema } from './tools/estimateMigrationEffort.js';
+export { estimateMigrationEffort } from './tools/estimateMigrationEffort.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.9.0';
+const SERVER_VERSION = '1.0.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -201,6 +207,27 @@ export function createServer(): McpServer {
     'Scan a Xero "Manual Journals" CSV export for anomalies — currently round-number lines (debit or credit amounts that are exact multiples of $1,000, above a $1,000 materiality threshold). Input is raw CSV text from Xero Accounting → Advanced → Manual Journals → Export. Max 5,000 rows; max 5 MB. Returns flagged lines with severity ($100K+ high, $10K+ medium, else low) and a shareable URL. Use this when a user pastes Xero data and asks "any anomalies?", "look for round numbers", or "anything suspicious". Same Tier-0 / paid-product split as the QBO variant — history-aware anomaly checks (GL outliers, vendor history, archived-vendor activity, LLM-narrated suspicious) live in the authenticated MCP / paid product.',
     analyzeXeroJournalAnomaliesSchema,
     async (args) => asJsonContent(analyzeXeroJournalAnomalies(args)),
+  );
+
+  server.tool(
+    'analyze_journal_variance',
+    'Compare two periods of journal-entry data (QBO or Xero — source auto-detected from headers) and flag accounts whose movement deviates materially between periods. Aggregates lines per account into a net total for each period, then surfaces accounts where the period-over-period change crosses a materiality threshold (≥5% relative AND ≥$100 absolute; severity high at ≥50%, medium at ≥20%, low at ≥5%). Inputs are two CSV exports — periodACsv (earlier period) and periodBCsv (later period). Optional periodALabel / periodBLabel for human-readable flag messages (e.g. "Q1 FY2024" vs "Q2 FY2024"). Max 5,000 rows per period; max 5 MB each. Use this when a user pastes two periods and asks "what changed?", "show me variances", "what jumped period-over-period". Returns a flag list ordered by largest delta, a roll-up, and a shareable URL. Both periods must be the same source — mixing QBO + Xero in one call returns an error.',
+    analyzeJournalVarianceSchema,
+    async (args) => asJsonContent(analyzeJournalVariance(args)),
+  );
+
+  server.tool(
+    'compare_books_to_hellobooks',
+    'Take a QBO or Xero journal-entry CSV (source auto-detected), run the full Tier-0 detection set (imbalance + duplicates + round-number + schema), and return a structured side-by-side comparison — "your books have X issues; here is how HelloBooks resolves each phase". This is the direct funnel tool: the response includes per-category counts mapped to HelloBooks Phases 1, 2, 3.0, 3.1, with exclusive-advantage bullets (command-center dashboard, conversational interface, one-prompt JE posting, cross-phase orchestration, auto ID resolution). Use this when a user is evaluating HelloBooks vs their current QBO/Xero, asks "should I migrate?", or pastes data while comparing accounting software. Output is suitable for the host LLM to narrate as a positioning argument; the share URL points at a branded landing page with the issue breakdown and a 1-click migrate CTA.',
+    compareBooksToHellobooksSchema,
+    async (args) => asJsonContent(compareBooksToHellobooks(args)),
+  );
+
+  server.tool(
+    'estimate_migration_effort',
+    'Take a QBO or Xero journal-entry CSV (source auto-detected) and return a structured migration-effort estimate — row counts, unique-account count, period span, complexity classification (low / medium / high), human-hours estimate, assisted-hours estimate, and an indicative price quote in USD. Heuristic-based — refined against the live entity once the user signs up. Accepts larger files than the other analytical tools (up to 50,000 rows / 20 MB) because no detection runs here, just sizing. Use this when a user is weighing the cost of moving books to HelloBooks, pastes data and asks "how long will migration take?", "what would this cost?", or "is it worth migrating?". The funnel CTA points at /migrate/<source>?ref=<shareUrl> to start the assisted flow with the parsed sizing pre-populated.',
+    estimateMigrationEffortSchema,
+    async (args) => asJsonContent(estimateMigrationEffort(args)),
   );
 
   // Resources
