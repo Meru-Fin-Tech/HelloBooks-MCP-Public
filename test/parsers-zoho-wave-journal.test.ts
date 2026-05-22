@@ -134,11 +134,13 @@ test('parseAndNormalize: routes Wave through the Wave parser', () => {
 
 /* ─────────────────── source helper functions ────────────────────── */
 
-test('sourceToMigrateSlug: returns canonical slugs', () => {
-  assert.equal(sourceToMigrateSlug('QBO'), 'quickbooks');
-  assert.equal(sourceToMigrateSlug('XERO'), 'xero');
-  assert.equal(sourceToMigrateSlug('ZOHO'), 'zoho');
-  assert.equal(sourceToMigrateSlug('WAVE'), 'wave');
+test('sourceToMigrateSlug: returns canonical /migrate/from-* slugs', () => {
+  // Web-Fire-hellobooks.ai uses the `from-` prefix convention on its
+  // /migrate/ pages — a slug without the prefix would 404.
+  assert.equal(sourceToMigrateSlug('QBO'), 'from-quickbooks');
+  assert.equal(sourceToMigrateSlug('XERO'), 'from-xero');
+  assert.equal(sourceToMigrateSlug('ZOHO'), 'from-zoho');
+  assert.equal(sourceToMigrateSlug('WAVE'), 'from-wave');
 });
 
 test('sourceToHumanLabel: returns user-facing names', () => {

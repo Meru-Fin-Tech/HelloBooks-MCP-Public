@@ -12,7 +12,7 @@
  *     → detectImbalance + detectDuplicates + schemaFlagsFromJournals
  *     → mintShare → response with `_branding` block
  *
- * Funnel CTA routes to /migrate/xero?ref=<shareUrl>.
+ * Funnel CTA routes to /migrate/from-xero?ref=<shareUrl>.
  */
 
 import { z } from 'zod';
@@ -90,7 +90,7 @@ export function analyzeXeroJournalCleanup(args: AnalyzeXeroJournalCleanupArgs) {
     shareExpiresAt: share.expiresAt,
     _branding: {
       poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/xero?ref=${encodeURIComponent(share.shareUrl)}`,
+      upgradeCta: `https://hellobooks.ai/migrate/from-xero?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
       note: 'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
     },

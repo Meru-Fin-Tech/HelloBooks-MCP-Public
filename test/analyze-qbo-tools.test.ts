@@ -23,7 +23,7 @@ test('analyze_qbo_journal_cleanup: two balanced journals → zero flags + share 
   assert.equal(r.summary.totalFlags, 0);
   assert.match(r.shareUrl, /\/r\/[A-HJ-NP-Za-km-z2-9]{12}$/);
   assert.equal(r._branding.poweredBy, 'HelloBooks AI Agent');
-  assert.match(r._branding.upgradeCta, /migrate\/quickbooks/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-quickbooks/);
 });
 
 test('analyze_qbo_journal_cleanup: unbalanced journal surfaces IMBALANCE flag', () => {
@@ -141,7 +141,7 @@ test('analyze_qbo_journal_anomalies: share URL routes to QBO migrate', () => {
   const r = analyzeQboJournalAnomalies({ csvText: CSV_TWO_BALANCED_JOURNALS });
   assert.equal(r.status, 'ok');
   if (r.status !== 'ok') return;
-  assert.match(r._branding.upgradeCta, /migrate\/quickbooks/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-quickbooks/);
 });
 
 /* ───────────── End-to-end via server.tool wiring ───────────────── */

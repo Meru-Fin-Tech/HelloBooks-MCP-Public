@@ -106,7 +106,7 @@ test('compare_books_to_hellobooks: routes Xero migrate CTA', () => {
   assert.equal(r.status, 'ok');
   if (r.status !== 'ok') return;
   assert.equal(r.source, 'XERO');
-  assert.match(r._branding.upgradeCta, /migrate\/xero/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-xero/);
 });
 
 /* ───────────────── estimate_migration_effort ───────────────────── */

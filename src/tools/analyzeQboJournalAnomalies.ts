@@ -83,7 +83,7 @@ export function analyzeQboJournalAnomalies(args: AnalyzeQboJournalAnomaliesArgs)
     shareExpiresAt: share.expiresAt,
     _branding: {
       poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
+      upgradeCta: `https://hellobooks.ai/migrate/from-quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
       note: 'Free analysis. Sign up at hellobooks.ai for full Phase 3.0 anomaly detection with AI-narrated rationale and history-aware checks.',
     },

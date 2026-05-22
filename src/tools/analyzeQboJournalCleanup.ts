@@ -89,7 +89,7 @@ export function analyzeQboJournalCleanup(args: AnalyzeQboJournalCleanupArgs) {
     shareExpiresAt: share.expiresAt,
     _branding: {
       poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
+      upgradeCta: `https://hellobooks.ai/migrate/from-quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
       note: 'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
     },
