@@ -39,11 +39,15 @@ import { analyzeQboJournalCleanup, analyzeQboJournalCleanupSchema } from './tool
 export { analyzeQboJournalCleanup } from './tools/analyzeQboJournalCleanup.js';
 import { analyzeQboJournalAnomalies, analyzeQboJournalAnomaliesSchema } from './tools/analyzeQboJournalAnomalies.js';
 export { analyzeQboJournalAnomalies } from './tools/analyzeQboJournalAnomalies.js';
+import { analyzeXeroJournalCleanup, analyzeXeroJournalCleanupSchema } from './tools/analyzeXeroJournalCleanup.js';
+export { analyzeXeroJournalCleanup } from './tools/analyzeXeroJournalCleanup.js';
+import { analyzeXeroJournalAnomalies, analyzeXeroJournalAnomaliesSchema } from './tools/analyzeXeroJournalAnomalies.js';
+export { analyzeXeroJournalAnomalies } from './tools/analyzeXeroJournalAnomalies.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.8.0';
+const SERVER_VERSION = '0.9.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -183,6 +187,20 @@ export function createServer(): McpServer {
     'Scan a QuickBooks Online "Journal Entries" CSV export for anomalies — currently round-number lines (debit or credit amounts that are exact multiples of $1,000, above a $1,000 materiality threshold). Round numbers are statistically rare in real bookkeeping and frequently indicate estimates, plugs, or fraud signals worth review. Input is raw CSV text from QBO Reports → Accountant → Journal. Max 5,000 rows; max 5 MB. Returns flagged lines with severity ($100K+ high, $10K+ medium, else low) and a shareable URL. Use this when a user pastes QBO data and asks "any anomalies?", "look for round numbers", or "anything suspicious". Tier-0 subset — HelloBooks Phase 3.0 anomaly detection in the paid product additionally catches GL outliers vs entity history, vendor-history mismatches, archived-vendor activity, and AI-narrated suspicious lines (which require the live HelloBooks account).',
     analyzeQboJournalAnomaliesSchema,
     async (args) => asJsonContent(analyzeQboJournalAnomalies(args)),
+  );
+
+  server.tool(
+    'analyze_xero_journal_cleanup',
+    'Scan a Xero "Manual Journals" CSV export for cleanup issues — unbalanced journals, duplicate journals (same date + same totals), and schema problems (invalid dates, malformed amounts, missing account code/name, missing group key). Input is the raw CSV content the user pastes after exporting from Xero via Accounting → Advanced → Manual Journals → Export. Xero-specific idioms handled: signed Amount column (positive = credit, negative = debit), explicit Debit/Credit fallback shape, Reference-or-Narration+Date grouping, account code preferred over name. Max 5,000 rows; max 5 MB. Returns structured flags with severity, a roll-up summary, parse diagnostics, and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes Xero manual-journal data, asks "check my Xero books", or "find issues in my Xero journal". The funnel CTA routes to /migrate/xero for users who want to fix at scale.',
+    analyzeXeroJournalCleanupSchema,
+    async (args) => asJsonContent(analyzeXeroJournalCleanup(args)),
+  );
+
+  server.tool(
+    'analyze_xero_journal_anomalies',
+    'Scan a Xero "Manual Journals" CSV export for anomalies — currently round-number lines (debit or credit amounts that are exact multiples of $1,000, above a $1,000 materiality threshold). Input is raw CSV text from Xero Accounting → Advanced → Manual Journals → Export. Max 5,000 rows; max 5 MB. Returns flagged lines with severity ($100K+ high, $10K+ medium, else low) and a shareable URL. Use this when a user pastes Xero data and asks "any anomalies?", "look for round numbers", or "anything suspicious". Same Tier-0 / paid-product split as the QBO variant — history-aware anomaly checks (GL outliers, vendor history, archived-vendor activity, LLM-narrated suspicious) live in the authenticated MCP / paid product.',
+    analyzeXeroJournalAnomaliesSchema,
+    async (args) => asJsonContent(analyzeXeroJournalAnomalies(args)),
   );
 
   // Resources
