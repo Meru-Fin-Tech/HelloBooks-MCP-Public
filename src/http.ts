@@ -42,6 +42,11 @@ import {
   generateRssFeed,
   generateSitemap,
 } from './discovery.js';
+import {
+  defaultShareStore,
+  renderSharePage,
+  isValidSlug,
+} from './lib/shareUrl/index.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -127,7 +132,7 @@ app.set('trust proxy', 1); // accurate req.ip behind a load balancer
 app.use(express.json({ limit: '256kb' })); // requests are tiny — cap aggressively
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', sessions: sessions.size });
+  res.json({ status: 'ok', sessions: sessions.size, shares: defaultShareStore.size });
 });
 
 app.get('/info', (_req, res) => {
@@ -192,6 +197,41 @@ app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson())
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+
+// ---------------------------------------------------------------------------
+// Share-URL surface — minted by analytical MCP tools, rendered here.
+// ---------------------------------------------------------------------------
+//
+// Slugs are 12 chars from a 56-char alphabet (collision-resistant). Payloads
+// live in an in-memory store with a 7-day TTL; periodic sweep below keeps
+// memory bounded. See src/lib/shareUrl/.
+
+const SHARE_SWEEP_MS = 15 * 60 * 1000;
+setInterval(() => defaultShareStore.sweepExpired(), SHARE_SWEEP_MS).unref();
+
+app.get('/r/:slug', (req, res) => {
+  const slug = req.params.slug;
+  if (!isValidSlug(slug)) {
+    res.status(400).type('text/html; charset=utf-8').send(renderShareError('Invalid share link', 'The link format is not valid.'));
+    return;
+  }
+  const payload = defaultShareStore.get(slug);
+  if (!payload) {
+    res.status(404).type('text/html; charset=utf-8').send(renderShareError('Share not found', 'This analysis has expired or never existed. Share links live for 7 days from creation.'));
+    return;
+  }
+  const host = req.get('host') ?? 'agents.hellobooks.ai';
+  const proto = req.header('x-forwarded-proto') ?? (req.secure ? 'https' : 'http');
+  const shareUrl = `${proto}://${host}/r/${slug}`;
+  // Public cacheable for a short window — payload is fixed for the slug's
+  // lifetime so any GET in the next 5 min can be served from edge.
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.type('text/html; charset=utf-8').send(renderSharePage(payload, { shareUrl }));
+});
+
+function renderShareError(title: string, message: string): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — HelloBooks AI Agent</title><meta name="robots" content="noindex"><style>body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 24px;color:#0f172a;line-height:1.6}h1{font-size:24px;margin-bottom:8px}p{color:#64748b}a{color:#2563eb;text-decoration:none;font-weight:500}</style></head><body><h1>${title}</h1><p>${message}</p><p><a href="https://hellobooks.ai/mcp">Learn about HelloBooks AI Agent &rarr;</a></p></body></html>`;
+}
 
 app.use('/mcp', ipLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
