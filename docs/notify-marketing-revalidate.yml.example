@@ -1,0 +1,114 @@
+name: notify-marketing-revalidate
+
+# Triggers hellobooks.ai/api/revalidate when any data file the marketing-site
+# mirror depends on changes, so the marketing-origin agents.json feed and
+# sitemap pick up the new catalog within seconds instead of waiting for the
+# 15-minute ISR window or the 24-hour sitemap regeneration.
+#
+# This closes the cross-repo freshness loop documented in
+# Web-Fire-hellobooks.ai PR #395:
+#
+#   MCP catalog change -> Jenkins deploy of agents.hellobooks.ai (existing)
+#                      -> THIS workflow pings hellobooks.ai/api/revalidate
+#                      -> /api/feed/agents.json ISR cache busts
+#                      -> sitemap.xml lastmod bumps on next regen
+#                      -> AI crawlers re-fetch on next visit
+#
+# Note: production deploy of agents.hellobooks.ai itself is Jenkins, not GHA
+# (per the org-wide "Jenkins is the build system" convention in
+# Web-Fire-hellobooks.ai/CLAUDE.md). This workflow is a notify-only side-channel
+# that runs after the merge to main — it does NOT deploy anything.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Anything that changes the MCP tool / resource catalog or its descriptions.
+      - 'src/data/**'
+      - 'src/discovery.ts'
+      - 'src/server.ts'
+      - 'src/resources/**'
+      - 'src/tools/**'
+      - 'server.json'
+      - 'package.json'
+  workflow_dispatch:
+    # Allow manual fire for ad-hoc cache busts (e.g. after rotating the secret
+    # or onboarding a new marketing-side mirror endpoint).
+
+concurrency:
+  # Coalesce rapid back-to-back pushes — one revalidate per branch in flight.
+  group: notify-marketing-revalidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ping-revalidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      # No repo writes needed — this job only makes outbound HTTP calls.
+      contents: read
+
+    steps:
+      - name: Ping marketing-site revalidate for /api/feed/agents.json
+        env:
+          REVALIDATE_SECRET: ${{ secrets.HELLOBOOKS_REVALIDATE_SECRET }}
+        run: |
+          if [ -z "$REVALIDATE_SECRET" ]; then
+            echo "::warning::HELLOBOOKS_REVALIDATE_SECRET not configured — skipping revalidate ping. Add it under Settings -> Secrets to enable cross-repo freshness."
+            exit 0
+          fi
+          # GET form of /api/revalidate accepts ?path=… and requires only the
+          # x-revalidate-secret header — see Web-Fire-hellobooks.ai
+          # src/app/api/revalidate/route.ts (the POST form is reserved for
+          # Payload CMS hooks with an allowed-collection check).
+          status=$(curl --silent --show-error --output /tmp/agents-resp.json \
+            --write-out '%{http_code}' \
+            --max-time 30 \
+            --retry 3 --retry-delay 5 --retry-max-time 60 \
+            --header "x-revalidate-secret: ${REVALIDATE_SECRET}" \
+            "https://hellobooks.ai/api/revalidate?path=/api/feed/agents.json")
+          echo "Response (HTTP ${status}):"
+          cat /tmp/agents-resp.json || true
+          echo ""
+          if [ "$status" != "200" ]; then
+            echo "::error::Revalidate ping returned HTTP ${status} (expected 200)."
+            exit 1
+          fi
+
+      - name: Ping marketing-site revalidate for /sitemap.xml
+        env:
+          REVALIDATE_SECRET: ${{ secrets.HELLOBOOKS_REVALIDATE_SECRET }}
+        run: |
+          if [ -z "$REVALIDATE_SECRET" ]; then exit 0; fi
+          # Sitemap regen propagates the lastmod tick on every AI-discovery
+          # mirror entry (llms.txt, llms-full.txt, agent.json, ai-plugin.json,
+          # api/feed/agents.json) — see Web-Fire-hellobooks.ai sitemap.ts
+          # aiDiscoveryRoutes block.
+          status=$(curl --silent --show-error --output /tmp/sitemap-resp.json \
+            --write-out '%{http_code}' \
+            --max-time 30 \
+            --retry 3 --retry-delay 5 --retry-max-time 60 \
+            --header "x-revalidate-secret: ${REVALIDATE_SECRET}" \
+            "https://hellobooks.ai/api/revalidate?path=/sitemap.xml")
+          echo "Response (HTTP ${status}):"
+          cat /tmp/sitemap-resp.json || true
+          echo ""
+          if [ "$status" != "200" ]; then
+            echo "::error::Sitemap revalidate ping returned HTTP ${status} (expected 200)."
+            exit 1
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "## Marketing-site revalidate pinged"
+            echo ""
+            echo "- \`/api/feed/agents.json\` cache busted"
+            echo "- \`/sitemap.xml\` cache busted"
+            echo ""
+            echo "AI crawlers (Perplexity, You, Brave, OAI-SearchBot, Google-Extended) will see the fresh catalog on their next fetch — typically within minutes."
+            echo ""
+            echo "See [Web-Fire-hellobooks.ai PR #395](https://github.com/Meru-Technosoft-Private-Limited/Web-Fire-hellobooks.ai/pull/395) for the receiving end."
+          } >> "$GITHUB_STEP_SUMMARY"
