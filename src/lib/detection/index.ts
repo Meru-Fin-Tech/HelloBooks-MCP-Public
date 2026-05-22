@@ -20,3 +20,4 @@ export { detectDuplicates } from './duplicates.js';
 export { detectRoundNumber } from './roundNumber.js';
 export { schemaFlagsFromJournals } from './schemaIssues.js';
 export { detectVariance } from './variance.js';
+export { detectTbImbalance, detectTbWrongSign, detectTbRoundBalance } from './trialBalanceChecks.js';
