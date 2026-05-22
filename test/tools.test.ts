@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { listPlans } from '../src/tools/listPlans.js';
+import { listCreditPacks } from '../src/tools/listCreditPacks.js';
 import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
@@ -61,6 +62,44 @@ test('list_plans plan filter restricts to single tier', () => {
   const r = listPlans({ plan: 'pro' });
   assert.equal(r.plans.length, 1);
   assert.equal(r.plans[0].plan, 'pro');
+});
+
+test('list_credit_packs returns all 4 packs with 8-country pricing', () => {
+  const r = listCreditPacks({});
+  const ids = r.creditPacks.map((p) => p.id).sort((a, b) => a.localeCompare(b));
+  assert.deepEqual(ids, ['boost', 'mega', 'power', 'ultra']);
+  for (const p of r.creditPacks) {
+    assert.equal(p.prices.length, 8);
+    assert.ok(p.credits > 0);
+  }
+});
+
+test('list_credit_packs credit allowances match Doc 19 v2', () => {
+  const byId = Object.fromEntries(
+    listCreditPacks({}).creditPacks.map((p) => [p.id, p.credits]),
+  );
+  assert.equal(byId.boost, 500);
+  assert.equal(byId.power, 1500);
+  assert.equal(byId.mega, 5000);
+  assert.equal(byId.ultra, 15000);
+});
+
+test('list_credit_packs id filter restricts to a single pack', () => {
+  const r = listCreditPacks({ id: 'ultra' });
+  assert.equal(r.creditPacks.length, 1);
+  assert.equal(r.creditPacks[0].id, 'ultra');
+});
+
+test('list_credit_packs country filter narrows prices to that market', () => {
+  const r = listCreditPacks({ country: 'IN' });
+  for (const p of r.creditPacks) {
+    assert.equal(p.prices.length, 1);
+    assert.equal(p.prices[0].country, 'IN');
+    assert.equal(p.prices[0].currency, 'INR');
+  }
+  // US Boost is the canonical $4.99 list price
+  const usBoost = listCreditPacks({ country: 'US', id: 'boost' });
+  assert.equal(usBoost.creditPacks[0].prices[0].price, 4.99);
 });
 
 test('list_integrations filters by category + country', () => {

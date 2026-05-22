@@ -98,6 +98,8 @@ interface RegionConfig {
   symbol: string;
   pro: { monthly: number; annual: number; anchor: number };
   cpa: { monthly: number; annual: number; perClient: number };
+  // One-time pay-as-you-go AI credit top-up packs (Doc 19 v2).
+  packs: { boost: number; power: number; mega: number; ultra: number };
 }
 
 // Mirrored from Web-Fire-hellobooks.ai/src/lib/pricingConfig.ts (Doc 19 v2, 2026-05-08).
@@ -106,28 +108,36 @@ interface RegionConfig {
 const REGIONS: RegionConfig[] = [
   { country: 'US', currency: 'USD', symbol: '$',
     pro: { monthly: 9.99, annual: 99, anchor: 19.99 },
-    cpa: { monthly: 59.99, annual: 599.99, perClient: 4.99 } },
+    cpa: { monthly: 59.99, annual: 599.99, perClient: 4.99 },
+    packs: { boost: 4.99, power: 12.99, mega: 29.99, ultra: 69.99 } },
   { country: 'IN', currency: 'INR', symbol: '₹',
     pro: { monthly: 499, annual: 4999, anchor: 999 },
-    cpa: { monthly: 4999, annual: 49999, perClient: 349 } },
+    cpa: { monthly: 4999, annual: 49999, perClient: 349 },
+    packs: { boost: 249, power: 699, mega: 1999, ultra: 4999 } },
   { country: 'CA', currency: 'CAD', symbol: 'C$',
     pro: { monthly: 12.99, annual: 129.99, anchor: 25.99 },
-    cpa: { monthly: 77.99, annual: 779.99, perClient: 6.49 } },
+    cpa: { monthly: 77.99, annual: 779.99, perClient: 6.49 },
+    packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
   { country: 'GB', currency: 'GBP', symbol: '£',
     pro: { monthly: 7.99, annual: 79.99, anchor: 15.99 },
-    cpa: { monthly: 47.99, annual: 479.99, perClient: 3.99 } },
+    cpa: { monthly: 47.99, annual: 479.99, perClient: 3.99 },
+    packs: { boost: 3.99, power: 10.49, mega: 23.99, ultra: 55.99 } },
   { country: 'AU', currency: 'AUD', symbol: 'A$',
     pro: { monthly: 14.99, annual: 149.99, anchor: 29.99 },
-    cpa: { monthly: 89.99, annual: 899.99, perClient: 7.49 } },
+    cpa: { monthly: 89.99, annual: 899.99, perClient: 7.49 },
+    packs: { boost: 7.49, power: 19.49, mega: 44.99, ultra: 104.99 } },
   { country: 'AE', currency: 'AED', symbol: 'AED ',
     pro: { monthly: 37, annual: 367, anchor: 73 },
-    cpa: { monthly: 220, annual: 2200, perClient: 18 } },
+    cpa: { monthly: 220, annual: 2200, perClient: 18 },
+    packs: { boost: 18, power: 48, mega: 110, ultra: 257 } },
   { country: 'SG', currency: 'SGD', symbol: 'S$',
     pro: { monthly: 12.99, annual: 129.99, anchor: 25.99 },
-    cpa: { monthly: 77.99, annual: 779.99, perClient: 6.49 } },
+    cpa: { monthly: 77.99, annual: 779.99, perClient: 6.49 },
+    packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
   { country: 'NZ', currency: 'NZD', symbol: 'NZ$',
     pro: { monthly: 15.99, annual: 159.99, anchor: 31.99 },
-    cpa: { monthly: 95.99, annual: 959.99, perClient: 7.99 } },
+    cpa: { monthly: 95.99, annual: 959.99, perClient: 7.99 },
+    packs: { boost: 7.99, power: 20.99, mega: 47.99, ultra: 111.99 } },
 ];
 
 type RegionalPaidPlan = 'pro' | 'cpa';
@@ -217,3 +227,46 @@ export const PLANS: Plan[] = [
     publicSignupUrl: 'https://hellobooks.ai/manufacturing',
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Credit packs — one-time pay-as-you-go AI credit top-ups (Doc 19 v2).
+// Stack on any plan, including Free. Priced per region; mirrors PACKS_BY_REGION
+// in pricingConfig.ts and the addOns array in hellobooks.ai/api/feed/pricing.json.
+// ---------------------------------------------------------------------------
+
+export type CreditPackId = 'boost' | 'power' | 'mega' | 'ultra';
+
+export interface PackPrice {
+  country: CountryCode;
+  currency: CurrencyCode;
+  symbol: string;
+  price: number;
+}
+
+export interface CreditPack {
+  id: CreditPackId;
+  name: string;
+  credits: number;
+  prices: PackPrice[];
+  publicUrl: string;
+}
+
+const PACK_META: { id: CreditPackId; name: string; credits: number }[] = [
+  { id: 'boost', name: 'Boost credit pack', credits: 500 },
+  { id: 'power', name: 'Power credit pack', credits: 1500 },
+  { id: 'mega', name: 'Mega credit pack', credits: 5000 },
+  { id: 'ultra', name: 'Ultra credit pack', credits: 15000 },
+];
+
+export const CREDIT_PACKS: CreditPack[] = PACK_META.map((meta) => ({
+  id: meta.id,
+  name: meta.name,
+  credits: meta.credits,
+  prices: REGIONS.map((r) => ({
+    country: r.country,
+    currency: r.currency,
+    symbol: r.symbol,
+    price: r.packs[meta.id],
+  })),
+  publicUrl: 'https://hellobooks.ai/pricing',
+}));
