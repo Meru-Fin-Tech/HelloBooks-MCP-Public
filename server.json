@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.meru-fin-tech/hellobooks-public",
   "title": "HelloBooks (Public)",
-  "description": "Read-only knowledge endpoint for HelloBooks cloud accounting/payroll/tax SaaS. Exposes plan pricing, AI credit packs, integrations catalog, marketing feature catalog data, per-country compliance frameworks, competitor positioning, statutory deadlines, local payment methods, product videos, and a curated catalog of published articles. Plan and credit-pack pricing is federated live from hellobooks.ai.",
-  "version": "0.6.0",
+  "description": "Read-only knowledge endpoint for HelloBooks cloud accounting/payroll/tax SaaS. Exposes plan pricing, AI credit packs, integrations catalog, marketing feature catalog data, per-country compliance frameworks, competitor positioning, statutory deadlines, local payment methods, product videos, and a curated catalog of published articles. Plan and credit-pack pricing is federated live from hellobooks.ai. Self-describing discovery surface at the origin (HTML landing, /.well-known/agent.json, /llms.txt, /catalog.json, /sitemap.xml, RSS, OpenAPI) so AI crawlers and agent registries can index the server.",
+  "version": "0.7.0",
   "repository": {
     "url": "https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public",
     "source": "github"

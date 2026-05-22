@@ -39,7 +39,7 @@ import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.6.0';
+const SERVER_VERSION = '0.7.0';
 
 function asJsonContent(payload: unknown) {
   return {
