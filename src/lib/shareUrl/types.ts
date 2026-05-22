@@ -16,7 +16,8 @@ export type AnalysisTool =
   | 'analyzeXeroJournalAnomalies'
   | 'analyzeJournalVariance'
   | 'compareBooksToHellobooks'
-  | 'estimateMigrationEffort';
+  | 'estimateMigrationEffort'
+  | 'analyzeTrialBalance';
 
 export interface SharePayload {
   /** Which analytical tool minted this share. */

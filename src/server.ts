@@ -49,11 +49,13 @@ import { compareBooksToHellobooks, compareBooksToHellobooksSchema } from './tool
 export { compareBooksToHellobooks } from './tools/compareBooksToHellobooks.js';
 import { estimateMigrationEffort, estimateMigrationEffortSchema } from './tools/estimateMigrationEffort.js';
 export { estimateMigrationEffort } from './tools/estimateMigrationEffort.js';
+import { analyzeTrialBalance, analyzeTrialBalanceSchema } from './tools/analyzeTrialBalance.js';
+export { analyzeTrialBalance } from './tools/analyzeTrialBalance.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.2.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -228,6 +230,13 @@ export function createServer(): McpServer {
     'Take a QBO or Xero journal-entry CSV (source auto-detected) and return a structured migration-effort estimate — row counts, unique-account count, period span, complexity classification (low / medium / high), human-hours estimate, assisted-hours estimate, and an indicative price quote in USD. Heuristic-based — refined against the live entity once the user signs up. Accepts larger files than the other analytical tools (up to 50,000 rows / 20 MB) because no detection runs here, just sizing. Use this when a user is weighing the cost of moving books to HelloBooks, pastes data and asks "how long will migration take?", "what would this cost?", or "is it worth migrating?". The funnel CTA points at /migrate/<source>?ref=<shareUrl> to start the assisted flow with the parsed sizing pre-populated.',
     estimateMigrationEffortSchema,
     async (args) => asJsonContent(estimateMigrationEffort(args)),
+  );
+
+  server.tool(
+    'analyze_trial_balance',
+    'Take a Trial Balance CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected from headers — YTD columns indicate Xero, Opening Balance indicates Zoho, etc.) and run three checks: (1) tb.unbalanced — debits ≠ credits (every downstream P&L / BS / cash-flow report built from this TB is wrong until fixed); (2) tb.wrong_sign — accounts whose name suggests a class (Revenue / COGS / Expense / AR / AP) carrying a balance on the wrong side (classic posting-error signal); (3) tb.round_balance — exact-multiple-of-$10,000 balances (plug-entry signal). Input is raw CSV text of a Trial Balance report. Max 5,000 rows; max 5 MB. Returns flagged accounts with severity, a roll-up showing whether the TB balances, parse diagnostics, and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes a Trial Balance and asks "does my TB balance?", "are there sign errors?", "what looks suspicious?", or "is this TB clean?". The Trial Balance is the foundation document for every other financial statement — if it does not balance, every downstream report is invalid.',
+    analyzeTrialBalanceSchema,
+    async (args) => asJsonContent(analyzeTrialBalance(args)),
   );
 
   // Resources
