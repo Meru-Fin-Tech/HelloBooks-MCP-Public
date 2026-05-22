@@ -13,7 +13,7 @@
 import { z } from 'zod';
 
 import { parseCsv } from '../lib/parsers/csv.js';
-import { parseAndNormalize } from '../lib/parsers/autoDetect.js';
+import { parseAndNormalize, sourceToMigrateSlug } from '../lib/parsers/autoDetect.js';
 import { mintShare } from '../lib/shareUrl/index.js';
 
 const MAX_ROWS = 50_000; // Allow larger inputs for sizing — the analytical detectors are skipped.
@@ -73,7 +73,7 @@ export function estimateMigrationEffort(args: EstimateMigrationEffortArgs) {
     flags: [],
   });
 
-  const migrateSlug = result.source === 'XERO' ? 'xero' : 'quickbooks';
+  const migrateSlug = sourceToMigrateSlug(result.source);
   return {
     status: 'ok' as const,
     source: result.source,

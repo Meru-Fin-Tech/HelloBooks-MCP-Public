@@ -34,6 +34,16 @@ const SEVERITY_RANK: Record<DetectionSeverity, number> = {
 const SIGNUP_URL = 'https://hellobooks.ai/signup';
 const MIGRATE_BASE = 'https://hellobooks.ai/migrate';
 
+function migrateUrlForTool(tool: string): string {
+  if (tool.includes('Xero')) return `${MIGRATE_BASE}/xero`;
+  if (tool.includes('Zoho')) return `${MIGRATE_BASE}/zoho`;
+  if (tool.includes('Wave')) return `${MIGRATE_BASE}/wave`;
+  // Default for QBO + cross-source tools (variance / compare / migration-estimate
+  // pass through the slug embedded in their _branding.upgradeCta — when the
+  // share page renders standalone we default to QBO as the most common source).
+  return `${MIGRATE_BASE}/quickbooks`;
+}
+
 export interface RenderOptions {
   /** Public URL of this share page — used in OG tags + the "Copy link" button. */
   shareUrl: string;
@@ -44,9 +54,7 @@ export function renderSharePage(payload: SharePayload, opts: RenderOptions): str
   const noun = n === 1 ? 'issue' : 'issues';
   const title = `HelloBooks AI — analysis result (${n} ${noun} found)`;
   const generated = new Date(payload.generatedAt).toUTCString();
-  const migrateUrl = payload.tool.includes('Xero')
-    ? `${MIGRATE_BASE}/xero`
-    : `${MIGRATE_BASE}/quickbooks`;
+  const migrateUrl = migrateUrlForTool(payload.tool);
 
   const flagsSorted = [...payload.flags].sort(
     (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],

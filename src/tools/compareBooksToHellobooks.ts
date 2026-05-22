@@ -13,9 +13,11 @@
 import { z } from 'zod';
 
 import { parseCsv } from '../lib/parsers/csv.js';
-import { parseAndNormalize } from '../lib/parsers/autoDetect.js';
+import { parseAndNormalize, sourceToMigrateSlug, sourceToHumanLabel } from '../lib/parsers/autoDetect.js';
 import { parseQboJournalEntries } from '../lib/parsers/qboJournal.js';
 import { parseXeroJournalEntries } from '../lib/parsers/xeroJournal.js';
+import { parseZohoJournalEntries } from '../lib/parsers/zohoJournal.js';
+import { parseWaveJournalEntries } from '../lib/parsers/waveJournal.js';
 import {
   detectImbalance,
   detectDuplicates,
@@ -55,23 +57,32 @@ export function compareBooksToHellobooks(args: CompareBooksToHellobooksArgs) {
 
   // Re-parse the raw shape to access parser issues for the schema bridge —
   // parseAndNormalize returns the normalised shape only.
-  const flags: DetectionFlag[] = [];
-  if (result.source === 'QBO') {
-    const raw = parseQboJournalEntries({ columns, rows });
-    flags.push(
-      ...detectImbalance(result.journals),
-      ...detectDuplicates(result.journals),
-      ...detectRoundNumber(result.journals),
-      ...schemaFlagsFromJournals(raw.journals, (j) => j.journalNumber),
-    );
-  } else {
-    const raw = parseXeroJournalEntries({ columns, rows });
-    flags.push(
-      ...detectImbalance(result.journals),
-      ...detectDuplicates(result.journals),
-      ...detectRoundNumber(result.journals),
-      ...schemaFlagsFromJournals(raw.journals, (j) => j.groupKey, (j) => j.reference ?? j.narration),
-    );
+  const flags: DetectionFlag[] = [
+    ...detectImbalance(result.journals),
+    ...detectDuplicates(result.journals),
+    ...detectRoundNumber(result.journals),
+  ];
+  switch (result.source) {
+    case 'QBO': {
+      const raw = parseQboJournalEntries({ columns, rows });
+      flags.push(...schemaFlagsFromJournals(raw.journals, (j) => j.journalNumber));
+      break;
+    }
+    case 'XERO': {
+      const raw = parseXeroJournalEntries({ columns, rows });
+      flags.push(...schemaFlagsFromJournals(raw.journals, (j) => j.groupKey, (j) => j.reference ?? j.narration));
+      break;
+    }
+    case 'ZOHO': {
+      const raw = parseZohoJournalEntries({ columns, rows });
+      flags.push(...schemaFlagsFromJournals(raw.journals, (j) => j.journalNumber, (j) => j.reference ?? j.notes));
+      break;
+    }
+    case 'WAVE': {
+      const raw = parseWaveJournalEntries({ columns, rows });
+      flags.push(...schemaFlagsFromJournals(raw.journals, (j) => j.journalNumber, (j) => j.reference ?? j.notes));
+      break;
+    }
   }
 
   const phaseMap = buildPhaseMap(flags);
@@ -83,7 +94,7 @@ export function compareBooksToHellobooks(args: CompareBooksToHellobooksArgs) {
     flags,
   });
 
-  const migrateSlug = result.source === 'XERO' ? 'xero' : 'quickbooks';
+  const migrateSlug = sourceToMigrateSlug(result.source);
   return {
     status: 'ok' as const,
     source: result.source,
@@ -94,7 +105,7 @@ export function compareBooksToHellobooks(args: CompareBooksToHellobooksArgs) {
     },
     comparison: {
       yourBooks: {
-        source: result.source === 'XERO' ? 'Xero' : 'QuickBooks Online',
+        source: sourceToHumanLabel(result.source),
         issuesFound: flags.length,
         byPhase: phaseMap,
       },
@@ -111,7 +122,7 @@ export function compareBooksToHellobooks(args: CompareBooksToHellobooksArgs) {
       poweredBy: 'HelloBooks AI Agent',
       upgradeCta: `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
-      note: `Found ${flags.length} issue${flags.length === 1 ? '' : 's'} in your ${result.source === 'XERO' ? 'Xero' : 'QBO'} books. HelloBooks's paid product fixes them in bulk and migrates your books in one click.`,
+      note: `Found ${flags.length} issue${flags.length === 1 ? '' : 's'} in your ${sourceToHumanLabel(result.source)} books. HelloBooks's paid product fixes them in bulk and migrates your books in one click.`,
     },
   };
 }
