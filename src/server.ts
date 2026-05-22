@@ -53,11 +53,13 @@ import { analyzeTrialBalance, analyzeTrialBalanceSchema } from './tools/analyzeT
 export { analyzeTrialBalance } from './tools/analyzeTrialBalance.js';
 import { analyzeProfitLoss, analyzeProfitLossSchema } from './tools/analyzeProfitLoss.js';
 export { analyzeProfitLoss } from './tools/analyzeProfitLoss.js';
+import { analyzeBalanceSheet, analyzeBalanceSheetSchema } from './tools/analyzeBalanceSheet.js';
+export { analyzeBalanceSheet } from './tools/analyzeBalanceSheet.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '1.3.0';
+const SERVER_VERSION = '1.4.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -239,6 +241,13 @@ export function createServer(): McpServer {
     'Take a Profit & Loss / Income Statement CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected from section names) and run three checks: (1) pnl.subtotal_mismatch — each "Total Section" subtotal equals the sum of its preceding line items (catches missing or duplicated rows); (2) pnl.negative_expense — flags expense-section line items with negative amounts (usually sign-flips or refunds posted to the wrong side); (3) pnl.margin_red_flag — gross-profit margin < 5% or > 95%, or negative total revenue. Input is raw CSV text of a P&L report (Reports → Profit and Loss in QBO / Xero / Zoho / Wave). Max 5,000 rows; max 5 MB. Returns flags with severity, a summary with totalRevenue / totalCogs / grossProfit / grossMarginPct / netIncome (when detected), and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes a P&L and asks "does my P&L look right?", "any sign errors?", "what is my gross margin?", or "anything suspicious in my income statement?". For period-over-period comparison use analyze_journal_variance with two periods of journal-entry data; this tool is single-period only.',
     analyzeProfitLossSchema,
     async (args) => asJsonContent(analyzeProfitLoss(args)),
+  );
+
+  server.tool(
+    'analyze_balance_sheet',
+    'Take a Balance Sheet CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected) and run three checks: (1) bs.equation_broken — the fundamental accounting equation Assets = Liabilities + Equity does not hold (every downstream ratio analysis is invalid until fixed); (2) bs.negative_asset — Cash / AR / Inventory line items with negative balances (reconciliation error signal); (3) bs.negative_equity — Total Equity < 0 (insolvency signal). Input is raw CSV text of a Balance Sheet (Reports → Balance Sheet in QBO / Xero / Zoho / Wave). Max 5,000 rows; max 5 MB. Returns flags with severity, totals (totalAssets, totalLiabilities, totalEquity, equationBalances boolean), and a shareable URL. Use this when a user pastes a Balance Sheet and asks "does my balance sheet balance?", "is the accounting equation satisfied?", or "is my company solvent on paper?". A Balance Sheet that fails Assets = Liabilities + Equity invalidates every downstream financial-ratio analysis — this is the single most important check for any BS.',
+    analyzeBalanceSheetSchema,
+    async (args) => asJsonContent(analyzeBalanceSheet(args)),
   );
 
   server.tool(
