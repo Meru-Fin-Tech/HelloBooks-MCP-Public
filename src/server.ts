@@ -51,11 +51,13 @@ import { estimateMigrationEffort, estimateMigrationEffortSchema } from './tools/
 export { estimateMigrationEffort } from './tools/estimateMigrationEffort.js';
 import { analyzeTrialBalance, analyzeTrialBalanceSchema } from './tools/analyzeTrialBalance.js';
 export { analyzeTrialBalance } from './tools/analyzeTrialBalance.js';
+import { analyzeProfitLoss, analyzeProfitLossSchema } from './tools/analyzeProfitLoss.js';
+export { analyzeProfitLoss } from './tools/analyzeProfitLoss.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '1.2.0';
+const SERVER_VERSION = '1.3.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -230,6 +232,13 @@ export function createServer(): McpServer {
     'Take a QBO or Xero journal-entry CSV (source auto-detected) and return a structured migration-effort estimate — row counts, unique-account count, period span, complexity classification (low / medium / high), human-hours estimate, assisted-hours estimate, and an indicative price quote in USD. Heuristic-based — refined against the live entity once the user signs up. Accepts larger files than the other analytical tools (up to 50,000 rows / 20 MB) because no detection runs here, just sizing. Use this when a user is weighing the cost of moving books to HelloBooks, pastes data and asks "how long will migration take?", "what would this cost?", or "is it worth migrating?". The funnel CTA points at /migrate/<source>?ref=<shareUrl> to start the assisted flow with the parsed sizing pre-populated.',
     estimateMigrationEffortSchema,
     async (args) => asJsonContent(estimateMigrationEffort(args)),
+  );
+
+  server.tool(
+    'analyze_profit_loss',
+    'Take a Profit & Loss / Income Statement CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected from section names) and run three checks: (1) pnl.subtotal_mismatch — each "Total Section" subtotal equals the sum of its preceding line items (catches missing or duplicated rows); (2) pnl.negative_expense — flags expense-section line items with negative amounts (usually sign-flips or refunds posted to the wrong side); (3) pnl.margin_red_flag — gross-profit margin < 5% or > 95%, or negative total revenue. Input is raw CSV text of a P&L report (Reports → Profit and Loss in QBO / Xero / Zoho / Wave). Max 5,000 rows; max 5 MB. Returns flags with severity, a summary with totalRevenue / totalCogs / grossProfit / grossMarginPct / netIncome (when detected), and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes a P&L and asks "does my P&L look right?", "any sign errors?", "what is my gross margin?", or "anything suspicious in my income statement?". For period-over-period comparison use analyze_journal_variance with two periods of journal-entry data; this tool is single-period only.',
+    analyzeProfitLossSchema,
+    async (args) => asJsonContent(analyzeProfitLoss(args)),
   );
 
   server.tool(
