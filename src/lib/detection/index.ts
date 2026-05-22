@@ -21,3 +21,4 @@ export { detectRoundNumber } from './roundNumber.js';
 export { schemaFlagsFromJournals } from './schemaIssues.js';
 export { detectVariance } from './variance.js';
 export { detectTbImbalance, detectTbWrongSign, detectTbRoundBalance } from './trialBalanceChecks.js';
+export { detectPnlSubtotalMismatch, detectPnlNegativeExpense, detectPnlMarginRedFlag } from './profitLossChecks.js';
