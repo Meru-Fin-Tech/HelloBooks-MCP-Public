@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { listPlans } from '../src/tools/listPlans.js';
 import { listCreditPacks } from '../src/tools/listCreditPacks.js';
+import { listVideos } from '../src/tools/listVideos.js';
 import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
@@ -100,6 +101,36 @@ test('list_credit_packs country filter narrows prices to that market', () => {
   // US Boost is the canonical $4.99 list price
   const usBoost = listCreditPacks({ country: 'US', id: 'boost' });
   assert.equal(usBoost.creditPacks[0].prices[0].price, 4.99);
+});
+
+test('list_videos returns the curated catalog plus the channel link', () => {
+  const r = listVideos({});
+  assert.ok(r.count >= 4);
+  assert.equal(r.videos.length, r.count);
+  assert.equal(r.channel.url, 'https://www.youtube.com/@hellobooksai');
+  for (const v of r.videos) {
+    assert.ok(v.id.length > 0);
+    assert.ok(v.watchUrl.includes(v.id));
+    assert.ok(v.embedUrl.includes(v.id));
+    assert.ok(v.thumbnailUrl.includes(v.id));
+  }
+});
+
+test('list_videos category filter restricts to one category', () => {
+  const r = listVideos({ category: 'features' });
+  assert.ok(r.count > 0);
+  for (const v of r.videos) assert.equal(v.category, 'features');
+});
+
+test('list_videos featuredOnly drops non-featured videos', () => {
+  const r = listVideos({ featuredOnly: true });
+  assert.ok(r.count > 0);
+  for (const v of r.videos) assert.equal(v.featured, true);
+});
+
+test('list_videos query matches title + description', () => {
+  const r = listVideos({ query: 'demo' });
+  assert.ok(r.count > 0);
 });
 
 test('list_integrations filters by category + country', () => {
