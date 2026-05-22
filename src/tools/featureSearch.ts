@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PLANS } from '../data/plans.js';
+import { getPlans } from '../pricingFeed.js';
 import { INTEGRATIONS } from '../data/integrations.js';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
 import { COMPETITORS } from '../data/competitors.js';
@@ -106,7 +106,7 @@ function filterTerms(terms: string[], stop: Set<string>): string[] {
 
 function searchPlans(terms: string[]): FeatureSearchHit[] {
   const hits: FeatureSearchHit[] = [];
-  for (const plan of PLANS) {
+  for (const plan of getPlans()) {
     for (const f of plan.features) {
       const s = score(f, terms);
       if (s <= 0) continue;

@@ -15,6 +15,18 @@ import { listFeatures } from '../src/tools/listFeatures.js';
 import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 import { listArticles } from '../src/tools/listArticles.js';
 import { ARTICLES } from '../src/data/articles.js';
+import {
+  feedToPlans,
+  feedToCreditPacks,
+  getPricingMeta,
+  __resetPricingCacheForTests,
+  type PricingFeed,
+} from '../src/pricingFeed.js';
+
+// Pin pricing to the baked catalog for deterministic, offline tests.
+// (pricingFeed reads this env var lazily, so setting it here — before any
+// test() callback runs — disables the live fetch for the whole suite.)
+process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
 
 test('list_plans returns all 5 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
@@ -101,6 +113,106 @@ test('list_credit_packs country filter narrows prices to that market', () => {
   // US Boost is the canonical $4.99 list price
   const usBoost = listCreditPacks({ country: 'US', id: 'boost' });
   assert.equal(usBoost.creditPacks[0].prices[0].price, 4.99);
+});
+
+// --- pricing federation ------------------------------------------------------
+
+const FEED_FIXTURE: PricingFeed = {
+  tiers: [
+    {
+      id: 'pro',
+      currency: 'USD',
+      monthlyPrice: 7.77,
+      annualPrice: 77,
+      anchorMonthlyPrice: 14.99,
+      features: ['Feed-sourced Pro feature'],
+      limits: { perClientPrice: 0 },
+    },
+    {
+      id: 'cpa',
+      currency: 'USD',
+      monthlyPrice: 55.55,
+      annualPrice: 555,
+      anchorMonthlyPrice: 0,
+      features: ['Feed-sourced CPA feature'],
+      limits: { perClientPrice: 3.33 },
+    },
+  ],
+  addOns: [{ id: 'boost', currency: 'USD', price: 3.33 }],
+  regions: [
+    {
+      region: 'US',
+      tiers: [
+        {
+          id: 'pro',
+          currency: 'USD',
+          monthlyPrice: 7.77,
+          annualPrice: 77,
+          anchorMonthlyPrice: 14.99,
+          features: ['Feed-sourced Pro feature'],
+          limits: { perClientPrice: 0 },
+        },
+        {
+          id: 'cpa',
+          currency: 'USD',
+          monthlyPrice: 55.55,
+          annualPrice: 555,
+          anchorMonthlyPrice: 0,
+          features: ['Feed-sourced CPA feature'],
+          limits: { perClientPrice: 3.33 },
+        },
+      ],
+      addOns: [{ id: 'boost', currency: 'USD', price: 3.33 }],
+    },
+  ],
+  updatedAt: '2026-05-22T00:00:00.000Z',
+};
+
+test('getPricingMeta reports static-fallback when the feed is disabled', () => {
+  __resetPricingCacheForTests();
+  const meta = getPricingMeta();
+  assert.equal(meta.dataSource, 'static-fallback');
+});
+
+test('feedToPlans overlays feed prices + features onto the baked catalog', () => {
+  const plans = feedToPlans(FEED_FIXTURE);
+  const pro = plans.find((p) => p.plan === 'pro');
+  assert.ok(pro);
+  // US price comes from the feed region
+  const us = pro.prices.find((pr) => pr.country === 'US');
+  assert.equal(us?.monthly, 7.77);
+  assert.equal(us?.symbol, '$');
+  // a region absent from the feed falls back to the baked price
+  const ca = pro.prices.find((pr) => pr.country === 'CA');
+  assert.equal(ca?.monthly, 12.99);
+  // features come from the feed
+  assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
+  // CPA carries the per-client price from feed limits
+  const cpaUs = plans.find((p) => p.plan === 'cpa')?.prices.find((pr) => pr.country === 'US');
+  assert.equal(cpaUs?.perClient, 3.33);
+});
+
+test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
+  const plans = feedToPlans(FEED_FIXTURE);
+  const warehouse = plans.find((p) => p.plan === 'warehouse-addon');
+  assert.ok(warehouse, 'warehouse-addon must survive the transform');
+  assert.equal(warehouse.prices[0].monthly, 9);
+  // free is absent from the fixture feed.tiers -> baked free returned untouched
+  const free = plans.find((p) => p.plan === 'free');
+  assert.equal(free?.monthlyAiCredits, 500);
+});
+
+test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
+  const packs = feedToCreditPacks(FEED_FIXTURE);
+  const boost = packs.find((p) => p.id === 'boost');
+  assert.ok(boost);
+  // US boost from the feed
+  assert.equal(boost.prices.find((pr) => pr.country === 'US')?.price, 3.33);
+  // CA boost not in the feed -> baked $... value retained
+  assert.equal(boost.prices.find((pr) => pr.country === 'CA')?.price, 6.49);
+  // power pack absent from the fixture -> all baked
+  const power = packs.find((p) => p.id === 'power');
+  assert.equal(power?.prices.find((pr) => pr.country === 'US')?.price, 12.99);
 });
 
 test('list_videos returns the curated catalog plus the channel link', () => {

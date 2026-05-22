@@ -35,10 +35,11 @@ import { listArticles, listArticlesSchema } from './tools/listArticles.js';
 export { listArticles } from './tools/listArticles.js';
 import { listVideos, listVideosSchema } from './tools/listVideos.js';
 export { listVideos } from './tools/listVideos.js';
+import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.5.0';
+const SERVER_VERSION = '0.6.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -63,6 +64,11 @@ export function createServer(): McpServer {
         '(server: hellotime-public).',
     },
   );
+
+  // Warm the pricing cache from the live feed. Fire-and-forget and self-
+  // contained: it never throws, and tools serve the baked catalog until it
+  // lands. See src/pricingFeed.ts.
+  void refreshPricingFromFeed();
 
   server.tool(
     'list_plans',

@@ -1,6 +1,6 @@
 {
   "name": "hellobooks-mcp-public",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Public read-only MCP server exposing HelloBooks plans, integrations, country support, compliance capabilities, competitor positioning, statutory compliance deadlines, local payment methods, feature catalog data, and published articles to AI agents.",
   "license": "MIT",
   "author": "HelloBooks <hello@hellobooks.ai>",
