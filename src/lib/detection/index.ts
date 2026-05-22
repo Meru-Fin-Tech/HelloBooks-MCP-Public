@@ -14,7 +14,7 @@ export type {
   NormalizedLine,
 } from './types.js';
 
-export { normalizeQboJournal, normalizeXeroJournal } from './normalize.js';
+export { normalizeQboJournal, normalizeXeroJournal, normalizeZohoJournal, normalizeWaveJournal } from './normalize.js';
 export { detectImbalance } from './imbalance.js';
 export { detectDuplicates } from './duplicates.js';
 export { detectRoundNumber } from './roundNumber.js';

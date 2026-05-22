@@ -15,7 +15,7 @@
 import { z } from 'zod';
 
 import { parseCsv } from '../lib/parsers/csv.js';
-import { parseAndNormalize } from '../lib/parsers/autoDetect.js';
+import { parseAndNormalize, sourceToMigrateSlug } from '../lib/parsers/autoDetect.js';
 import { detectVariance, type DetectionFlag } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
 
@@ -78,7 +78,7 @@ export function analyzeJournalVariance(args: AnalyzeJournalVarianceArgs) {
     flags,
   });
 
-  const migrateSlug = aResult.source === 'XERO' ? 'xero' : 'quickbooks';
+  const migrateSlug = sourceToMigrateSlug(aResult.source);
   return {
     status: 'ok' as const,
     source: aResult.source,

@@ -14,14 +14,63 @@
 import { normalizeHeader } from './fieldUtils.js';
 import { parseQboJournalEntries, type ParseResult as QboParseResult } from './qboJournal.js';
 import { parseXeroJournalEntries, type ParseResult as XeroParseResult } from './xeroJournal.js';
-import { normalizeQboJournal, normalizeXeroJournal, type NormalizedJournal } from '../detection/index.js';
+import { parseZohoJournalEntries, type ParseResult as ZohoParseResult } from './zohoJournal.js';
+import { parseWaveJournalEntries, type ParseResult as WaveParseResult } from './waveJournal.js';
+import {
+  normalizeQboJournal,
+  normalizeXeroJournal,
+  normalizeZohoJournal,
+  normalizeWaveJournal,
+  type NormalizedJournal,
+} from '../detection/index.js';
 
-export type DetectedSource = 'QBO' | 'XERO';
+export type DetectedSource = 'QBO' | 'XERO' | 'ZOHO' | 'WAVE';
 
+/** Map a detected source to the canonical `/migrate/<slug>` URL path. */
+export function sourceToMigrateSlug(source: DetectedSource): string {
+  switch (source) {
+    case 'QBO':  return 'quickbooks';
+    case 'XERO': return 'xero';
+    case 'ZOHO': return 'zoho';
+    case 'WAVE': return 'wave';
+  }
+}
+
+/** Human-readable label for the detected source — used in share-page UI. */
+export function sourceToHumanLabel(source: DetectedSource): string {
+  switch (source) {
+    case 'QBO':  return 'QuickBooks Online';
+    case 'XERO': return 'Xero';
+    case 'ZOHO': return 'Zoho Books';
+    case 'WAVE': return 'Wave';
+  }
+}
+
+/**
+ * Heuristic ordering — strongest disambiguator first:
+ *
+ *   1. WAVE — `transaction id` column is a Wave-only signature.
+ *   2. XERO — `narration`, `reference`, or `accountcode` are Xero idioms.
+ *   3. ZOHO — `journal date` (with a space) or `currency code` plus a Zoho
+ *      grouping field (`journal number`).
+ *   4. QBO  — generic `num` / `je no` / `journal no` / `journal number`
+ *      with no Xero/Zoho-specific signal.
+ *
+ * Returns null when none of the signatures match.
+ */
 export function detectSource(columns: string[]): DetectedSource | null {
   const set = new Set(columns.map(normalizeHeader));
+
+  if (set.has('transaction id')) {
+    return 'WAVE';
+  }
   if (set.has('narration') || set.has('reference') || set.has('accountcode') || set.has('account code')) {
     return 'XERO';
+  }
+  // Zoho distinguishing signal — "journal date" (space-separated) or
+  // "currency code" alongside a journal-number column.
+  if (set.has('journal date') || set.has('currency code')) {
+    return 'ZOHO';
   }
   if (set.has('num') || set.has('journal number') || set.has('journal no') || set.has('je no')) {
     return 'QBO';
@@ -42,18 +91,16 @@ export function parseAndNormalize(
 
   if (source === 'QBO') {
     const parsed: QboParseResult = parseQboJournalEntries({ columns, rows });
-    return {
-      source,
-      journals: parsed.journals.map(normalizeQboJournal),
-      totalRows: parsed.totalRows,
-      totalJournals: parsed.totalJournals,
-    };
+    return { source, journals: parsed.journals.map(normalizeQboJournal), totalRows: parsed.totalRows, totalJournals: parsed.totalJournals };
   }
-  const parsed: XeroParseResult = parseXeroJournalEntries({ columns, rows });
-  return {
-    source,
-    journals: parsed.journals.map(normalizeXeroJournal),
-    totalRows: parsed.totalRows,
-    totalJournals: parsed.totalJournals,
-  };
+  if (source === 'XERO') {
+    const parsed: XeroParseResult = parseXeroJournalEntries({ columns, rows });
+    return { source, journals: parsed.journals.map(normalizeXeroJournal), totalRows: parsed.totalRows, totalJournals: parsed.totalJournals };
+  }
+  if (source === 'ZOHO') {
+    const parsed: ZohoParseResult = parseZohoJournalEntries({ columns, rows });
+    return { source, journals: parsed.journals.map(normalizeZohoJournal), totalRows: parsed.totalRows, totalJournals: parsed.totalJournals };
+  }
+  const parsed: WaveParseResult = parseWaveJournalEntries({ columns, rows });
+  return { source, journals: parsed.journals.map(normalizeWaveJournal), totalRows: parsed.totalRows, totalJournals: parsed.totalJournals };
 }

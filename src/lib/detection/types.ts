@@ -53,8 +53,8 @@ export interface NormalizedLine {
 }
 
 export interface NormalizedJournal {
-  source: 'QBO' | 'XERO';
-  /** Stable per-journal identifier — journalNumber (QBO) or groupKey (Xero). */
+  source: 'QBO' | 'XERO' | 'ZOHO' | 'WAVE';
+  /** Stable per-journal identifier — journalNumber (QBO/Zoho/Wave) or groupKey (Xero). */
   id: string;
   /** Human-readable reference, if available. */
   reference: string | null;

@@ -8,6 +8,8 @@
 
 import type { ParsedJournal as QboParsedJournal, ParsedJournalLine as QboParsedLine } from '../parsers/qboJournal.js';
 import type { ParsedJournal as XeroParsedJournal, ParsedJournalLine as XeroParsedLine } from '../parsers/xeroJournal.js';
+import type { ParsedJournal as ZohoParsedJournal, ParsedJournalLine as ZohoParsedLine } from '../parsers/zohoJournal.js';
+import type { ParsedJournal as WaveParsedJournal, ParsedJournalLine as WaveParsedLine } from '../parsers/waveJournal.js';
 import type { NormalizedJournal, NormalizedLine } from './types.js';
 
 function normalizeQboLine(line: QboParsedLine): NormalizedLine {
@@ -52,6 +54,54 @@ export function normalizeXeroJournal(journal: XeroParsedJournal): NormalizedJour
     narration: journal.narration,
     date: journal.date,
     lines: journal.lines.map(normalizeXeroLine),
+    totalDebits: journal.totalDebits,
+    totalCredits: journal.totalCredits,
+    balanced: journal.balanced,
+  };
+}
+
+function normalizeZohoLine(line: ZohoParsedLine): NormalizedLine {
+  return {
+    rowIndex: line.rowIndex,
+    accountIdentifier: line.accountName,
+    debit: line.debit,
+    credit: line.credit,
+    memo: line.lineDesc ?? line.notes,
+  };
+}
+
+export function normalizeZohoJournal(journal: ZohoParsedJournal): NormalizedJournal {
+  return {
+    source: 'ZOHO',
+    id: journal.journalNumber,
+    reference: journal.reference ?? journal.journalNumber,
+    narration: journal.notes,
+    date: journal.date,
+    lines: journal.lines.map(normalizeZohoLine),
+    totalDebits: journal.totalDebits,
+    totalCredits: journal.totalCredits,
+    balanced: journal.balanced,
+  };
+}
+
+function normalizeWaveLine(line: WaveParsedLine): NormalizedLine {
+  return {
+    rowIndex: line.rowIndex,
+    accountIdentifier: line.accountName,
+    debit: line.debit,
+    credit: line.credit,
+    memo: line.lineDesc ?? line.notes,
+  };
+}
+
+export function normalizeWaveJournal(journal: WaveParsedJournal): NormalizedJournal {
+  return {
+    source: 'WAVE',
+    id: journal.journalNumber,
+    reference: journal.reference ?? journal.journalNumber,
+    narration: journal.notes,
+    date: journal.date,
+    lines: journal.lines.map(normalizeWaveLine),
     totalDebits: journal.totalDebits,
     totalCredits: journal.totalCredits,
     balanced: journal.balanced,
