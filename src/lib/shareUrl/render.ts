@@ -35,13 +35,15 @@ const SIGNUP_URL = 'https://hellobooks.ai/signup';
 const MIGRATE_BASE = 'https://hellobooks.ai/migrate';
 
 function migrateUrlForTool(tool: string): string {
-  if (tool.includes('Xero')) return `${MIGRATE_BASE}/xero`;
-  if (tool.includes('Zoho')) return `${MIGRATE_BASE}/zoho`;
-  if (tool.includes('Wave')) return `${MIGRATE_BASE}/wave`;
+  // URL paths match Web-Fire-hellobooks.ai/src/app/migrate/from-<source>/
+  // — using the wrong prefix (e.g. /migrate/xero) returns a 404.
+  if (tool.includes('Xero')) return `${MIGRATE_BASE}/from-xero`;
+  if (tool.includes('Zoho')) return `${MIGRATE_BASE}/from-zoho`;
+  if (tool.includes('Wave')) return `${MIGRATE_BASE}/from-wave`;
   // Default for QBO + cross-source tools (variance / compare / migration-estimate
   // pass through the slug embedded in their _branding.upgradeCta — when the
   // share page renders standalone we default to QBO as the most common source).
-  return `${MIGRATE_BASE}/quickbooks`;
+  return `${MIGRATE_BASE}/from-quickbooks`;
 }
 
 export interface RenderOptions {

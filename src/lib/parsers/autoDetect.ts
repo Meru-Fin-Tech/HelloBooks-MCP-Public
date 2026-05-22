@@ -26,13 +26,18 @@ import {
 
 export type DetectedSource = 'QBO' | 'XERO' | 'ZOHO' | 'WAVE';
 
-/** Map a detected source to the canonical `/migrate/<slug>` URL path. */
+/**
+ * Map a detected source to the canonical `/migrate/from-<slug>` URL path
+ * on hellobooks.ai. Web-Fire-hellobooks.ai uses the `from-` prefix on
+ * its migrate pages — see `src/app/migrate/from-quickbooks/` and
+ * `from-wave/`. Tools that omit the prefix will 404.
+ */
 export function sourceToMigrateSlug(source: DetectedSource): string {
   switch (source) {
-    case 'QBO':  return 'quickbooks';
-    case 'XERO': return 'xero';
-    case 'ZOHO': return 'zoho';
-    case 'WAVE': return 'wave';
+    case 'QBO':  return 'from-quickbooks';
+    case 'XERO': return 'from-xero';
+    case 'ZOHO': return 'from-zoho';
+    case 'WAVE': return 'from-wave';
   }
 }
 

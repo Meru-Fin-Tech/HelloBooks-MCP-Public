@@ -74,7 +74,7 @@ export function analyzeXeroJournalAnomalies(args: AnalyzeXeroJournalAnomaliesArg
     shareExpiresAt: share.expiresAt,
     _branding: {
       poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/xero?ref=${encodeURIComponent(share.shareUrl)}`,
+      upgradeCta: `https://hellobooks.ai/migrate/from-xero?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
       note: 'Free analysis. Sign up at hellobooks.ai for full Phase 3.0 anomaly detection with AI-narrated rationale and history-aware checks.',
     },

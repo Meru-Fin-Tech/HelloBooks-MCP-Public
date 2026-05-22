@@ -185,12 +185,12 @@ test('renderSharePage routes the migration CTA based on tool name', () => {
     samplePayload({ tool: 'analyzeXeroJournalCleanup' }),
     { shareUrl: 'https://example.test/r/AAAAAAAAAAAA' },
   );
-  assert.match(xeroHtml, /migrate\/xero/);
+  assert.match(xeroHtml, /migrate\/from-xero/);
   const qboHtml = renderSharePage(
     samplePayload({ tool: 'analyzeQboJournalCleanup' }),
     { shareUrl: 'https://example.test/r/AAAAAAAAAAAA' },
   );
-  assert.match(qboHtml, /migrate\/quickbooks/);
+  assert.match(qboHtml, /migrate\/from-quickbooks/);
 });
 
 test('renderSharePage escapes user-controlled strings to prevent XSS', () => {

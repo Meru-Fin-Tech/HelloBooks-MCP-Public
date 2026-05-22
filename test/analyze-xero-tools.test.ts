@@ -20,7 +20,7 @@ test('analyze_xero_journal_cleanup: two balanced journals → zero flags + share
   assert.equal(r.summary.totalJournals, 2);
   assert.equal(r.summary.totalFlags, 0);
   assert.match(r.shareUrl, /\/r\/[A-HJ-NP-Za-km-z2-9]{12}$/);
-  assert.match(r._branding.upgradeCta, /migrate\/xero/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-xero/);
 });
 
 test('analyze_xero_journal_cleanup: unbalanced journal surfaces IMBALANCE', () => {
@@ -102,7 +102,7 @@ test('analyze_xero_journal_anomalies: share URL routes to Xero migrate', () => {
   const r = analyzeXeroJournalAnomalies({ csvText: CSV_TWO_BALANCED });
   assert.equal(r.status, 'ok');
   if (r.status !== 'ok') return;
-  assert.match(r._branding.upgradeCta, /migrate\/xero/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-xero/);
 });
 
 test('analyze_xero_journal_anomalies: notice mentions paid-product gap', () => {

@@ -18,7 +18,7 @@ test('compare_books_to_hellobooks: Zoho input → migrate CTA routes to /migrate
   if (r.status !== 'ok') return;
   assert.equal(r.source, 'ZOHO');
   assert.equal(r.comparison.yourBooks.source, 'Zoho Books');
-  assert.match(r._branding.upgradeCta, /migrate\/zoho/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-zoho/);
 });
 
 test('compare_books_to_hellobooks: Wave input → migrate CTA routes to /migrate/wave', () => {
@@ -32,7 +32,7 @@ test('compare_books_to_hellobooks: Wave input → migrate CTA routes to /migrate
   if (r.status !== 'ok') return;
   assert.equal(r.source, 'WAVE');
   assert.equal(r.comparison.yourBooks.source, 'Wave');
-  assert.match(r._branding.upgradeCta, /migrate\/wave/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-wave/);
 });
 
 test('estimate_migration_effort: Zoho input sized + migrate CTA routes correctly', () => {
@@ -45,7 +45,7 @@ test('estimate_migration_effort: Zoho input sized + migrate CTA routes correctly
   assert.equal(r.status, 'ok');
   if (r.status !== 'ok') return;
   assert.equal(r.source, 'ZOHO');
-  assert.match(r._branding.upgradeCta, /migrate\/zoho/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-zoho/);
 });
 
 test('estimate_migration_effort: Wave input sized + migrate CTA routes correctly', () => {
@@ -58,7 +58,7 @@ test('estimate_migration_effort: Wave input sized + migrate CTA routes correctly
   assert.equal(r.status, 'ok');
   if (r.status !== 'ok') return;
   assert.equal(r.source, 'WAVE');
-  assert.match(r._branding.upgradeCta, /migrate\/wave/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-wave/);
 });
 
 test('analyze_journal_variance: Zoho two-period comparison works', () => {
@@ -71,7 +71,7 @@ test('analyze_journal_variance: Zoho two-period comparison works', () => {
   const travel = r.flags.find((f) => f.data?.account === 'Travel');
   assert.ok(travel);
   assert.equal(travel!.severity, 'high');
-  assert.match(r._branding.upgradeCta, /migrate\/zoho/);
+  assert.match(r._branding.upgradeCta, /migrate\/from-zoho/);
 });
 
 test('analyze_journal_variance: rejects QBO + Zoho mixed sources', () => {
