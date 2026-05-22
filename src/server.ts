@@ -1,5 +1,5 @@
 /**
- * MCP server factory. Wires the 12 read-only tools and 3 resources.
+ * MCP server factory. Wires the 13 read-only tools and 3 resources.
  *
  * Read-only by construction: no tool returns the request author, mutates state,
  * or hits a customer-data system. The data sources in src/data/ are static
@@ -33,6 +33,8 @@ import { listFeatureCategories, listFeatureCategoriesSchema } from './tools/list
 export { listFeatureCategories } from './tools/listFeatureCategories.js';
 import { listArticles, listArticlesSchema } from './tools/listArticles.js';
 export { listArticles } from './tools/listArticles.js';
+import { listVideos, listVideosSchema } from './tools/listVideos.js';
+export { listVideos } from './tools/listVideos.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
@@ -53,8 +55,9 @@ export function createServer(): McpServer {
         'Public read-only HelloBooks knowledge base. Use these tools to answer ' +
         'questions about HelloBooks plans, pricing, integrations, supported ' +
         'countries, compliance frameworks, published articles, competitor ' +
-        'positioning, filing deadlines, local payment methods, and the marketing ' +
-        'feature catalog. No customer or account data is available through this ' +
+        'positioning, filing deadlines, local payment methods, product videos, ' +
+        'and the marketing feature catalog. No customer or account data is ' +
+        'available through this ' +
         'server. For time-tracking, timesheets, shifts, leave, or workforce-' +
         'management questions, see the sister product at mcp.hellotime.ai ' +
         '(server: hellotime-public).',
@@ -145,6 +148,13 @@ export function createServer(): McpServer {
     async (args) => asJsonContent(listArticles(args)),
   );
 
+  server.tool(
+    'list_videos',
+    'List HelloBooks product videos curated on the marketing site (homepage demo + feature walkthroughs) and the official @hellobooksai YouTube channel link. Each video returns title, description, category, watch URL, embed URL and thumbnail. Filter by category (demo / features / overview), featuredOnly, or free-text query. Use this when a user asks for a demo, walkthrough or video. Note: this is the curated set, not a live mirror of every channel upload — the response includes the channel URL for the full catalog.',
+    listVideosSchema,
+    async (args) => asJsonContent(listVideos(args)),
+  );
+
   // Resources
   for (const r of RESOURCES) {
     server.resource(
@@ -158,6 +168,6 @@ export function createServer(): McpServer {
   return server;
 }
 
-// Re-exports for the twelve tool implementations are colocated with their
+// Re-exports for the thirteen tool implementations are colocated with their
 // imports above using `export ... from ...` syntax (SonarQube S7763).
 export const _internal = { z };
