@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PLANS } from '../data/plans.js';
+import { getPlans, getPricingMeta } from '../pricingFeed.js';
 import type { CountryCode, PlanType } from '../data/plans.js';
 
 export const listPlansSchema = {
@@ -15,7 +15,7 @@ export interface ListPlansArgs {
 }
 
 export function listPlans(args: ListPlansArgs) {
-  let results = PLANS;
+  let results = getPlans();
   if (args.plan) results = results.filter((p) => p.plan === args.plan);
 
   if (args.country) {
@@ -28,7 +28,8 @@ export function listPlans(args: ListPlansArgs) {
 
   return {
     plans: results,
+    ...getPricingMeta(),
     source: 'https://hellobooks.ai/pricing',
-    note: 'Prices are list prices in local currency. Discounts and promotions may apply at checkout.',
+    note: 'Prices are list prices in local currency. Discounts and promotions may apply at checkout. `dataSource` is "live-feed" when prices were fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
   };
 }
