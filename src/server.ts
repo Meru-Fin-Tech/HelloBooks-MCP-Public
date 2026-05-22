@@ -35,11 +35,15 @@ import { listArticles, listArticlesSchema } from './tools/listArticles.js';
 export { listArticles } from './tools/listArticles.js';
 import { listVideos, listVideosSchema } from './tools/listVideos.js';
 export { listVideos } from './tools/listVideos.js';
+import { analyzeQboJournalCleanup, analyzeQboJournalCleanupSchema } from './tools/analyzeQboJournalCleanup.js';
+export { analyzeQboJournalCleanup } from './tools/analyzeQboJournalCleanup.js';
+import { analyzeQboJournalAnomalies, analyzeQboJournalAnomaliesSchema } from './tools/analyzeQboJournalAnomalies.js';
+export { analyzeQboJournalAnomalies } from './tools/analyzeQboJournalAnomalies.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.7.0';
+const SERVER_VERSION = '0.8.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -159,6 +163,26 @@ export function createServer(): McpServer {
     'List HelloBooks product videos curated on the marketing site (homepage demo + feature walkthroughs) and the official @hellobooksai YouTube channel link. Each video returns title, description, category, watch URL, embed URL and thumbnail. Filter by category (demo / features / overview), featuredOnly, or free-text query. Use this when a user asks for a demo, walkthrough or video. Note: this is the curated set, not a live mirror of every channel upload — the response includes the channel URL for the full catalog.',
     listVideosSchema,
     async (args) => asJsonContent(listVideos(args)),
+  );
+
+  // ─── Analytical tools — paste-and-analyse over competitor exports ──────
+  // These tools accept user-pasted CSV from QBO/Xero/etc. and return a
+  // structured flag list plus a branded share URL at agents.hellobooks.ai/r/*.
+  // The funnel CTA (`_branding.upgradeCta`) directs to migrate/<source>?ref=*
+  // so signups can be attributed back to the share slug.
+
+  server.tool(
+    'analyze_qbo_journal_cleanup',
+    'Scan a QuickBooks Online "Journal Entries" CSV export for cleanup issues — unbalanced journals (debits ≠ credits, with severity by deviation), duplicate journals (same date + same totals, likely posted twice), and schema problems (invalid dates, malformed amounts, missing accounts, missing journal numbers). Input is the raw CSV content the user pastes after exporting from QBO via Reports → Accountant → Journal → Export. Max 5,000 rows; max 5 MB. Returns a structured flag list with severity (high/medium/low), a roll-up summary by category and severity, parse diagnostics (column mapping + unmapped columns), and a shareable URL at agents.hellobooks.ai/r/{slug} (7-day TTL) that renders a branded analysis page suitable for sending to a CA or bookkeeper. Use this when a user pastes QBO journal data, asks "check my books", "find issues in my QBO journal", or "what is wrong with my journal entries". Each flag includes a `fixableInHellobooks` boolean — true means HelloBooks can resolve it automatically in the paid product.',
+    analyzeQboJournalCleanupSchema,
+    async (args) => asJsonContent(analyzeQboJournalCleanup(args)),
+  );
+
+  server.tool(
+    'analyze_qbo_journal_anomalies',
+    'Scan a QuickBooks Online "Journal Entries" CSV export for anomalies — currently round-number lines (debit or credit amounts that are exact multiples of $1,000, above a $1,000 materiality threshold). Round numbers are statistically rare in real bookkeeping and frequently indicate estimates, plugs, or fraud signals worth review. Input is raw CSV text from QBO Reports → Accountant → Journal. Max 5,000 rows; max 5 MB. Returns flagged lines with severity ($100K+ high, $10K+ medium, else low) and a shareable URL. Use this when a user pastes QBO data and asks "any anomalies?", "look for round numbers", or "anything suspicious". Tier-0 subset — HelloBooks Phase 3.0 anomaly detection in the paid product additionally catches GL outliers vs entity history, vendor-history mismatches, archived-vendor activity, and AI-narrated suspicious lines (which require the live HelloBooks account).',
+    analyzeQboJournalAnomaliesSchema,
+    async (args) => asJsonContent(analyzeQboJournalAnomalies(args)),
   );
 
   // Resources

@@ -18,3 +18,4 @@ export { normalizeQboJournal, normalizeXeroJournal } from './normalize.js';
 export { detectImbalance } from './imbalance.js';
 export { detectDuplicates } from './duplicates.js';
 export { detectRoundNumber } from './roundNumber.js';
+export { schemaFlagsFromJournals } from './schemaIssues.js';
