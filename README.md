@@ -37,6 +37,8 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_features` | Full 96-feature marketing catalog. Filter by `category`, `tier`, `status`, `marketedOnly`, or substring `query`. |
 | `list_feature_categories` | The 13 feature categories on the marketing site with per-category counts by status (live/beta/planned). |
 | `list_articles` | Published content on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
+| `list_tax_rates` | Statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant), UK VAT (20/5/zero/exempt), AU GST (10/GST-free), US state-administered summary, CA GST + HST (ON, Atlantic), SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/…), or `scheme` (standard/reduced/zero/exempt/composition/cess). Every entry carries an effective-from date and a `source` URL — confirm before quoting. |
+| `lookup_tax_rate` | Pick a single statutory rate by exact `id` (e.g. `IN-standard-18`) or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports"). Returns the matched rate, score, and source URL. |
 
 ## Resources
 
