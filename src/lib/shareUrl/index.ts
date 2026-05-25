@@ -49,12 +49,18 @@ export function mintShare(input: MintShareInput): ShareSlugResult {
     summary,
   };
   const { slug, expiresAt } = defaultShareStore.mint(payload);
-  const base = (input.publicBaseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const base = stripTrailingSlashes(input.publicBaseUrl ?? DEFAULT_BASE_URL);
   return {
     slug,
     shareUrl: `${base}/r/${slug}`,
     expiresAt: new Date(expiresAt).toISOString(),
   };
+}
+
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end--;
+  return value.slice(0, end);
 }
 
 function summarise(flags: DetectionFlag[]): SharePayload['summary'] {

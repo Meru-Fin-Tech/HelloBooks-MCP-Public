@@ -148,13 +148,10 @@ const KEY_SUBTOTAL_LABELS = new Set([
   'ebitda',
 ]);
 
-const TOTAL_PREFIX_RE = /^total\s+/i;
-const TOTAL_SUFFIX_RE = /\s+total$/i;
-
 function classifyRow(label: string, amount: number | null, indent: number): PnlRowKind {
   const n = label.trim().toLowerCase();
   if (KEY_SUBTOTAL_LABELS.has(n)) return 'KEY_SUBTOTAL';
-  if (TOTAL_PREFIX_RE.test(label) || TOTAL_SUFFIX_RE.test(label)) return 'SUBTOTAL';
+  if (hasTotalPrefix(label) || hasTotalSuffix(label)) return 'SUBTOTAL';
   // Section header — has no amount and no obvious math role.
   if (amount === null) return 'SECTION_HEADER';
   // Indented row with amount → line item under the most recent section.
@@ -165,10 +162,33 @@ function classifyRow(label: string, amount: number | null, indent: number): PnlR
 }
 
 function deriveSectionName(label: string): string {
-  return label
-    .replace(TOTAL_PREFIX_RE, '')
-    .replace(TOTAL_SUFFIX_RE, '')
-    .trim();
+  return stripTotalSuffix(stripTotalPrefix(label)).trim();
+}
+
+function hasTotalPrefix(label: string): boolean {
+  return label.length > 6 && label.slice(0, 5).toLowerCase() === 'total' && isWhitespace(label[5]);
+}
+
+function hasTotalSuffix(label: string): boolean {
+  return label.length > 6 && label.slice(-5).toLowerCase() === 'total' && isWhitespace(label[label.length - 6]);
+}
+
+function stripTotalPrefix(label: string): string {
+  if (!hasTotalPrefix(label)) return label;
+  let start = 5;
+  while (start < label.length && isWhitespace(label[start])) start++;
+  return label.slice(start);
+}
+
+function stripTotalSuffix(label: string): string {
+  if (!hasTotalSuffix(label)) return label;
+  let end = label.length - 5;
+  while (end > 0 && isWhitespace(label[end - 1])) end--;
+  return label.slice(0, end);
+}
+
+function isWhitespace(value: string | undefined): boolean {
+  return value !== undefined && value.trim() === '';
 }
 
 function deriveIndent(raw: string): number {

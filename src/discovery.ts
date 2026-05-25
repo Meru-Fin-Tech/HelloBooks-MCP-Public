@@ -44,7 +44,13 @@ const DEPLOY_TIME = new Date();
 
 export function getBaseUrl(): string {
   const raw = process.env.HELLOBOOKS_MCP_BASE_URL ?? DEFAULT_BASE_URL;
-  return raw.replace(/\/+$/, '');
+  return stripTrailingSlashes(raw);
+}
+
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end--;
+  return value.slice(0, end);
 }
 
 /** Returns the most-recent changelog entry date (YYYY-MM-DD) or deploy time. */
