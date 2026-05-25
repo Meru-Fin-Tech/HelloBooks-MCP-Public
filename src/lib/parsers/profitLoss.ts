@@ -170,7 +170,7 @@ function hasTotalPrefix(label: string): boolean {
 }
 
 function hasTotalSuffix(label: string): boolean {
-  return label.length > 6 && label.slice(-5).toLowerCase() === 'total' && isWhitespace(label[label.length - 6]);
+  return label.length > 6 && label.slice(-5).toLowerCase() === 'total' && isWhitespace(label.at(-6));
 }
 
 function stripTotalPrefix(label: string): string {
@@ -188,7 +188,7 @@ function stripTotalSuffix(label: string): string {
 }
 
 function isWhitespace(value: string | undefined): boolean {
-  return value !== undefined && value.trim() === '';
+  return value?.trim() === '';
 }
 
 function deriveIndent(raw: string): number {
