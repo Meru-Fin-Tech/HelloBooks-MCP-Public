@@ -55,11 +55,15 @@ import { analyzeProfitLoss, analyzeProfitLossSchema } from './tools/analyzeProfi
 export { analyzeProfitLoss } from './tools/analyzeProfitLoss.js';
 import { analyzeBalanceSheet, analyzeBalanceSheetSchema } from './tools/analyzeBalanceSheet.js';
 export { analyzeBalanceSheet } from './tools/analyzeBalanceSheet.js';
+import { listTaxRates, listTaxRatesSchema } from './tools/listTaxRates.js';
+export { listTaxRates } from './tools/listTaxRates.js';
+import { lookupTaxRate, lookupTaxRateSchema } from './tools/lookupTaxRate.js';
+export { lookupTaxRate } from './tools/lookupTaxRate.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '1.4.0';
+const SERVER_VERSION = '1.5.0';
 
 function asJsonContent(payload: unknown) {
   return {
@@ -248,6 +252,20 @@ export function createServer(): McpServer {
     'Take a Balance Sheet CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected) and run three checks: (1) bs.equation_broken — the fundamental accounting equation Assets = Liabilities + Equity does not hold (every downstream ratio analysis is invalid until fixed); (2) bs.negative_asset — Cash / AR / Inventory line items with negative balances (reconciliation error signal); (3) bs.negative_equity — Total Equity < 0 (insolvency signal). Input is raw CSV text of a Balance Sheet (Reports → Balance Sheet in QBO / Xero / Zoho / Wave). Max 5,000 rows; max 5 MB. Returns flags with severity, totals (totalAssets, totalLiabilities, totalEquity, equationBalances boolean), and a shareable URL. Use this when a user pastes a Balance Sheet and asks "does my balance sheet balance?", "is the accounting equation satisfied?", or "is my company solvent on paper?". A Balance Sheet that fails Assets = Liabilities + Equity invalidates every downstream financial-ratio analysis — this is the single most important check for any BS.',
     analyzeBalanceSheetSchema,
     async (args) => asJsonContent(analyzeBalanceSheet(args)),
+  );
+
+  server.tool(
+    'list_tax_rates',
+    'List statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant + compensation cess), UK VAT (20 / 5 / zero / exempt), AU GST (10 / GST-free), US sales-tax (state-administered summary, no federal rate), CA GST 5% + HST 13% ON / 15% Atlantic, SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/IGST/CGST-SGST/TDS/TCS), or `scheme` (standard / reduced / zero / exempt / composition / cess / state-summary). Every entry carries an effective-from date and an authoritative `source` URL (CBIC, gov.uk, ATO, CRA, IRAS, IRD, FTA, Tax Foundation) — agents should confirm the rate against the source before quoting figures to a user. Use this when a user asks "what is the GST rate on X?", "what VAT band does Y fall into?", or "what are the composition slabs in India?". This is the public statutory reference — for an org-specific tax assignment use the authenticated books_classify_event tool.',
+    listTaxRatesSchema,
+    async (args) => asJsonContent(listTaxRates(args)),
+  );
+
+  server.tool(
+    'lookup_tax_rate',
+    'Pick a single statutory tax-rate slab — either by exact `id` (e.g. `IN-standard-18`, `GB-zero-0`, `CA-hst-13-on`) for a deterministic lookup, or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports", "domestic fuel") for a fuzzy best-match. Returns the matched rate, the match score, and the authoritative `source` URL. Use this when a user asks "what slab does X fall into in India?" or "what VAT rate applies to children\'s car seats?". For broader exploration (all slabs in a country / all rates of one scheme), use list_tax_rates. No customer data — public statutory reference only.',
+    lookupTaxRateSchema,
+    async (args) => asJsonContent(lookupTaxRate(args)),
   );
 
   server.tool(
