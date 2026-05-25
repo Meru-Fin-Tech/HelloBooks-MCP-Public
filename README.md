@@ -90,6 +90,12 @@ scripts/
 Containerised — see `Dockerfile`. Designed to run behind a TLS-terminating load balancer.
 Set `PORT` and `HOST` via environment.
 
+Optional anonymous usage telemetry (Layer-2 server-side analytics) is sent to GA4 via
+the Measurement Protocol when `GA4_MEASUREMENT_ID` and `GA4_API_SECRET` are both set —
+see `.env.example` and `src/analytics.ts`. Leave them unset and the server runs with
+telemetry fully disabled. No customer data, request bodies, tool-argument values, or
+IP addresses are ever sent — only anonymous counts. See strategy doc 73.
+
 ```bash
 docker build -t hellobooks-mcp-public .
 docker run -p 8080:8080 hellobooks-mcp-public
