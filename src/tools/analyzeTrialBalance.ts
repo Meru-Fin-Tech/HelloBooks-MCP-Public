@@ -71,10 +71,14 @@ export function analyzeTrialBalance(args: AnalyzeTrialBalanceArgs) {
   const hasDebit = Object.values(parsed.columnMapping).includes('Debit');
   const hasCredit = Object.values(parsed.columnMapping).includes('Credit');
   if (!hasDebit || !hasCredit) {
+    const mappedColumns = Object.entries(parsed.columnMapping)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `${k}→${v}`)
+      .join(', ');
     return {
       status: 'error' as const,
       error: 'not_a_trial_balance',
-      message: `The CSV does not look like a Trial Balance — expected Debit and Credit columns. Mapped columns: ${Object.entries(parsed.columnMapping).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ')}. Try exporting Reports → Trial Balance from your accounting platform.`,
+      message: `The CSV does not look like a Trial Balance — expected Debit and Credit columns. Mapped columns: ${mappedColumns}. Try exporting Reports → Trial Balance from your accounting platform.`,
     };
   }
 

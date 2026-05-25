@@ -97,7 +97,7 @@ export function analyzeProfitLoss(args: AnalyzeProfitLossArgs) {
       totalRevenue: parsed.totals.totalRevenue,
       totalCogs: parsed.totals.totalCogs,
       grossProfit: parsed.totals.grossProfit,
-      grossMarginPct: grossMargin !== null ? Number((grossMargin * 100).toFixed(2)) : null,
+      grossMarginPct: grossMargin === null ? null : Number((grossMargin * 100).toFixed(2)),
       totalExpenses: parsed.totals.totalExpenses,
       operatingIncome: parsed.totals.operatingIncome,
       netIncome: parsed.totals.netIncome,
@@ -118,7 +118,7 @@ function profitLossBrandingNote(flagCount: number, netIncome: number | null): st
     return `Found ${flagCount} issue${flagCount === 1 ? '' : 's'} in this P&L — subtotal mismatches, negative-expense lines, or margin red flags. HelloBooks AI agents auto-resolve sign-flips and re-classify mis-categorised expenses.`;
   }
 
-  const netIncomeText = netIncome !== null ? `Net Income ${netIncome.toFixed(2)}.` : '';
+  const netIncomeText = netIncome === null ? '' : `Net Income ${netIncome.toFixed(2)}.`;
   return `P&L parsed cleanly. ${netIncomeText} No subtotal-mismatch or sign anomalies detected. Variance vs prior period needs analyze_journal_variance with two periods.`;
 }
 

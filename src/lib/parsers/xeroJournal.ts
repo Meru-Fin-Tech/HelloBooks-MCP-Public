@@ -166,8 +166,8 @@ function parseDebitCredit(rowIndex: number, mapped: Record<string, unknown>): De
 
   const debitRaw = mapped.Debit;
   const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
+  const debit = debitRaw === undefined ? null : parseDecimal(debitRaw);
+  const credit = creditRaw === undefined ? null : parseDecimal(creditRaw);
 
   if (debitRaw !== undefined && debit === null) {
     issues.push({

@@ -113,8 +113,8 @@ export function parseExplicitDebitCredit(
   const issues: JournalParseIssue[] = [];
   const debitRaw = mapped.Debit;
   const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
+  const debit = debitRaw === undefined ? null : parseDecimal(debitRaw);
+  const credit = creditRaw === undefined ? null : parseDecimal(creditRaw);
 
   if (debitRaw !== undefined && debit === null) {
     issues.push({ code: 'INVALID_DECIMAL', message: messages.invalidDebit(debitRaw), field: 'Debit', rowIndex });

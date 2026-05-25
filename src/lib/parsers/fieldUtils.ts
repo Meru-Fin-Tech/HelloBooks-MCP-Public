@@ -54,22 +54,7 @@ export function parseDecimal(v: unknown): number | null {
   //      US export convention, where multi-thousand values always carry a
   //      comma. A misread here on truly European input is acceptable
   //      because QBO US is the dominant source.
-  const lastComma = s.lastIndexOf(',');
-  const lastDot = s.lastIndexOf('.');
-  if (lastComma !== -1 && lastDot !== -1) {
-    if (lastComma > lastDot) {
-      s = s.replaceAll('.', '').replace(',', '.');
-    } else {
-      s = s.replaceAll(',', '');
-    }
-  } else if (lastComma !== -1) {
-    const digitsAfterComma = s.length - lastComma - 1;
-    if (digitsAfterComma === 3) {
-      s = s.replaceAll(',', '');
-    } else {
-      s = s.replace(',', '.');
-    }
-  }
+  s = normalizeDecimalSeparators(s);
 
   if (s.startsWith('-')) {
     negative = !negative;
@@ -82,6 +67,25 @@ export function parseDecimal(v: unknown): number | null {
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   return negative ? -n : n;
+}
+
+function normalizeDecimalSeparators(s: string): string {
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  if (lastComma !== -1 && lastDot !== -1) {
+    if (lastComma > lastDot) {
+      return s.replaceAll('.', '').replace(',', '.');
+    }
+    return s.replaceAll(',', '');
+  }
+  if (lastComma !== -1) {
+    const digitsAfterComma = s.length - lastComma - 1;
+    if (digitsAfterComma === 3) {
+      return s.replaceAll(',', '');
+    }
+    return s.replace(',', '.');
+  }
+  return s;
 }
 
 export type DatePreference = 'auto' | 'mdy' | 'dmy';

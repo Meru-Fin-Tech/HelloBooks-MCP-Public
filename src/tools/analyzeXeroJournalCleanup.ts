@@ -17,19 +17,13 @@
 
 import { z } from 'zod';
 
-import { parseCsv } from '../lib/parsers/csv.js';
 import { parseXeroJournalEntries } from '../lib/parsers/xeroJournal.js';
 import {
   normalizeXeroJournal,
-  detectImbalance,
-  detectDuplicates,
   schemaFlagsFromJournals,
-  type DetectionFlag,
 } from '../lib/detection/index.js';
-import { mintShare } from '../lib/shareUrl/index.js';
-import { branding, emptyCsvError, journalSummary } from './toolUtils.js';
+import { analyzeJournalCleanup } from './journalCleanupUtils.js';
 
-const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 export const analyzeXeroJournalCleanupSchema = {
@@ -47,41 +41,13 @@ export interface AnalyzeXeroJournalCleanupArgs {
 }
 
 export function analyzeXeroJournalCleanup(args: AnalyzeXeroJournalCleanupArgs) {
-  const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
-
-  if (columns.length === 0) {
-    return emptyCsvError('The pasted text did not parse as CSV. Make sure you exported the Xero Manual Journals report as CSV (not PDF) and pasted the full content including the header row.');
-  }
-
-  const parsed = parseXeroJournalEntries({ columns, rows });
-  const normalised = parsed.journals.map(normalizeXeroJournal);
-
-  const flags: DetectionFlag[] = [
-    ...detectImbalance(normalised),
-    ...detectDuplicates(normalised),
-    ...schemaFlagsFromJournals(parsed.journals, (j) => j.groupKey, (j) => j.reference ?? j.narration),
-  ];
-
-  const share = mintShare({
+  return analyzeJournalCleanup(args, {
     tool: 'analyzeXeroJournalCleanup',
-    sourceLabel: args.fileName ?? 'Xero — Manual Journals',
-    inputSummary: { totalRows: parsed.totalRows, totalJournals: parsed.totalJournals },
-    flags,
+    defaultSourceLabel: 'Xero — Manual Journals',
+    migrateSlug: 'from-xero',
+    emptyCsvMessage: 'The pasted text did not parse as CSV. Make sure you exported the Xero Manual Journals report as CSV (not PDF) and pasted the full content including the header row.',
+    parse: parseXeroJournalEntries,
+    normalize: normalizeXeroJournal,
+    schemaFlags: (journals) => schemaFlagsFromJournals(journals, (j) => j.groupKey, (j) => j.reference ?? j.narration),
   });
-
-  return {
-    status: 'ok' as const,
-    summary: journalSummary(parsed.totalRows, parsed.totalJournals, flags),
-    flags,
-    parseDiagnostics: {
-      columnMapping: parsed.columnMapping,
-      unmappedColumns: parsed.unmappedColumns,
-    },
-    shareUrl: share.shareUrl,
-    shareExpiresAt: share.expiresAt,
-    _branding: branding(
-      `https://hellobooks.ai/migrate/from-xero?ref=${encodeURIComponent(share.shareUrl)}`,
-      'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
-    ),
-  };
 }

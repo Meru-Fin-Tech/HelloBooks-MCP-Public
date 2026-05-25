@@ -16,19 +16,13 @@
 
 import { z } from 'zod';
 
-import { parseCsv } from '../lib/parsers/csv.js';
 import { parseQboJournalEntries } from '../lib/parsers/qboJournal.js';
 import {
   normalizeQboJournal,
-  detectImbalance,
-  detectDuplicates,
   schemaFlagsFromJournals,
-  type DetectionFlag,
 } from '../lib/detection/index.js';
-import { mintShare } from '../lib/shareUrl/index.js';
-import { branding, emptyCsvError, journalSummary } from './toolUtils.js';
+import { analyzeJournalCleanup } from './journalCleanupUtils.js';
 
-const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 export const analyzeQboJournalCleanupSchema = {
@@ -46,41 +40,13 @@ export interface AnalyzeQboJournalCleanupArgs {
 }
 
 export function analyzeQboJournalCleanup(args: AnalyzeQboJournalCleanupArgs) {
-  const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
-
-  if (columns.length === 0) {
-    return emptyCsvError('The pasted text did not parse as CSV. Make sure you exported the QBO Journal Entries report as CSV (not PDF or Excel) and pasted the full content including the header row.');
-  }
-
-  const parsed = parseQboJournalEntries({ columns, rows });
-  const normalised = parsed.journals.map(normalizeQboJournal);
-
-  const flags: DetectionFlag[] = [
-    ...detectImbalance(normalised),
-    ...detectDuplicates(normalised),
-    ...schemaFlagsFromJournals(parsed.journals, (j) => j.journalNumber),
-  ];
-
-  const share = mintShare({
+  return analyzeJournalCleanup(args, {
     tool: 'analyzeQboJournalCleanup',
-    sourceLabel: args.fileName ?? 'QuickBooks Online — Journal Entries',
-    inputSummary: { totalRows: parsed.totalRows, totalJournals: parsed.totalJournals },
-    flags,
+    defaultSourceLabel: 'QuickBooks Online — Journal Entries',
+    migrateSlug: 'from-quickbooks',
+    emptyCsvMessage: 'The pasted text did not parse as CSV. Make sure you exported the QBO Journal Entries report as CSV (not PDF or Excel) and pasted the full content including the header row.',
+    parse: parseQboJournalEntries,
+    normalize: normalizeQboJournal,
+    schemaFlags: (journals) => schemaFlagsFromJournals(journals, (j) => j.journalNumber),
   });
-
-  return {
-    status: 'ok' as const,
-    summary: journalSummary(parsed.totalRows, parsed.totalJournals, flags),
-    flags,
-    parseDiagnostics: {
-      columnMapping: parsed.columnMapping,
-      unmappedColumns: parsed.unmappedColumns,
-    },
-    shareUrl: share.shareUrl,
-    shareExpiresAt: share.expiresAt,
-    _branding: branding(
-      `https://hellobooks.ai/migrate/from-quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
-      'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
-    ),
-  };
 }

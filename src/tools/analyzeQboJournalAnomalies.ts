@@ -17,20 +17,11 @@
  * exclusive to the authenticated MCP / paid product.
  */
 
-import { parseCsv } from '../lib/parsers/csv.js';
 import { parseQboJournalEntries } from '../lib/parsers/qboJournal.js';
-import {
-  normalizeQboJournal,
-  detectRoundNumber,
-  type DetectionFlag,
-} from '../lib/detection/index.js';
-import { mintShare } from '../lib/shareUrl/index.js';
-import { branding, emptyCsvError, journalSummary } from './toolUtils.js';
-import { analyzeQboJournalCleanupSchema } from './analyzeQboJournalCleanup.js';
+import { normalizeQboJournal } from '../lib/detection/index.js';
+import { analyzeJournalAnomalies } from './journalAnomaliesUtils.js';
+export { analyzeQboJournalCleanupSchema as analyzeQboJournalAnomaliesSchema } from './analyzeQboJournalCleanup.js';
 
-const MAX_ROWS = 5_000;
-
-export const analyzeQboJournalAnomaliesSchema = analyzeQboJournalCleanupSchema;
 
 export interface AnalyzeQboJournalAnomaliesArgs {
   csvText: string;
@@ -38,34 +29,12 @@ export interface AnalyzeQboJournalAnomaliesArgs {
 }
 
 export function analyzeQboJournalAnomalies(args: AnalyzeQboJournalAnomaliesArgs) {
-  const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
-
-  if (columns.length === 0) {
-    return emptyCsvError('The pasted text did not parse as CSV. Make sure you exported the QBO Journal Entries report as CSV (not PDF or Excel) and pasted the full content including the header row.');
-  }
-
-  const parsed = parseQboJournalEntries({ columns, rows });
-  const normalised = parsed.journals.map(normalizeQboJournal);
-
-  const flags: DetectionFlag[] = [...detectRoundNumber(normalised)];
-
-  const share = mintShare({
+  return analyzeJournalAnomalies(args, {
     tool: 'analyzeQboJournalAnomalies',
-    sourceLabel: args.fileName ?? 'QuickBooks Online — Journal Entries',
-    inputSummary: { totalRows: parsed.totalRows, totalJournals: parsed.totalJournals },
-    flags,
+    defaultSourceLabel: 'QuickBooks Online — Journal Entries',
+    migrateSlug: 'from-quickbooks',
+    emptyCsvMessage: 'The pasted text did not parse as CSV. Make sure you exported the QBO Journal Entries report as CSV (not PDF or Excel) and pasted the full content including the header row.',
+    parse: parseQboJournalEntries,
+    normalize: normalizeQboJournal,
   });
-
-  return {
-    status: 'ok' as const,
-    summary: journalSummary(parsed.totalRows, parsed.totalJournals, flags),
-    flags,
-    notice: 'This is a Tier-0 subset (round-number detection only). HelloBooks Phase 3.0 anomaly detection in the paid product additionally catches GL outliers vs entity history, vendor-history mismatches, archived-vendor activity, and AI-narrated suspicious lines — none of which can run on pasted-only data.',
-    shareUrl: share.shareUrl,
-    shareExpiresAt: share.expiresAt,
-    _branding: branding(
-      `https://hellobooks.ai/migrate/from-quickbooks?ref=${encodeURIComponent(share.shareUrl)}`,
-      'Free analysis. Sign up at hellobooks.ai for full Phase 3.0 anomaly detection with AI-narrated rationale and history-aware checks.',
-    ),
-  };
 }

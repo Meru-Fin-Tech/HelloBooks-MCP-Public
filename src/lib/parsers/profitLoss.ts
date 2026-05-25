@@ -299,7 +299,7 @@ function parsePnlRow(
 
 function parseAmountCell(rawAmount: unknown): { amount: number | null; rawAmount: string | null; invalidAmount: boolean } {
   if (rawAmount === undefined || rawAmount === null || scalarToString(rawAmount).trim() === '') {
-    return { amount: null, rawAmount: rawAmount !== undefined ? scalarToString(rawAmount) : null, invalidAmount: false };
+    return { amount: null, rawAmount: rawAmount === undefined ? null : scalarToString(rawAmount), invalidAmount: false };
   }
   const amount = parseDecimal(rawAmount);
   return { amount, rawAmount: scalarToString(rawAmount), invalidAmount: amount === null };
@@ -340,13 +340,36 @@ function detectKeyTotals(rows: PnlRow[]): ParseResult['totals'] {
   const out = nullTotals();
   for (const row of rows) {
     if (row.amount === null) continue;
-    const label = row.label;
-    if (out.totalRevenue === null && REVENUE_RE.test(label)) out.totalRevenue = row.amount;
-    if (out.totalCogs === null && COGS_RE.test(label)) out.totalCogs = row.amount;
-    if (out.grossProfit === null && GROSS_PROFIT_RE.test(label)) out.grossProfit = row.amount;
-    if (out.totalExpenses === null && EXPENSES_RE.test(label)) out.totalExpenses = row.amount;
-    if (out.operatingIncome === null && OPERATING_RE.test(label)) out.operatingIncome = row.amount;
-    if (out.netIncome === null && NET_INCOME_RE.test(label)) out.netIncome = row.amount;
+    maybeSetTotalRevenue(out, row);
+    maybeSetTotalCogs(out, row);
+    maybeSetGrossProfit(out, row);
+    maybeSetTotalExpenses(out, row);
+    maybeSetOperatingIncome(out, row);
+    maybeSetNetIncome(out, row);
   }
   return out;
+}
+
+function maybeSetTotalRevenue(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.totalRevenue === null && REVENUE_RE.test(row.label)) out.totalRevenue = row.amount;
+}
+
+function maybeSetTotalCogs(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.totalCogs === null && COGS_RE.test(row.label)) out.totalCogs = row.amount;
+}
+
+function maybeSetGrossProfit(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.grossProfit === null && GROSS_PROFIT_RE.test(row.label)) out.grossProfit = row.amount;
+}
+
+function maybeSetTotalExpenses(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.totalExpenses === null && EXPENSES_RE.test(row.label)) out.totalExpenses = row.amount;
+}
+
+function maybeSetOperatingIncome(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.operatingIncome === null && OPERATING_RE.test(row.label)) out.operatingIncome = row.amount;
+}
+
+function maybeSetNetIncome(out: ParseResult['totals'], row: PnlRow): void {
+  if (out.netIncome === null && NET_INCOME_RE.test(row.label)) out.netIncome = row.amount;
 }

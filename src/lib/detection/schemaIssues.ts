@@ -67,7 +67,7 @@ function toFlag(
     code: `schema.${issue.code.toLowerCase()}`,
     severity,
     message: issue.message,
-    affectedRowIndices: issue.rowIndex !== undefined ? [issue.rowIndex] : [],
+    affectedRowIndices: issue.rowIndex === undefined ? [] : [issue.rowIndex],
     affectedJournalIds: [journalId],
     data: {
       field: issue.field,
@@ -95,8 +95,10 @@ export function schemaFlagsFromJournals<J extends SourceJournal<SourceLine>>(
   for (const journal of journals) {
     const id = getId(journal);
     const ref = getReference ? (getReference(journal) ?? id) : id;
-    flags.push(...issueFlags(journal.issues, id, ref));
-    flags.push(...lineIssueFlags(journal.lines, id, ref));
+    flags.push(
+      ...issueFlags(journal.issues, id, ref),
+      ...lineIssueFlags(journal.lines, id, ref),
+    );
   }
   return flags;
 }
