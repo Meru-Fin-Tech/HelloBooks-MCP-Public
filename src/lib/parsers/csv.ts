@@ -68,7 +68,7 @@ export function parseCsv(text: string, opts: ParseCsvOptions = {}): ParseCsvResu
 
 /** Strip a UTF-8 BOM if present. */
 function stripBom(s: string): string {
-  if (s.charCodeAt(0) === 0xfeff) return s.slice(1);
+  if (s.codePointAt(0) === 0xfeff) return s.slice(1);
   return s;
 }
 
@@ -85,51 +85,29 @@ function tokenize(text: string): string[][] {
   const n = text.length;
 
   while (i < n) {
-    const ch = text[i];
     if (inQuotes) {
-      if (ch === QUOTE) {
-        if (text[i + 1] === QUOTE) {
-          // Escaped quote inside quoted field.
-          cell += QUOTE;
-          i += 2;
-          continue;
-        }
-        inQuotes = false;
-        i++;
-        continue;
-      }
-      cell += ch;
-      i++;
+      const next = readQuotedChar(text, i, cell);
+      cell = next.cell;
+      inQuotes = next.inQuotes;
+      i = next.nextIndex;
       continue;
     }
 
-    // Outside quotes.
-    if (ch === QUOTE) {
+    const next = readUnquotedChar(text, i, cell);
+    if (next.action === 'startQuote') {
       inQuotes = true;
-      i++;
-      continue;
-    }
-    if (ch === COMMA) {
-      current.push(cell);
+    } else if (next.action === 'endCell') {
+      current.push(next.cell);
       cell = '';
-      i++;
-      continue;
-    }
-    if (ch === '\r') {
-      // Swallow \r so \r\n is treated as a single terminator.
-      i++;
-      continue;
-    }
-    if (ch === '\n') {
+    } else if (next.action === 'endRow') {
       current.push(cell);
       rows.push(current);
       current = [];
       cell = '';
-      i++;
-      continue;
+    } else {
+      cell = next.cell;
     }
-    cell += ch;
-    i++;
+    i = next.nextIndex;
   }
 
   // Flush final cell + row if the file does not end with a newline.
@@ -138,4 +116,32 @@ function tokenize(text: string): string[][] {
     rows.push(current);
   }
   return rows;
+}
+
+function readQuotedChar(
+  text: string,
+  index: number,
+  cell: string,
+): { cell: string; inQuotes: boolean; nextIndex: number } {
+  const ch = text[index];
+  if (ch !== QUOTE) {
+    return { cell: cell + ch, inQuotes: true, nextIndex: index + 1 };
+  }
+  if (text[index + 1] === QUOTE) {
+    return { cell: cell + QUOTE, inQuotes: true, nextIndex: index + 2 };
+  }
+  return { cell, inQuotes: false, nextIndex: index + 1 };
+}
+
+function readUnquotedChar(
+  text: string,
+  index: number,
+  cell: string,
+): { action: 'append' | 'startQuote' | 'endCell' | 'endRow' | 'skip'; cell: string; nextIndex: number } {
+  const ch = text[index];
+  if (ch === QUOTE) return { action: 'startQuote', cell, nextIndex: index + 1 };
+  if (ch === COMMA) return { action: 'endCell', cell, nextIndex: index + 1 };
+  if (ch === '\r') return { action: 'skip', cell, nextIndex: index + 1 };
+  if (ch === '\n') return { action: 'endRow', cell, nextIndex: index + 1 };
+  return { action: 'append', cell: cell + ch, nextIndex: index + 1 };
 }

@@ -19,7 +19,7 @@
  */
 
 import type { DetectionFlag, DetectionSeverity } from './types.js';
-import type { ParsedTbLine, ParseResult as TbParseResult } from '../parsers/trialBalance.js';
+import type { ParseResult as TbParseResult } from '../parsers/trialBalance.js';
 
 /* ─────────────────────── 1. Imbalance ──────────────────────────── */
 
@@ -80,35 +80,46 @@ export function detectTbWrongSign(parsed: TbParseResult): DetectionFlag[] {
   const flags: DetectionFlag[] = [];
   for (const line of parsed.lines) {
     for (const rule of ACCOUNT_CLASS_RULES) {
-      if (!rule.pattern.test(line.accountName)) continue;
-      const debit = line.debit ?? 0;
-      const credit = line.credit ?? 0;
-      const wrongSide =
-        (rule.expectedSide === 'debit' && credit > 0 && debit === 0) ||
-        (rule.expectedSide === 'credit' && debit > 0 && credit === 0);
-      if (!wrongSide) break; // first matching rule wins; otherwise rule didn't fire
-      const wrongAmount = rule.expectedSide === 'debit' ? credit : debit;
-      flags.push({
-        category: 'SCHEMA',
-        code: 'tb.wrong_sign',
-        severity: classifySeverityByAbsAmount(wrongAmount),
-        message: `Account "${line.accountName}" looks like a ${rule.label} account (should be ${rule.expectedSide}-balance) but has a ${rule.expectedSide === 'debit' ? 'credit' : 'debit'} balance of ${wrongAmount.toFixed(2)}. Likely a sign-flip error during posting.`,
-        affectedRowIndices: [line.rowIndex],
-        affectedJournalIds: [],
-        data: {
-          account: line.accountName,
-          accountCode: line.accountCode,
-          expectedSide: rule.expectedSide,
-          observedSide: rule.expectedSide === 'debit' ? 'credit' : 'debit',
-          amount: wrongAmount,
-          ruleLabel: rule.label,
-        },
-        fixableInHellobooks: true,
-      });
-      break; // one flag per line — even if multiple rules match
+      if (rule.pattern.test(line.accountName)) {
+        const flag = wrongSignFlagForLine(line, rule);
+        if (flag) flags.push(flag);
+        break;
+      }
     }
   }
   return flags;
+}
+
+function wrongSignFlagForLine(
+  line: TbParseResult['lines'][number],
+  rule: AccountClassRule,
+): DetectionFlag | null {
+  const debit = line.debit ?? 0;
+  const credit = line.credit ?? 0;
+  const wrongSide =
+    (rule.expectedSide === 'debit' && credit > 0 && debit === 0) ||
+    (rule.expectedSide === 'credit' && debit > 0 && credit === 0);
+  if (wrongSide) {
+    const wrongAmount = rule.expectedSide === 'debit' ? credit : debit;
+    return {
+      category: 'SCHEMA',
+      code: 'tb.wrong_sign',
+      severity: classifySeverityByAbsAmount(wrongAmount),
+      message: `Account "${line.accountName}" looks like a ${rule.label} account (should be ${rule.expectedSide}-balance) but has a ${rule.expectedSide === 'debit' ? 'credit' : 'debit'} balance of ${wrongAmount.toFixed(2)}. Likely a sign-flip error during posting.`,
+      affectedRowIndices: [line.rowIndex],
+      affectedJournalIds: [],
+      data: {
+        account: line.accountName,
+        accountCode: line.accountCode,
+        expectedSide: rule.expectedSide,
+        observedSide: rule.expectedSide === 'debit' ? 'credit' : 'debit',
+        amount: wrongAmount,
+        ruleLabel: rule.label,
+      },
+      fixableInHellobooks: true,
+    };
+  }
+  return null;
 }
 
 /* ─────────────────── 3. Round-number balances ──────────────────── */

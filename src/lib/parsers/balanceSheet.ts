@@ -34,6 +34,7 @@ export type BsRowKind =
 export type BsSection = 'ASSETS' | 'LIABILITIES' | 'EQUITY' | 'UNKNOWN';
 
 export type BsSource = 'QBO' | 'XERO' | 'ZOHO' | 'WAVE' | 'UNKNOWN';
+type BsColumnRole = 'Label' | 'Amount';
 
 export type IssueCode =
   | 'INVALID_DECIMAL'
@@ -80,30 +81,36 @@ export interface ParseResult {
   equationBalances: boolean | null;
   totalRowCount: number;
   totalIssues: number;
-  columnMapping: Record<string, 'Label' | 'Amount' | null>;
+  columnMapping: Record<string, BsColumnRole | null>;
   topLevelIssues: ParseIssue[];
+}
+
+interface BsParseState {
+  rows: BsRow[];
+  currentTopSection: BsSection;
+  currentSubSection: string | null;
 }
 
 /* ──────────────────────── Column detection ─────────────────────── */
 
-const LABEL_ALIASES = ['account', 'item', 'description', 'name', ''];
+const LABEL_ALIASES = new Set(['account', 'item', 'description', 'name', '']);
 const AMOUNT_ALIASES = ['amount', 'balance', 'total', 'current period', 'this period', 'ytd', 'as of'];
 
-function classifyColumn(header: string): 'Label' | 'Amount' | null {
+function classifyColumn(header: string): BsColumnRole | null {
   const n = normalizeHeader(header);
-  if (LABEL_ALIASES.includes(n)) return 'Label';
+  if (LABEL_ALIASES.has(n)) return 'Label';
   if (AMOUNT_ALIASES.some((a) => n === a || n.startsWith(a))) return 'Amount';
   if (/\d{4}/.test(n)) return 'Amount';
   return null;
 }
 
-function buildColumnMapping(columns: string[]): Record<string, 'Label' | 'Amount' | null> {
-  const mapping: Record<string, 'Label' | 'Amount' | null> = {};
+function buildColumnMapping(columns: string[]): Record<string, BsColumnRole | null> {
+  const mapping: Record<string, BsColumnRole | null> = {};
   for (const c of columns) mapping[c] = classifyColumn(c);
-  const hasLabel = Object.values(mapping).some((v) => v === 'Label');
+  const hasLabel = Object.values(mapping).includes('Label');
   if (!hasLabel && columns.length > 0) mapping[columns[0]] = 'Label';
-  const hasAmount = Object.values(mapping).some((v) => v === 'Amount');
-  if (!hasAmount && columns.length > 1) mapping[columns[columns.length - 1]] = 'Amount';
+  const hasAmount = Object.values(mapping).includes('Amount');
+  if (!hasAmount && columns.length > 1) mapping[columns.at(-1)!] = 'Amount';
   return mapping;
 }
 
@@ -116,7 +123,7 @@ const LIABILITIES_AND_EQUITY_RE = /^total liabilit(y|ies) (and|plus) equity$/i;
 
 const TOTAL_ASSETS_RE = /^total assets$/i;
 const TOTAL_LIABILITIES_RE = /^total liabilit(y|ies)$/i;
-const TOTAL_EQUITY_RE = /^total (stockholders|shareholders|owner|owner['']s)?[' ]*equity$/i;
+const TOTAL_EQUITY_RE = /^total (stockholders|shareholders|owner|owner[' ]s)?[' ]*equity$/i;
 const TOTAL_PREFIX_RE = /^total\s+/i;
 
 function deriveIndent(raw: string): number {
@@ -186,42 +193,17 @@ export function parseBalanceSheet(input: ParseInput): ParseResult {
     };
   }
 
-  const bsRows: BsRow[] = [];
-  let currentTopSection: BsSection = 'UNKNOWN';
-  let currentSubSection: string | null = null;
+  const state: BsParseState = {
+    rows: [],
+    currentTopSection: 'UNKNOWN',
+    currentSubSection: null,
+  };
 
   input.rows.forEach((raw, idx) => {
-    const rawLabel = String(raw[labelCol] ?? '');
-    const labelStripped = rawLabel.trim();
-    if (labelStripped === '') return;
-
-    const rawAmount = raw[amountCol];
-    let amount: number | null = null;
-    if (rawAmount !== undefined && rawAmount !== null && String(rawAmount).trim() !== '') {
-      amount = parseDecimal(rawAmount);
-    }
-
-    const indent = deriveIndent(rawLabel);
-    const newTop = topSectionFromLabel(labelStripped, currentTopSection);
-    if (newTop !== currentTopSection) {
-      currentTopSection = newTop;
-      currentSubSection = null;
-    }
-    const kind = classifyRow(labelStripped, amount, indent);
-    if (kind === 'SECTION_HEADER') currentSubSection = labelStripped;
-
-    bsRows.push({
-      rowIndex: idx + 1,
-      label: labelStripped,
-      amount,
-      kind,
-      topSection: currentTopSection,
-      subSection: kind === 'SECTION_HEADER' ? null : currentSubSection,
-      indent,
-    });
+    processBsRow(state, raw, idx + 1, labelCol, amountCol);
   });
 
-  const totals = detectKeyTotals(bsRows);
+  const totals = detectKeyTotals(state.rows);
 
   let equationBalances: boolean | null = null;
   if (totals.totalAssets !== null && totals.totalLiabilities !== null && totals.totalEquity !== null) {
@@ -243,16 +225,54 @@ export function parseBalanceSheet(input: ParseInput): ParseResult {
   }
 
   return {
-    source: detectBsSource(bsRows),
+    source: detectBsSource(state.rows),
     entityType: 'BALANCE_SHEET',
-    rows: bsRows,
+    rows: state.rows,
     totals,
     equationBalances,
-    totalRowCount: bsRows.length,
+    totalRowCount: state.rows.length,
     totalIssues: topLevelIssues.length,
     columnMapping,
     topLevelIssues,
   };
+}
+
+function processBsRow(
+  state: BsParseState,
+  raw: Record<string, unknown>,
+  rowIndex: number,
+  labelCol: string,
+  amountCol: string,
+): void {
+  const rawLabel = String(raw[labelCol] ?? '');
+  const labelStripped = rawLabel.trim();
+  if (labelStripped === '') return;
+
+  const amount = parseBsAmount(raw[amountCol]);
+  const indent = deriveIndent(rawLabel);
+  const newTop = topSectionFromLabel(labelStripped, state.currentTopSection);
+  if (newTop !== state.currentTopSection) {
+    state.currentTopSection = newTop;
+    state.currentSubSection = null;
+  }
+
+  const kind = classifyRow(labelStripped, amount, indent);
+  if (kind === 'SECTION_HEADER') state.currentSubSection = labelStripped;
+
+  state.rows.push({
+    rowIndex,
+    label: labelStripped,
+    amount,
+    kind,
+    topSection: state.currentTopSection,
+    subSection: kind === 'SECTION_HEADER' ? null : state.currentSubSection,
+    indent,
+  });
+}
+
+function parseBsAmount(rawAmount: unknown): number | null {
+  if (rawAmount === undefined || rawAmount === null || String(rawAmount).trim() === '') return null;
+  return parseDecimal(rawAmount);
 }
 
 function nullTotals(): ParseResult['totals'] {

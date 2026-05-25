@@ -30,6 +30,12 @@
  */
 
 import { trimOrNull, parseDecimal, normalizeHeader } from './fieldUtils.js';
+import {
+  applyColumnMapping,
+  buildAliasColumnMapping,
+  rowHasValues,
+  type ColumnMapping,
+} from './journalUtils.js';
 
 export const TB_COLUMN_ALIASES: Record<string, string[]> = {
   AccountName: ['account', 'account name', 'account description'],
@@ -103,34 +109,8 @@ export function detectTbSource(columns: string[]): TbSource {
   return 'UNKNOWN';
 }
 
-export function buildColumnMapping(sourceColumns: string[]): Record<string, string | null> {
-  const mapping: Record<string, string | null> = {};
-  for (const col of sourceColumns) {
-    const norm = normalizeHeader(col);
-    let matched: string | null = null;
-    for (const [hbField, aliases] of Object.entries(TB_COLUMN_ALIASES)) {
-      if (aliases.some((a) => normalizeHeader(a) === norm)) {
-        matched = hbField;
-        break;
-      }
-    }
-    mapping[col] = matched;
-  }
-  return mapping;
-}
-
-function applyMapping(
-  rawRow: Record<string, unknown>,
-  mapping: Record<string, string | null>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [srcCol, hbField] of Object.entries(mapping)) {
-    if (!hbField) continue;
-    const v = rawRow[srcCol];
-    if (v === undefined || v === null || String(v).trim() === '') continue;
-    out[hbField] = v;
-  }
-  return out;
+export function buildColumnMapping(sourceColumns: string[]): ColumnMapping {
+  return buildAliasColumnMapping(sourceColumns, TB_COLUMN_ALIASES);
 }
 
 function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>): ParsedTbLine {
@@ -210,9 +190,8 @@ export function parseTrialBalance(input: ParseInput): ParseResult {
 
   const lines: ParsedTbLine[] = [];
   input.rows.forEach((raw, idx) => {
-    const hasAny = Object.values(raw).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
-    if (!hasAny) return;
-    const mapped = applyMapping(raw, mapping);
+    if (!rowHasValues(raw)) return;
+    const mapped = applyColumnMapping(raw, mapping);
     lines.push(validateAndShapeLine(idx + 1, mapped));
   });
 

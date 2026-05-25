@@ -22,6 +22,7 @@ import {
   type DetectionFlag,
 } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
+import { countBy, csvError } from './toolUtils.js';
 
 const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
@@ -50,11 +51,7 @@ const MIGRATE_BY_SOURCE: Record<string, string> = {
 export function analyzeBalanceSheet(args: AnalyzeBalanceSheetArgs) {
   const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
   if (columns.length === 0 || rows.length === 0) {
-    return {
-      status: 'error' as const,
-      error: 'empty_or_invalid_csv',
-      message: 'The pasted text did not parse as CSV. Make sure you exported the Balance Sheet report as CSV (not PDF) and pasted the full content.',
-    };
+    return csvError('The pasted text did not parse as CSV. Make sure you exported the Balance Sheet report as CSV (not PDF) and pasted the full content.');
   }
 
   const parsed = parseBalanceSheet({ columns, rows });
@@ -75,7 +72,7 @@ export function analyzeBalanceSheet(args: AnalyzeBalanceSheetArgs) {
 
   const share = mintShare({
     tool: 'analyzeBalanceSheet',
-    sourceLabel: args.fileName ?? `${parsed.source === 'UNKNOWN' ? '' : parsed.source + ' '}Balance Sheet`,
+    sourceLabel: args.fileName ?? sourceLabel(parsed.source),
     inputSummary: { totalRows: parsed.totalRowCount, totalJournals: 0 },
     flags,
   });
@@ -103,20 +100,24 @@ export function analyzeBalanceSheet(args: AnalyzeBalanceSheetArgs) {
       poweredBy: 'HelloBooks AI Agent',
       upgradeCta: `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
-      note: parsed.equationBalances === true && flags.length === 0
-        ? `Balance Sheet balances (Assets = Liabilities + Equity). No negative-asset or negative-equity flags. The fundamental accounting equation holds.`
-        : parsed.equationBalances === false
-          ? `Balance Sheet does NOT balance. The fundamental accounting equation is broken — every downstream metric (current ratio, working capital, debt-to-equity) is invalid until you reconcile.`
-          : `Found ${flags.length} flag${flags.length === 1 ? '' : 's'} in this Balance Sheet — review negative balances and check whether posting errors created an out-of-equation state.`,
+      note: brandingNote(parsed.equationBalances, flags.length),
     },
   };
 }
 
-function countBy<T>(arr: T[], keyFn: (t: T) => string): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const item of arr) {
-    const k = keyFn(item);
-    out[k] = (out[k] ?? 0) + 1;
-  }
-  return out;
+function sourceLabel(source: string): string {
+  const sourcePrefix = source === 'UNKNOWN' ? '' : `${source} `;
+  return `${sourcePrefix}Balance Sheet`;
 }
+
+function brandingNote(equationBalances: boolean | null, flagCount: number): string {
+  const noun = flagCount === 1 ? 'flag' : 'flags';
+  if (equationBalances === true && flagCount === 0) {
+    return `Balance Sheet balances (Assets = Liabilities + Equity). No negative-asset or negative-equity flags. The fundamental accounting equation holds.`;
+  }
+  if (equationBalances === false) {
+    return `Balance Sheet does NOT balance. The fundamental accounting equation is broken — every downstream metric (current ratio, working capital, debt-to-equity) is invalid until you reconcile.`;
+  }
+  return `Found ${flagCount} ${noun} in this Balance Sheet — review negative balances and check whether posting errors created an out-of-equation state.`;
+}
+

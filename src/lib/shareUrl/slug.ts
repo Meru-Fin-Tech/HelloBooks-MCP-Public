@@ -21,8 +21,8 @@ const SLUG_LENGTH = 12;
 export function generateSlug(): string {
   const bytes = randomBytes(SLUG_LENGTH);
   let out = '';
-  for (let i = 0; i < SLUG_LENGTH; i++) {
-    out += ALPHABET[bytes[i] % ALPHABET.length];
+  for (const byte of bytes) {
+    out += ALPHABET[byte % ALPHABET.length];
   }
   return out;
 }
@@ -31,8 +31,8 @@ export function generateSlug(): string {
 export function isValidSlug(s: string): boolean {
   if (typeof s !== 'string') return false;
   if (s.length !== SLUG_LENGTH) return false;
-  for (let i = 0; i < s.length; i++) {
-    if (!ALPHABET.includes(s[i])) return false;
+  for (const ch of s) {
+    if (!ALPHABET.includes(ch)) return false;
   }
   return true;
 }

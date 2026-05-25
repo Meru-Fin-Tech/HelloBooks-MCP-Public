@@ -60,7 +60,9 @@ export function normalizeXeroJournal(journal: XeroParsedJournal): NormalizedJour
   };
 }
 
-function normalizeZohoLine(line: ZohoParsedLine): NormalizedLine {
+function normalizeNamedJournalLine(
+  line: ZohoParsedLine | WaveParsedLine,
+): NormalizedLine {
   return {
     rowIndex: line.rowIndex,
     accountIdentifier: line.accountName,
@@ -68,6 +70,10 @@ function normalizeZohoLine(line: ZohoParsedLine): NormalizedLine {
     credit: line.credit,
     memo: line.lineDesc ?? line.notes,
   };
+}
+
+function normalizeZohoLine(line: ZohoParsedLine): NormalizedLine {
+  return normalizeNamedJournalLine(line);
 }
 
 export function normalizeZohoJournal(journal: ZohoParsedJournal): NormalizedJournal {
@@ -85,13 +91,7 @@ export function normalizeZohoJournal(journal: ZohoParsedJournal): NormalizedJour
 }
 
 function normalizeWaveLine(line: WaveParsedLine): NormalizedLine {
-  return {
-    rowIndex: line.rowIndex,
-    accountIdentifier: line.accountName,
-    debit: line.debit,
-    credit: line.credit,
-    memo: line.lineDesc ?? line.notes,
-  };
+  return normalizeNamedJournalLine(line);
 }
 
 export function normalizeWaveJournal(journal: WaveParsedJournal): NormalizedJournal {

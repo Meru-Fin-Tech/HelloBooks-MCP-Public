@@ -26,7 +26,17 @@
  *   Amount | TrackingName1 | TrackingOption1
  */
 
-import { trimOrNull, parseDecimal, parseFlexibleDate, normalizeHeader } from './fieldUtils.js';
+import { trimOrNull, parseDecimal, parseFlexibleDate } from './fieldUtils.js';
+import {
+  applyColumnMapping,
+  buildAliasColumnMapping,
+  parseJournalDebitCredit,
+  PENNY,
+  round2,
+  rowHasValues,
+  sortedStrings,
+  type ColumnMapping,
+} from './journalUtils.js';
 
 /* ──────────────────────── Column alias map ─────────────────────── */
 
@@ -118,35 +128,8 @@ export interface ParseResult {
 
 /* ──────────────────── Column mapping helpers ───────────────────── */
 
-export function buildColumnMapping(sourceColumns: string[]): Record<string, string | null> {
-  const mapping: Record<string, string | null> = {};
-  const ALIASES = XERO_JOURNAL_COLUMN_ALIASES;
-  for (const col of sourceColumns) {
-    const norm = normalizeHeader(col);
-    let matched: string | null = null;
-    for (const [hbField, aliases] of Object.entries(ALIASES)) {
-      if (aliases.some((a) => normalizeHeader(a) === norm)) {
-        matched = hbField;
-        break;
-      }
-    }
-    mapping[col] = matched;
-  }
-  return mapping;
-}
-
-function applyMapping(
-  rawRow: Record<string, unknown>,
-  mapping: Record<string, string | null>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [srcCol, hbField] of Object.entries(mapping)) {
-    if (!hbField) continue;
-    const v = rawRow[srcCol];
-    if (v === undefined || v === null || String(v).trim() === '') continue;
-    out[hbField] = v;
-  }
-  return out;
+export function buildColumnMapping(sourceColumns: string[]): ColumnMapping {
+  return buildAliasColumnMapping(sourceColumns, XERO_JOURNAL_COLUMN_ALIASES);
 }
 
 /* ────────────────────── Group-key derivation ───────────────────── */
@@ -181,39 +164,22 @@ interface DebitCredit {
  *   • Explicit `Debit` + `Credit` columns
  */
 function parseDebitCredit(rowIndex: number, mapped: Record<string, unknown>): DebitCredit {
+  const explicit = parseJournalDebitCredit(rowIndex, mapped, false);
   const issues: ParseIssue[] = [];
-
-  const debitRaw = mapped.Debit;
-  const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
-
-  if (debitRaw !== undefined && debit === null) {
+  for (const issue of explicit.issues) {
+    if (issue.code === 'NEITHER_DEBIT_NOR_CREDIT') continue;
     issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse debit "${String(debitRaw)}"`,
-      field: 'Debit',
-      rowIndex,
+      code: issue.code,
+      message: issue.message,
+      field: issue.field,
+      rowIndex: issue.rowIndex,
     });
   }
-  if (creditRaw !== undefined && credit === null) {
-    issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse credit "${String(creditRaw)}"`,
-      field: 'Credit',
-      rowIndex,
-    });
-  }
+  const { debit, credit } = explicit;
 
   // Explicit columns take precedence when at least one parsed.
   if (debit !== null || credit !== null) {
-    if (debit && credit) {
-      issues.push({
-        code: 'BOTH_DEBIT_AND_CREDIT',
-        message: `Journal line has both debit (${debit}) and credit (${credit}) — only one is allowed per line.`,
-        field: 'Debit',
-        rowIndex,
-      });
+    if (issues.some((issue) => issue.code === 'BOTH_DEBIT_AND_CREDIT')) {
       return { debit: null, credit: null, issues };
     }
     return { debit: debit ?? null, credit: credit ?? null, issues };
@@ -316,8 +282,6 @@ function validateAndShapeLine(
 
 /* ──────────────────── Per-journal grouping ─────────────────────── */
 
-const PENNY = 0.01;
-
 function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
   const order: string[] = [];
   const byKey = new Map<string, ParsedJournalLine[]>();
@@ -340,7 +304,7 @@ function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
     if (dateSet.size > 1) {
       journalIssues.push({
         code: 'INCONSISTENT_DATE',
-        message: `Journal "${prettyKey(groupKey)}" has rows with conflicting dates: ${[...dateSet].sort().join(', ')}`,
+        message: `Journal "${prettyKey(groupKey)}" has rows with conflicting dates: ${sortedStrings(dateSet).join(', ')}`,
         field: 'Date',
       });
     }
@@ -388,10 +352,6 @@ function prettyKey(groupKey: string): string {
   return groupKey;
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 /* ─────────────────────────── Public API ────────────────────────── */
 
 /**
@@ -418,10 +378,9 @@ export function parseXeroJournalEntries(input: ParseInput): ParseResult {
 
   const lines: ParsedJournalLine[] = [];
   input.rows.forEach((raw, idx) => {
-    const hasAny = Object.values(raw).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
-    if (!hasAny) return;
+    if (!rowHasValues(raw)) return;
 
-    const mapped = applyMapping(raw, mapping);
+    const mapped = applyColumnMapping(raw, mapping);
     const line = validateAndShapeLine(idx + 1, mapped);
     lines.push(line);
   });

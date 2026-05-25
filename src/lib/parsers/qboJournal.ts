@@ -23,7 +23,17 @@
  *   Date | Num | Account | Debit | Credit | Memo | Name | Class
  */
 
-import { trimOrNull, parseDecimal, parseFlexibleDate, normalizeHeader } from './fieldUtils.js';
+import { trimOrNull, parseFlexibleDate } from './fieldUtils.js';
+import {
+  applyColumnMapping,
+  buildAliasColumnMapping,
+  parseJournalDebitCredit,
+  PENNY,
+  round2,
+  rowHasValues,
+  sortedStrings,
+  type ColumnMapping,
+} from './journalUtils.js';
 
 /* ──────────────────────── Column alias map ─────────────────────── */
 
@@ -111,36 +121,8 @@ export interface ParseResult {
  * Unrecognised columns map to null and surface as `unmappedColumns` in the
  * result — useful for diagnosing custom QBO exports.
  */
-export function buildColumnMapping(sourceColumns: string[]): Record<string, string | null> {
-  const mapping: Record<string, string | null> = {};
-  const ALIASES = QBO_JOURNAL_COLUMN_ALIASES;
-  for (const col of sourceColumns) {
-    const norm = normalizeHeader(col);
-    let matched: string | null = null;
-    for (const [hbField, aliases] of Object.entries(ALIASES)) {
-      if (aliases.some((a) => normalizeHeader(a) === norm)) {
-        matched = hbField;
-        break;
-      }
-    }
-    mapping[col] = matched;
-  }
-  return mapping;
-}
-
-/** Project a raw row through the column mapping, dropping empty / unmapped fields. */
-function applyMapping(
-  rawRow: Record<string, unknown>,
-  mapping: Record<string, string | null>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [srcCol, hbField] of Object.entries(mapping)) {
-    if (!hbField) continue;
-    const v = rawRow[srcCol];
-    if (v === undefined || v === null || String(v).trim() === '') continue;
-    out[hbField] = v;
-  }
-  return out;
+export function buildColumnMapping(sourceColumns: string[]): ColumnMapping {
+  return buildAliasColumnMapping(sourceColumns, QBO_JOURNAL_COLUMN_ALIASES);
 }
 
 /* ───────────────────── Per-row validation ──────────────────────── */
@@ -182,49 +164,8 @@ function validateAndShapeLine(
     });
   }
 
-  const debitRaw = mapped.Debit;
-  const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
-
-  if (debitRaw !== undefined && debit === null) {
-    issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse debit "${String(debitRaw)}"`,
-      field: 'Debit',
-      rowIndex,
-    });
-  }
-  if (creditRaw !== undefined && credit === null) {
-    issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse credit "${String(creditRaw)}"`,
-      field: 'Credit',
-      rowIndex,
-    });
-  }
-
-  // Debit/credit invariants — skip when either parse failed so we do not
-  // double-report (the INVALID_DECIMAL already explains the problem).
-  const debitParsed = debitRaw === undefined || debit !== null;
-  const creditParsed = creditRaw === undefined || credit !== null;
-  if (debitParsed && creditParsed) {
-    if (debit && credit) {
-      issues.push({
-        code: 'BOTH_DEBIT_AND_CREDIT',
-        message: `Journal line has both debit (${debit}) and credit (${credit}) — only one is allowed per line.`,
-        field: 'Debit',
-        rowIndex,
-      });
-    } else if (!debit && !credit) {
-      issues.push({
-        code: 'NEITHER_DEBIT_NOR_CREDIT',
-        message: 'Journal line has neither a debit nor a credit amount.',
-        field: 'Debit',
-        rowIndex,
-      });
-    }
-  }
+  const { debit, credit, issues: amountIssues } = parseJournalDebitCredit(rowIndex, mapped);
+  issues.push(...amountIssues);
 
   return {
     rowIndex,
@@ -242,8 +183,6 @@ function validateAndShapeLine(
 }
 
 /* ──────────────────── Per-journal grouping ─────────────────────── */
-
-const PENNY = 0.01;
 
 function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
   // Preserve first-seen ordering of journal numbers — important for back-
@@ -272,7 +211,7 @@ function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
     if (dateSet.size > 1) {
       journalIssues.push({
         code: 'INCONSISTENT_DATE',
-        message: `Journal "${journalNumber}" has rows with conflicting dates: ${[...dateSet].sort().join(', ')}`,
+        message: `Journal "${journalNumber}" has rows with conflicting dates: ${sortedStrings(dateSet).join(', ')}`,
         field: 'Date',
       });
     }
@@ -302,10 +241,6 @@ function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
   return journals;
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 /* ─────────────────────────── Public API ────────────────────────── */
 
 /**
@@ -332,10 +267,9 @@ export function parseQboJournalEntries(input: ParseInput): ParseResult {
   input.rows.forEach((raw, idx) => {
     // Skip wholly empty rows (papaparse skipEmptyLines does most of this,
     // but XLSX can still emit `{Date: '', Num: '', ...}` blanks).
-    const hasAny = Object.values(raw).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
-    if (!hasAny) return;
+    if (!rowHasValues(raw)) return;
 
-    const mapped = applyMapping(raw, mapping);
+    const mapped = applyColumnMapping(raw, mapping);
     const line = validateAndShapeLine(idx + 1, mapped);
     lines.push(line);
   });

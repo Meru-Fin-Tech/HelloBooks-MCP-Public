@@ -40,36 +40,8 @@ export function parseDecimal(v: unknown): number | null {
     negative = true;
     s = s.slice(1, -1).trim();
   }
-  s = s.replace(/[$£€₹¥A-Za-z\s]/g, '');
-
-  // Decimal-vs-thousands separator disambiguation. Two scenarios:
-  //   1) Both `,` and `.` present — the one appearing LAST is the decimal
-  //      separator. "1,500.00" → US (dot is decimal). "1.500,00" → European.
-  //   2) Only `,` present — ambiguous. "1,500" could be US thousands or
-  //      European decimal. Disambiguate by digit-count after the comma:
-  //      exactly 3 → thousands separator; otherwise → decimal separator.
-  //      ("1,50" → 1.5; "1,500" → 1500; "1,500,000" → 1500000.)
-  //   3) Only `.` present — dot is the decimal separator (already in the
-  //      target format). Note: "1.500" stays 1.5 — this matches the QBO
-  //      US export convention, where multi-thousand values always carry a
-  //      comma. A misread here on truly European input is acceptable
-  //      because QBO US is the dominant source.
-  const lastComma = s.lastIndexOf(',');
-  const lastDot = s.lastIndexOf('.');
-  if (lastComma !== -1 && lastDot !== -1) {
-    if (lastComma > lastDot) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else {
-      s = s.replace(/,/g, '');
-    }
-  } else if (lastComma !== -1) {
-    const digitsAfterComma = s.length - lastComma - 1;
-    if (digitsAfterComma === 3) {
-      s = s.replace(/,/g, '');
-    } else {
-      s = s.replace(',', '.');
-    }
-  }
+  s = s.replaceAll(/[$£€₹¥A-Za-z\s]/g, '');
+  s = normalizeDecimalSeparators(s);
 
   if (s.startsWith('-')) {
     negative = !negative;
@@ -82,6 +54,22 @@ export function parseDecimal(v: unknown): number | null {
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   return negative ? -n : n;
+}
+
+function normalizeDecimalSeparators(s: string): string {
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  if (lastComma !== -1 && lastDot !== -1) {
+    if (lastComma > lastDot) return s.replaceAll('.', '').replace(',', '.');
+    return s.replaceAll(',', '');
+  }
+  if (lastComma === -1) return s;
+  if (hasThousandsComma(s, lastComma)) return s.replaceAll(',', '');
+  return s.replace(',', '.');
+}
+
+function hasThousandsComma(s: string, lastComma: number): boolean {
+  return s.length - lastComma - 1 === 3;
 }
 
 export type DatePreference = 'auto' | 'mdy' | 'dmy';
@@ -105,48 +93,53 @@ export function parseFlexibleDate(v: unknown, opts: ParseDateOptions = {}): stri
   if (!s) return null;
   const prefer: DatePreference = opts.prefer ?? 'auto';
 
-  // ISO YYYY-MM-DD
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
-  if (m) {
-    return safeIso(Number(m[1]), Number(m[2]), Number(m[3]));
-  }
-
-  // "15-Mar-2024" / "15 Mar 2024"
-  m = /^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-,]+(\d{4})$/.exec(s);
-  if (m) {
-    const mon = MONTHS.indexOf(m[2].slice(0, 3).toLowerCase());
-    if (mon !== -1) return safeIso(Number(m[3]), mon + 1, Number(m[1]));
-  }
-
-  // "Mar 15 2024" / "Mar 15, 2024"
-  m = /^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/.exec(s);
-  if (m) {
-    const mon = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase());
-    if (mon !== -1) return safeIso(Number(m[3]), mon + 1, Number(m[2]));
-  }
-
-  // Slash / dash numeric: "03/15/2024" or "15/03/2024"
-  m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(s);
-  if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    const y = Number(m[3]);
-    if (prefer === 'mdy') return safeIso(y, a, b);
-    if (prefer === 'dmy') return safeIso(y, b, a);
-    // Auto — if first part > 12 it must be the day.
-    if (a > 12 && b <= 12) return safeIso(y, b, a);
-    if (b > 12 && a <= 12) return safeIso(y, a, b);
-    // Tie-breaker — default to US-style because QBO is the dominant source.
-    return safeIso(y, a, b);
-  }
-
-  return null;
+  return parseIsoDate(s)
+    ?? parseDayMonthNameDate(s)
+    ?? parseMonthNameDayDate(s)
+    ?? parseNumericDate(s, prefer);
 }
 
 const MONTHS = [
   'jan', 'feb', 'mar', 'apr', 'may', 'jun',
   'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
 ];
+
+function parseIsoDate(s: string): string | null {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+  return m ? safeIso(Number(m[1]), Number(m[2]), Number(m[3])) : null;
+}
+
+function parseDayMonthNameDate(s: string): string | null {
+  const m = /^(\d{1,2})[\s-]+([A-Za-z]{3,9})[\s,-]+(\d{4})$/.exec(s);
+  if (!m) return null;
+  const mon = monthIndex(m[2]);
+  return mon === null ? null : safeIso(Number(m[3]), mon + 1, Number(m[1]));
+}
+
+function parseMonthNameDayDate(s: string): string | null {
+  const m = /^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/.exec(s);
+  if (!m) return null;
+  const mon = monthIndex(m[1]);
+  return mon === null ? null : safeIso(Number(m[3]), mon + 1, Number(m[2]));
+}
+
+function parseNumericDate(s: string, prefer: DatePreference): string | null {
+  const m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(s);
+  if (!m) return null;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  const y = Number(m[3]);
+  if (prefer === 'mdy') return safeIso(y, a, b);
+  if (prefer === 'dmy') return safeIso(y, b, a);
+  if (a > 12 && b <= 12) return safeIso(y, b, a);
+  if (b > 12 && a <= 12) return safeIso(y, a, b);
+  return safeIso(y, a, b);
+}
+
+function monthIndex(monthName: string): number | null {
+  const mon = MONTHS.indexOf(monthName.slice(0, 3).toLowerCase());
+  return mon === -1 ? null : mon;
+}
 
 function safeIso(y: number, m: number, d: number): string | null {
   if (m < 1 || m > 12 || d < 1 || d > 31) return null;
@@ -159,10 +152,10 @@ function safeIso(y: number, m: number, d: number): string | null {
 
 /** Lowercase plus collapse whitespace for fuzzy key building. */
 export function fuzzyKey(s: unknown): string {
-  return String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return String(s ?? '').trim().toLowerCase().replaceAll(/\s+/g, ' ');
 }
 
 /** Lowercase plus single-space collapse for header alias matching. */
 export function normalizeHeader(s: unknown): string {
-  return String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+  return String(s ?? '').toLowerCase().trim().replaceAll(/\s+/g, ' ');
 }

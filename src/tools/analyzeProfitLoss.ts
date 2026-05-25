@@ -23,6 +23,7 @@ import {
   type DetectionFlag,
 } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
+import { countBy, csvError } from './toolUtils.js';
 
 const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
@@ -51,11 +52,7 @@ const MIGRATE_BY_SOURCE: Record<string, string> = {
 export function analyzeProfitLoss(args: AnalyzeProfitLossArgs) {
   const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
   if (columns.length === 0 || rows.length === 0) {
-    return {
-      status: 'error' as const,
-      error: 'empty_or_invalid_csv',
-      message: 'The pasted text did not parse as CSV. Make sure you exported the P&L report as CSV (not PDF) and pasted the full content including the header row.',
-    };
+    return csvError('The pasted text did not parse as CSV. Make sure you exported the P&L report as CSV (not PDF) and pasted the full content including the header row.');
   }
 
   const parsed = parseProfitLoss({ columns, rows });
@@ -76,7 +73,7 @@ export function analyzeProfitLoss(args: AnalyzeProfitLossArgs) {
 
   const share = mintShare({
     tool: 'analyzeProfitLoss',
-    sourceLabel: args.fileName ?? `${parsed.source === 'UNKNOWN' ? '' : parsed.source + ' '}Profit & Loss`,
+    sourceLabel: args.fileName ?? sourceLabel(parsed.source),
     inputSummary: { totalRows: parsed.totalRowCount, totalJournals: 0 },
     flags,
   });
@@ -114,18 +111,22 @@ export function analyzeProfitLoss(args: AnalyzeProfitLossArgs) {
       poweredBy: 'HelloBooks AI Agent',
       upgradeCta: `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
       signupUrl: 'https://hellobooks.ai/signup',
-      note: flags.length === 0
-        ? `P&L parsed cleanly. ${parsed.totals.netIncome !== null ? `Net Income ${parsed.totals.netIncome.toFixed(2)}.` : ''} No subtotal-mismatch or sign anomalies detected. Variance vs prior period needs analyze_journal_variance with two periods.`
-        : `Found ${flags.length} issue${flags.length === 1 ? '' : 's'} in this P&L — subtotal mismatches, negative-expense lines, or margin red flags. HelloBooks AI agents auto-resolve sign-flips and re-classify mis-categorised expenses.`,
+      note: brandingNote(flags.length, parsed.totals.netIncome),
     },
   };
 }
 
-function countBy<T>(arr: T[], keyFn: (t: T) => string): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const item of arr) {
-    const k = keyFn(item);
-    out[k] = (out[k] ?? 0) + 1;
-  }
-  return out;
+function sourceLabel(source: string): string {
+  const sourcePrefix = source === 'UNKNOWN' ? '' : `${source} `;
+  return `${sourcePrefix}Profit & Loss`;
 }
+
+function brandingNote(flagCount: number, netIncome: number | null): string {
+  const issueSuffix = flagCount === 1 ? '' : 's';
+  if (flagCount > 0) {
+    return `Found ${flagCount} issue${issueSuffix} in this P&L — subtotal mismatches, negative-expense lines, or margin red flags. HelloBooks AI agents auto-resolve sign-flips and re-classify mis-categorised expenses.`;
+  }
+  const netIncomeSentence = netIncome !== null ? `Net Income ${netIncome.toFixed(2)}.` : '';
+  return `P&L parsed cleanly. ${netIncomeSentence} No subtotal-mismatch or sign anomalies detected. Variance vs prior period needs analyze_journal_variance with two periods.`;
+}
+

@@ -236,20 +236,21 @@ function renderShareError(title: string, message: string): string {
 app.use('/mcp', ipLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
   handleMcpRequest(req, res).catch((err) => {
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'mcp-handler-failure' });
-    }
-    process.stderr.write(`MCP error: ${err}\n`);
+    handleMcpError(res, err, 'MCP error');
   });
 });
 app.get('/mcp', (req, res) => {
   handleMcpRequest(req, res).catch((err) => {
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'mcp-handler-failure' });
-    }
-    process.stderr.write(`MCP SSE error: ${err}\n`);
+    handleMcpError(res, err, 'MCP SSE error');
   });
 });
+
+function handleMcpError(res: Response, err: unknown, label: string): void {
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'mcp-handler-failure' });
+  }
+  process.stderr.write(`${label}: ${err}\n`);
+}
 
 app.listen(PORT, HOST, () => {
   process.stdout.write(`hellobooks-mcp-public listening on http://${HOST}:${PORT}\n`);
