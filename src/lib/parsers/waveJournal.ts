@@ -9,7 +9,16 @@
  * explicit Debit/Credit shape as QBO/Zoho; no signed-amount handling.
  */
 
-import { trimOrNull, parseDecimal, parseFlexibleDate, normalizeHeader } from './fieldUtils.js';
+import { trimOrNull, parseFlexibleDate, scalarToString } from './fieldUtils.js';
+import {
+  buildAliasColumnMapping,
+  countJournalIssues,
+  groupJournalLines,
+  parseExplicitDebitCredit,
+  parseMappedRows,
+  round2,
+  unmappedColumns,
+} from './journalUtils.js';
 
 export const WAVE_JOURNAL_COLUMN_ALIASES: Record<string, string[]> = {
   Date:           ['date', 'transaction date'],
@@ -85,30 +94,7 @@ export interface ParseResult {
 }
 
 export function buildColumnMapping(sourceColumns: string[]): Record<string, string | null> {
-  const mapping: Record<string, string | null> = {};
-  for (const col of sourceColumns) {
-    const norm = normalizeHeader(col);
-    let matched: string | null = null;
-    for (const [hbField, aliases] of Object.entries(WAVE_JOURNAL_COLUMN_ALIASES)) {
-      if (aliases.some((a) => normalizeHeader(a) === norm)) {
-        matched = hbField;
-        break;
-      }
-    }
-    mapping[col] = matched;
-  }
-  return mapping;
-}
-
-function applyMapping(rawRow: Record<string, unknown>, mapping: Record<string, string | null>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [srcCol, hbField] of Object.entries(mapping)) {
-    if (!hbField) continue;
-    const v = rawRow[srcCol];
-    if (v === undefined || v === null || String(v).trim() === '') continue;
-    out[hbField] = v;
-  }
-  return out;
+  return buildAliasColumnMapping(sourceColumns, WAVE_JOURNAL_COLUMN_ALIASES);
 }
 
 function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>): ParsedJournalLine {
@@ -130,26 +116,12 @@ function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>)
     issues.push({ code: 'MISSING_ACCOUNT', message: 'Journal line needs an Account.', field: 'AccountName', rowIndex });
   }
 
-  const debitRaw = mapped.Debit;
-  const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
-  if (debitRaw !== undefined && debit === null) {
-    issues.push({ code: 'INVALID_DECIMAL', message: `Could not parse debit "${String(debitRaw)}"`, field: 'Debit', rowIndex });
-  }
-  if (creditRaw !== undefined && credit === null) {
-    issues.push({ code: 'INVALID_DECIMAL', message: `Could not parse credit "${String(creditRaw)}"`, field: 'Credit', rowIndex });
-  }
-
-  const debitParsed = debitRaw === undefined || debit !== null;
-  const creditParsed = creditRaw === undefined || credit !== null;
-  if (debitParsed && creditParsed) {
-    if (debit && credit) {
-      issues.push({ code: 'BOTH_DEBIT_AND_CREDIT', message: `Journal line has both debit (${debit}) and credit (${credit}) — only one is allowed per line.`, field: 'Debit', rowIndex });
-    } else if (!debit && !credit) {
-      issues.push({ code: 'NEITHER_DEBIT_NOR_CREDIT', message: 'Journal line has neither a debit nor a credit amount.', field: 'Debit', rowIndex });
-    }
-  }
+  const { debit, credit, issues: amountIssues } = parseExplicitDebitCredit(rowIndex, mapped, {
+    invalidDebit: (debitRaw) => `Could not parse debit "${scalarToString(debitRaw)}"`,
+    invalidCredit: (creditRaw) => `Could not parse credit "${scalarToString(creditRaw)}"`,
+    both: (debit, credit) => `Journal line has both debit (${debit}) and credit (${credit}) — only one is allowed per line.`,
+    neither: 'Journal line has neither a debit nor a credit amount.',
+  });
 
   return {
     rowIndex,
@@ -163,77 +135,33 @@ function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>)
     credit,
     contact: trimOrNull(mapped.Contact),
     currency: trimOrNull(mapped.Currency),
-    issues,
+    issues: [...issues, ...(amountIssues as ParseIssue[])],
   };
 }
 
-const PENNY = 0.01;
-
 function groupJournals(lines: ParsedJournalLine[]): ParsedJournal[] {
-  const order: string[] = [];
-  const byNumber = new Map<string, ParsedJournalLine[]>();
-  for (const line of lines) {
-    if (!line.journalNumber) continue;
-    if (!byNumber.has(line.journalNumber)) {
-      order.push(line.journalNumber);
-      byNumber.set(line.journalNumber, []);
-    }
-    byNumber.get(line.journalNumber)!.push(line);
-  }
-
-  const journals: ParsedJournal[] = [];
-  for (const journalNumber of order) {
-    const journalLines = byNumber.get(journalNumber)!;
-    const journalIssues: ParseIssue[] = [];
-
-    const dateSet = new Set(journalLines.map((l) => l.date).filter((d): d is string => d !== null));
-    if (dateSet.size > 1) {
-      journalIssues.push({ code: 'INCONSISTENT_DATE', message: `Journal "${journalNumber}" has rows with conflicting dates: ${[...dateSet].sort().join(', ')}`, field: 'Date' });
-    }
-    const date = journalLines.find((l) => l.date)?.date ?? null;
-
-    const totalDebits = journalLines.reduce((s, l) => s + (l.debit ?? 0), 0);
-    const totalCredits = journalLines.reduce((s, l) => s + (l.credit ?? 0), 0);
-    const balanced = Math.abs(totalDebits - totalCredits) < PENNY;
-
-    journals.push({
-      journalNumber,
+  return groupJournalLines({
+    lines,
+    getKey: (line) => line.journalNumber,
+    describe: (journalNumber) => journalNumber,
+    makeJournal: ({ key, date, lines, totalDebits, totalCredits, balanced, issues }) => ({
+      journalNumber: key,
       date,
-      reference: journalLines.find((l) => l.reference)?.reference ?? null,
-      notes: journalLines.find((l) => l.notes)?.notes ?? null,
-      lines: journalLines,
+      reference: lines.find((l) => l.reference)?.reference ?? null,
+      notes: lines.find((l) => l.notes)?.notes ?? null,
+      lines,
       totalDebits: round2(totalDebits),
       totalCredits: round2(totalCredits),
       balanced,
-      issues: journalIssues,
-    });
-  }
-  return journals;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+      issues: issues as ParseIssue[],
+    }),
+  });
 }
 
 export function parseWaveJournalEntries(input: ParseInput): ParseResult {
   const mapping = buildColumnMapping(input.columns);
-  const unmappedColumns = Object.entries(mapping)
-    .filter(([, hb]) => hb === null)
-    .map(([col]) => col);
-
-  const lines: ParsedJournalLine[] = [];
-  input.rows.forEach((raw, idx) => {
-    const hasAny = Object.values(raw).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
-    if (!hasAny) return;
-    const mapped = applyMapping(raw, mapping);
-    lines.push(validateAndShapeLine(idx + 1, mapped));
-  });
-
+  const lines = parseMappedRows(input, mapping, validateAndShapeLine);
   const journals = groupJournals(lines);
-
-  let totalIssues = 0;
-  for (const j of journals) totalIssues += j.issues.length;
-  for (const l of lines) totalIssues += l.issues.length;
 
   return {
     source: 'WAVE',
@@ -241,8 +169,8 @@ export function parseWaveJournalEntries(input: ParseInput): ParseResult {
     journals,
     totalRows: lines.length,
     totalJournals: journals.length,
-    totalIssues,
+    totalIssues: countJournalIssues(journals, lines),
     columnMapping: mapping,
-    unmappedColumns,
+    unmappedColumns: unmappedColumns(mapping),
   };
 }

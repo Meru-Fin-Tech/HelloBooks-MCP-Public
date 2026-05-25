@@ -28,6 +28,7 @@ import {
   type DetectionFlag,
 } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
+import { branding, countBy } from './toolUtils.js';
 
 const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
@@ -83,14 +84,16 @@ export function analyzeTrialBalance(args: AnalyzeTrialBalanceArgs) {
     ...detectTbRoundBalance(parsed),
   ];
 
+  const sourcePrefix = parsed.source === 'UNKNOWN' ? '' : `${parsed.source} `;
   const share = mintShare({
     tool: 'analyzeTrialBalance',
-    sourceLabel: args.fileName ?? `${parsed.source === 'UNKNOWN' ? '' : parsed.source + ' '}Trial Balance`,
+    sourceLabel: args.fileName ?? `${sourcePrefix}Trial Balance`,
     inputSummary: { totalRows: parsed.totalRows, totalJournals: 0 },
     flags,
   });
 
   const migrateSlug = MIGRATE_BY_SOURCE[parsed.source] ?? 'from-quickbooks';
+  const brandingNote = trialBalanceBrandingNote(parsed.balanced, parsed.totalDebits, parsed.totalCredits, flags.length);
   return {
     status: 'ok' as const,
     source: parsed.source,
@@ -110,22 +113,19 @@ export function analyzeTrialBalance(args: AnalyzeTrialBalanceArgs) {
     },
     shareUrl: share.shareUrl,
     shareExpiresAt: share.expiresAt,
-    _branding: {
-      poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
-      signupUrl: 'https://hellobooks.ai/signup',
-      note: parsed.balanced
-        ? `Trial Balance ties (debits ${parsed.totalDebits.toFixed(2)} = credits ${parsed.totalCredits.toFixed(2)}). Found ${flags.length} other issue${flags.length === 1 ? '' : 's'} — wrong-sign balances or round-number plugs. HelloBooks AI agents auto-resolve these at account level.`
-        : `Trial Balance does NOT tie out — debits ${parsed.totalDebits.toFixed(2)} vs credits ${parsed.totalCredits.toFixed(2)}. Every downstream report (P&L, BS, cash flow) built from this TB is wrong. Fix the imbalance before relying on any financial statement.`,
-    },
+    _branding: branding(`https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`, brandingNote),
   };
 }
 
-function countBy<T>(arr: T[], keyFn: (t: T) => string): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const item of arr) {
-    const k = keyFn(item);
-    out[k] = (out[k] ?? 0) + 1;
+function trialBalanceBrandingNote(
+  balanced: boolean,
+  totalDebits: number,
+  totalCredits: number,
+  flagCount: number,
+): string {
+  if (balanced) {
+    return `Trial Balance ties (debits ${totalDebits.toFixed(2)} = credits ${totalCredits.toFixed(2)}). Found ${flagCount} other issue${flagCount === 1 ? '' : 's'} — wrong-sign balances or round-number plugs. HelloBooks AI agents auto-resolve these at account level.`;
   }
-  return out;
+  return `Trial Balance does NOT tie out — debits ${totalDebits.toFixed(2)} vs credits ${totalCredits.toFixed(2)}. Every downstream report (P&L, BS, cash flow) built from this TB is wrong. Fix the imbalance before relying on any financial statement.`;
 }
+

@@ -52,7 +52,7 @@ function getCatalogLastModified(): Date {
   const top = CHANGELOG[0];
   if (top?.date) {
     const d = new Date(top.date + 'T00:00:00Z');
-    if (!isNaN(d.getTime())) return d;
+    if (!Number.isNaN(d.getTime())) return d;
   }
   return DEPLOY_TIME;
 }
@@ -203,10 +203,10 @@ const ESCAPE_MAP: Record<string, string> = {
   "'": '&apos;',
 };
 function escapeXml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
+  return s.replaceAll(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
 }
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
+  return s.replaceAll(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
 }
 
 /**
@@ -716,7 +716,7 @@ export function generateRssFeed(): string {
       return `    <item>
       <title>${escapeXml(c.title)}</title>
       <link>${escapeXml(link)}</link>
-      <guid isPermaLink="false">hellobooks-mcp:${c.date}:${escapeXml(c.title.toLowerCase().replace(/\s+/g, '-').slice(0, 64))}</guid>
+      <guid isPermaLink="false">hellobooks-mcp:${c.date}:${escapeXml(c.title.toLowerCase().replaceAll(/\s+/g, '-').slice(0, 64))}</guid>
       <pubDate>${pub}</pubDate>
       <category>${escapeXml(c.category)}</category>
       <description>${escapeXml(c.description)}</description>

@@ -23,7 +23,7 @@
  * Pure functions. No I/O.
  */
 
-import { parseDecimal, normalizeHeader } from './fieldUtils.js';
+import { parseDecimal, normalizeHeader, scalarToString } from './fieldUtils.js';
 
 export type BsRowKind =
   | 'SECTION_HEADER'
@@ -80,30 +80,33 @@ export interface ParseResult {
   equationBalances: boolean | null;
   totalRowCount: number;
   totalIssues: number;
-  columnMapping: Record<string, 'Label' | 'Amount' | null>;
+  columnMapping: Record<string, BsColumnRole>;
   topLevelIssues: ParseIssue[];
 }
 
 /* ──────────────────────── Column detection ─────────────────────── */
 
-const LABEL_ALIASES = ['account', 'item', 'description', 'name', ''];
+type BsColumnRole = 'Label' | 'Amount' | null;
+
+const LABEL_ALIASES = new Set(['account', 'item', 'description', 'name', '']);
 const AMOUNT_ALIASES = ['amount', 'balance', 'total', 'current period', 'this period', 'ytd', 'as of'];
 
-function classifyColumn(header: string): 'Label' | 'Amount' | null {
+function classifyColumn(header: string): BsColumnRole {
   const n = normalizeHeader(header);
-  if (LABEL_ALIASES.includes(n)) return 'Label';
+  if (LABEL_ALIASES.has(n)) return 'Label';
   if (AMOUNT_ALIASES.some((a) => n === a || n.startsWith(a))) return 'Amount';
   if (/\d{4}/.test(n)) return 'Amount';
   return null;
 }
 
-function buildColumnMapping(columns: string[]): Record<string, 'Label' | 'Amount' | null> {
-  const mapping: Record<string, 'Label' | 'Amount' | null> = {};
+function buildColumnMapping(columns: string[]): Record<string, BsColumnRole> {
+  const mapping: Record<string, BsColumnRole> = {};
   for (const c of columns) mapping[c] = classifyColumn(c);
-  const hasLabel = Object.values(mapping).some((v) => v === 'Label');
+  const roles = Object.values(mapping);
+  const hasLabel = roles.includes('Label');
   if (!hasLabel && columns.length > 0) mapping[columns[0]] = 'Label';
-  const hasAmount = Object.values(mapping).some((v) => v === 'Amount');
-  if (!hasAmount && columns.length > 1) mapping[columns[columns.length - 1]] = 'Amount';
+  const hasAmount = roles.includes('Amount');
+  if (!hasAmount && columns.length > 1) mapping[columns.at(-1)!] = 'Amount';
   return mapping;
 }
 
@@ -116,7 +119,7 @@ const LIABILITIES_AND_EQUITY_RE = /^total liabilit(y|ies) (and|plus) equity$/i;
 
 const TOTAL_ASSETS_RE = /^total assets$/i;
 const TOTAL_LIABILITIES_RE = /^total liabilit(y|ies)$/i;
-const TOTAL_EQUITY_RE = /^total (stockholders|shareholders|owner|owner['']s)?[' ]*equity$/i;
+const TOTAL_EQUITY_RE = /^total (stockholders|shareholders|owner|owner's)?[' ]*equity$/i;
 const TOTAL_PREFIX_RE = /^total\s+/i;
 
 function deriveIndent(raw: string): number {
@@ -191,13 +194,13 @@ export function parseBalanceSheet(input: ParseInput): ParseResult {
   let currentSubSection: string | null = null;
 
   input.rows.forEach((raw, idx) => {
-    const rawLabel = String(raw[labelCol] ?? '');
+    const rawLabel = scalarToString(raw[labelCol]);
     const labelStripped = rawLabel.trim();
     if (labelStripped === '') return;
 
     const rawAmount = raw[amountCol];
     let amount: number | null = null;
-    if (rawAmount !== undefined && rawAmount !== null && String(rawAmount).trim() !== '') {
+    if (rawAmount !== undefined && rawAmount !== null && scalarToString(rawAmount).trim() !== '') {
       amount = parseDecimal(rawAmount);
     }
 

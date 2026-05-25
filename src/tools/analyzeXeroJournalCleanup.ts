@@ -27,6 +27,7 @@ import {
   type DetectionFlag,
 } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
+import { branding, emptyCsvError, journalSummary } from './toolUtils.js';
 
 const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
@@ -49,11 +50,7 @@ export function analyzeXeroJournalCleanup(args: AnalyzeXeroJournalCleanupArgs) {
   const { columns, rows } = parseCsv(args.csvText, { maxRows: MAX_ROWS });
 
   if (columns.length === 0) {
-    return {
-      status: 'error' as const,
-      error: 'empty_or_invalid_csv',
-      message: 'The pasted text did not parse as CSV. Make sure you exported the Xero Manual Journals report as CSV (not PDF) and pasted the full content including the header row.',
-    };
+    return emptyCsvError('The pasted text did not parse as CSV. Make sure you exported the Xero Manual Journals report as CSV (not PDF) and pasted the full content including the header row.');
   }
 
   const parsed = parseXeroJournalEntries({ columns, rows });
@@ -74,13 +71,7 @@ export function analyzeXeroJournalCleanup(args: AnalyzeXeroJournalCleanupArgs) {
 
   return {
     status: 'ok' as const,
-    summary: {
-      totalRows: parsed.totalRows,
-      totalJournals: parsed.totalJournals,
-      totalFlags: flags.length,
-      byCategory: countBy(flags, (f) => f.category),
-      bySeverity: countBy(flags, (f) => f.severity),
-    },
+    summary: journalSummary(parsed.totalRows, parsed.totalJournals, flags),
     flags,
     parseDiagnostics: {
       columnMapping: parsed.columnMapping,
@@ -88,20 +79,9 @@ export function analyzeXeroJournalCleanup(args: AnalyzeXeroJournalCleanupArgs) {
     },
     shareUrl: share.shareUrl,
     shareExpiresAt: share.expiresAt,
-    _branding: {
-      poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/from-xero?ref=${encodeURIComponent(share.shareUrl)}`,
-      signupUrl: 'https://hellobooks.ai/signup',
-      note: 'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
-    },
+    _branding: branding(
+      `https://hellobooks.ai/migrate/from-xero?ref=${encodeURIComponent(share.shareUrl)}`,
+      'Free analysis. Sign up at hellobooks.ai to bulk-fix these in seconds, post adjusting JEs, and migrate your books in one click.',
+    ),
   };
-}
-
-function countBy<T>(arr: T[], keyFn: (t: T) => string): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const item of arr) {
-    const k = keyFn(item);
-    out[k] = (out[k] ?? 0) + 1;
-  }
-  return out;
 }

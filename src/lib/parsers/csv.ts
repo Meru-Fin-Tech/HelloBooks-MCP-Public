@@ -68,7 +68,7 @@ export function parseCsv(text: string, opts: ParseCsvOptions = {}): ParseCsvResu
 
 /** Strip a UTF-8 BOM if present. */
 function stripBom(s: string): string {
-  if (s.charCodeAt(0) === 0xfeff) return s.slice(1);
+  if (s.codePointAt(0) === 0xfeff) return s.slice(1);
   return s;
 }
 
@@ -77,65 +77,78 @@ function stripBom(s: string): string {
  * fields with embedded newlines + escaped quotes.
  */
 function tokenize(text: string): string[][] {
-  const rows: string[][] = [];
-  let current: string[] = [];
-  let cell = '';
-  let inQuotes = false;
+  const state: TokenizeState = {
+    rows: [],
+    current: [],
+    cell: '',
+    inQuotes: false,
+  };
   let i = 0;
   const n = text.length;
 
   while (i < n) {
     const ch = text[i];
-    if (inQuotes) {
-      if (ch === QUOTE) {
-        if (text[i + 1] === QUOTE) {
-          // Escaped quote inside quoted field.
-          cell += QUOTE;
-          i += 2;
-          continue;
-        }
-        inQuotes = false;
-        i++;
-        continue;
-      }
-      cell += ch;
-      i++;
-      continue;
-    }
-
-    // Outside quotes.
-    if (ch === QUOTE) {
-      inQuotes = true;
-      i++;
-      continue;
-    }
-    if (ch === COMMA) {
-      current.push(cell);
-      cell = '';
-      i++;
-      continue;
-    }
-    if (ch === '\r') {
-      // Swallow \r so \r\n is treated as a single terminator.
-      i++;
-      continue;
-    }
-    if (ch === '\n') {
-      current.push(cell);
-      rows.push(current);
-      current = [];
-      cell = '';
-      i++;
-      continue;
-    }
-    cell += ch;
-    i++;
+    i = state.inQuotes
+      ? readQuotedChar(text, i, state)
+      : readUnquotedChar(ch, i, state);
   }
 
   // Flush final cell + row if the file does not end with a newline.
-  if (cell !== '' || current.length > 0) {
-    current.push(cell);
-    rows.push(current);
+  if (state.cell !== '' || state.current.length > 0) {
+    flushRow(state);
   }
-  return rows;
+  return state.rows;
+}
+
+interface TokenizeState {
+  rows: string[][];
+  current: string[];
+  cell: string;
+  inQuotes: boolean;
+}
+
+function readQuotedChar(text: string, i: number, state: TokenizeState): number {
+  const ch = text[i];
+  if (ch !== QUOTE) {
+    state.cell += ch;
+    return i + 1;
+  }
+  if (text[i + 1] === QUOTE) {
+    state.cell += QUOTE;
+    return i + 2;
+  }
+  state.inQuotes = false;
+  return i + 1;
+}
+
+function readUnquotedChar(ch: string, i: number, state: TokenizeState): number {
+  if (ch === QUOTE) {
+    state.inQuotes = true;
+    return i + 1;
+  }
+  if (ch === COMMA) {
+    flushCell(state);
+    return i + 1;
+  }
+  if (ch === '\r') {
+    // Swallow \r so \r\n is treated as a single terminator.
+    return i + 1;
+  }
+  if (ch === '\n') {
+    flushRow(state);
+    return i + 1;
+  }
+  state.cell += ch;
+  return i + 1;
+}
+
+function flushCell(state: TokenizeState): void {
+  state.current.push(state.cell);
+  state.cell = '';
+}
+
+function flushRow(state: TokenizeState): void {
+  flushCell(state);
+  state.rows.push(state.current);
+  state.current = [];
 }

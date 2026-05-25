@@ -18,6 +18,7 @@ import { parseCsv } from '../lib/parsers/csv.js';
 import { parseAndNormalize, sourceToMigrateSlug } from '../lib/parsers/autoDetect.js';
 import { detectVariance, type DetectionFlag } from '../lib/detection/index.js';
 import { mintShare } from '../lib/shareUrl/index.js';
+import { branding, countBy } from './toolUtils.js';
 
 const MAX_ROWS = 5_000;
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
@@ -93,12 +94,10 @@ export function analyzeJournalVariance(args: AnalyzeJournalVarianceArgs) {
     flags,
     shareUrl: share.shareUrl,
     shareExpiresAt: share.expiresAt,
-    _branding: {
-      poweredBy: 'HelloBooks AI Agent',
-      upgradeCta: `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
-      signupUrl: 'https://hellobooks.ai/signup',
-      note: 'Free analysis. Sign up at hellobooks.ai for AI-narrated variance commentary, conversational acknowledge ("acknowledge the Travel jump, it is the kickoff event"), and per-class drill-downs.',
-    },
+    _branding: branding(
+      `https://hellobooks.ai/migrate/${migrateSlug}?ref=${encodeURIComponent(share.shareUrl)}`,
+      'Free analysis. Sign up at hellobooks.ai for AI-narrated variance commentary, conversational acknowledge ("acknowledge the Travel jump, it is the kickoff event"), and per-class drill-downs.',
+    ),
   };
 }
 
@@ -106,11 +105,3 @@ function errorResponse(error: string, message: string) {
   return { status: 'error' as const, error, message };
 }
 
-function countBy<T>(arr: T[], keyFn: (t: T) => string): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const item of arr) {
-    const k = keyFn(item);
-    out[k] = (out[k] ?? 0) + 1;
-  }
-  return out;
-}

@@ -15,7 +15,7 @@
 /** Trim and return null for empty / whitespace-only / undefined. */
 export function trimOrNull(v: unknown): string | null {
   if (v === undefined || v === null) return null;
-  const s = String(v).trim();
+  const s = scalarToString(v).trim();
   return s === '' ? null : s;
 }
 
@@ -32,7 +32,7 @@ export function trimOrNull(v: unknown): string | null {
  */
 export function parseDecimal(v: unknown): number | null {
   if (v === undefined || v === null) return null;
-  let s = String(v).trim();
+  let s = scalarToString(v).trim();
   if (s === '') return null;
 
   let negative = false;
@@ -40,7 +40,7 @@ export function parseDecimal(v: unknown): number | null {
     negative = true;
     s = s.slice(1, -1).trim();
   }
-  s = s.replace(/[$£€₹¥A-Za-z\s]/g, '');
+  s = s.replaceAll(/[$£€₹¥A-Za-z\s]/g, '');
 
   // Decimal-vs-thousands separator disambiguation. Two scenarios:
   //   1) Both `,` and `.` present — the one appearing LAST is the decimal
@@ -58,14 +58,14 @@ export function parseDecimal(v: unknown): number | null {
   const lastDot = s.lastIndexOf('.');
   if (lastComma !== -1 && lastDot !== -1) {
     if (lastComma > lastDot) {
-      s = s.replace(/\./g, '').replace(',', '.');
+      s = s.replaceAll('.', '').replace(',', '.');
     } else {
-      s = s.replace(/,/g, '');
+      s = s.replaceAll(',', '');
     }
   } else if (lastComma !== -1) {
     const digitsAfterComma = s.length - lastComma - 1;
     if (digitsAfterComma === 3) {
-      s = s.replace(/,/g, '');
+      s = s.replaceAll(',', '');
     } else {
       s = s.replace(',', '.');
     }
@@ -112,7 +112,7 @@ export function parseFlexibleDate(v: unknown, opts: ParseDateOptions = {}): stri
   }
 
   // "15-Mar-2024" / "15 Mar 2024"
-  m = /^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-,]+(\d{4})$/.exec(s);
+  m = /^(\d{1,2})[\s-]+([A-Za-z]{3,9})[\s,-]+(\d{4})$/.exec(s);
   if (m) {
     const mon = MONTHS.indexOf(m[2].slice(0, 3).toLowerCase());
     if (mon !== -1) return safeIso(Number(m[3]), mon + 1, Number(m[1]));
@@ -126,18 +126,9 @@ export function parseFlexibleDate(v: unknown, opts: ParseDateOptions = {}): stri
   }
 
   // Slash / dash numeric: "03/15/2024" or "15/03/2024"
-  m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(s);
+  m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(s);
   if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    const y = Number(m[3]);
-    if (prefer === 'mdy') return safeIso(y, a, b);
-    if (prefer === 'dmy') return safeIso(y, b, a);
-    // Auto — if first part > 12 it must be the day.
-    if (a > 12 && b <= 12) return safeIso(y, b, a);
-    if (b > 12 && a <= 12) return safeIso(y, a, b);
-    // Tie-breaker — default to US-style because QBO is the dominant source.
-    return safeIso(y, a, b);
+    return parseNumericDate(m, prefer);
   }
 
   return null;
@@ -159,10 +150,31 @@ function safeIso(y: number, m: number, d: number): string | null {
 
 /** Lowercase plus collapse whitespace for fuzzy key building. */
 export function fuzzyKey(s: unknown): string {
-  return String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return scalarToString(s).trim().toLowerCase().replaceAll(/\s+/g, ' ');
 }
 
 /** Lowercase plus single-space collapse for header alias matching. */
 export function normalizeHeader(s: unknown): string {
-  return String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+  return scalarToString(s).toLowerCase().trim().replaceAll(/\s+/g, ' ');
+}
+
+export function scalarToString(v: unknown): string {
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v);
+  if (v instanceof Date) return v.toISOString();
+  return '';
+}
+
+function parseNumericDate(m: RegExpExecArray, prefer: DatePreference): string | null {
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  const y = Number(m[3]);
+  if (prefer === 'mdy') return safeIso(y, a, b);
+  if (prefer === 'dmy') return safeIso(y, b, a);
+  // Auto — if first part > 12 it must be the day.
+  if (a > 12 && b <= 12) return safeIso(y, b, a);
+  if (b > 12 && a <= 12) return safeIso(y, a, b);
+  // Tie-breaker — default to US-style because QBO is the dominant source.
+  return safeIso(y, a, b);
 }

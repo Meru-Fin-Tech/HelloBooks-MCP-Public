@@ -29,7 +29,14 @@
  * Pure functions. No I/O.
  */
 
-import { trimOrNull, parseDecimal, normalizeHeader } from './fieldUtils.js';
+import { trimOrNull, normalizeHeader, scalarToString } from './fieldUtils.js';
+import {
+  buildAliasColumnMapping,
+  parseExplicitDebitCredit,
+  parseMappedRows,
+  round2,
+  unmappedColumns,
+} from './journalUtils.js';
 
 export const TB_COLUMN_ALIASES: Record<string, string[]> = {
   AccountName: ['account', 'account name', 'account description'],
@@ -104,33 +111,7 @@ export function detectTbSource(columns: string[]): TbSource {
 }
 
 export function buildColumnMapping(sourceColumns: string[]): Record<string, string | null> {
-  const mapping: Record<string, string | null> = {};
-  for (const col of sourceColumns) {
-    const norm = normalizeHeader(col);
-    let matched: string | null = null;
-    for (const [hbField, aliases] of Object.entries(TB_COLUMN_ALIASES)) {
-      if (aliases.some((a) => normalizeHeader(a) === norm)) {
-        matched = hbField;
-        break;
-      }
-    }
-    mapping[col] = matched;
-  }
-  return mapping;
-}
-
-function applyMapping(
-  rawRow: Record<string, unknown>,
-  mapping: Record<string, string | null>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [srcCol, hbField] of Object.entries(mapping)) {
-    if (!hbField) continue;
-    const v = rawRow[srcCol];
-    if (v === undefined || v === null || String(v).trim() === '') continue;
-    out[hbField] = v;
-  }
-  return out;
+  return buildAliasColumnMapping(sourceColumns, TB_COLUMN_ALIASES);
 }
 
 function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>): ParsedTbLine {
@@ -146,43 +127,11 @@ function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>)
     });
   }
 
-  const debitRaw = mapped.Debit;
-  const creditRaw = mapped.Credit;
-  const debit = debitRaw !== undefined ? parseDecimal(debitRaw) : null;
-  const credit = creditRaw !== undefined ? parseDecimal(creditRaw) : null;
-
-  if (debitRaw !== undefined && debit === null) {
-    issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse debit "${String(debitRaw)}"`,
-      field: 'Debit',
-      rowIndex,
-    });
-  }
-  if (creditRaw !== undefined && credit === null) {
-    issues.push({
-      code: 'INVALID_DECIMAL',
-      message: `Could not parse credit "${String(creditRaw)}"`,
-      field: 'Credit',
-      rowIndex,
-    });
-  }
-
-  // TB rows must have exactly one side populated. Zero-balance accounts
-  // (e.g. a closed account included for completeness) are tolerated.
-  const debitParsed = debitRaw === undefined || debit !== null;
-  const creditParsed = creditRaw === undefined || credit !== null;
-  if (debitParsed && creditParsed) {
-    if (debit && credit) {
-      issues.push({
-        code: 'BOTH_DEBIT_AND_CREDIT',
-        message: `Account "${accountName}" has both debit (${debit}) and credit (${credit}) balances — should be only one.`,
-        field: 'Debit',
-        rowIndex,
-      });
-    }
-    // Skip NEITHER_DEBIT_NOR_CREDIT — zero-balance accounts are valid TB rows.
-  }
+  const { debit, credit, issues: amountIssues } = parseExplicitDebitCredit(rowIndex, mapped, {
+    invalidDebit: (debitRaw) => `Could not parse debit "${scalarToString(debitRaw)}"`,
+    invalidCredit: (creditRaw) => `Could not parse credit "${scalarToString(creditRaw)}"`,
+    both: (debit, credit) => `Account "${accountName}" has both debit (${debit}) and credit (${credit}) balances — should be only one.`,
+  });
 
   return {
     rowIndex,
@@ -191,30 +140,17 @@ function validateAndShapeLine(rowIndex: number, mapped: Record<string, unknown>)
     accountType: trimOrNull(mapped.AccountType),
     debit,
     credit,
-    issues,
+    issues: [...issues, ...(amountIssues as ParseIssue[])],
   };
 }
 
 const PENNY = 0.01;
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 export function parseTrialBalance(input: ParseInput): ParseResult {
   const mapping = buildColumnMapping(input.columns);
-  const unmappedColumns = Object.entries(mapping)
-    .filter(([, hb]) => hb === null)
-    .map(([col]) => col);
   const source = detectTbSource(input.columns);
 
-  const lines: ParsedTbLine[] = [];
-  input.rows.forEach((raw, idx) => {
-    const hasAny = Object.values(raw).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
-    if (!hasAny) return;
-    const mapped = applyMapping(raw, mapping);
-    lines.push(validateAndShapeLine(idx + 1, mapped));
-  });
+  const lines = parseMappedRows(input, mapping, validateAndShapeLine);
 
   const totalDebits = lines.reduce((s, l) => s + (l.debit ?? 0), 0);
   const totalCredits = lines.reduce((s, l) => s + (l.credit ?? 0), 0);
@@ -242,7 +178,7 @@ export function parseTrialBalance(input: ParseInput): ParseResult {
     totalRows: lines.length,
     totalIssues,
     columnMapping: mapping,
-    unmappedColumns,
+    unmappedColumns: unmappedColumns(mapping),
     topLevelIssues,
   };
 }

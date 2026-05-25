@@ -95,16 +95,18 @@ export function schemaFlagsFromJournals<J extends SourceJournal<SourceLine>>(
   for (const journal of journals) {
     const id = getId(journal);
     const ref = getReference ? (getReference(journal) ?? id) : id;
-    for (const ji of journal.issues) {
-      if (EXCLUDED_CODES.has(ji.code)) continue;
-      flags.push(toFlag(ji, id, ref));
-    }
-    for (const line of journal.lines) {
-      for (const li of line.issues) {
-        if (EXCLUDED_CODES.has(li.code)) continue;
-        flags.push(toFlag(li, id, ref));
-      }
-    }
+    flags.push(...issueFlags(journal.issues, id, ref));
+    flags.push(...lineIssueFlags(journal.lines, id, ref));
   }
   return flags;
+}
+
+function lineIssueFlags(lines: SourceLine[], id: string, ref: string): DetectionFlag[] {
+  return lines.flatMap((line) => issueFlags(line.issues, id, ref));
+}
+
+function issueFlags(issues: SourceIssue[], id: string, ref: string): DetectionFlag[] {
+  return issues
+    .filter((issue) => !EXCLUDED_CODES.has(issue.code))
+    .map((issue) => toFlag(issue, id, ref));
 }

@@ -30,7 +30,7 @@
  * Pure functions. No I/O.
  */
 
-import { trimOrNull, parseDecimal, normalizeHeader } from './fieldUtils.js';
+import { parseDecimal, normalizeHeader, scalarToString } from './fieldUtils.js';
 
 export type PnlRowKind =
   | 'SECTION_HEADER'
@@ -86,23 +86,25 @@ export interface ParseResult {
   };
   totalRowCount: number;
   totalIssues: number;
-  columnMapping: Record<string, 'Label' | 'Amount' | null>;
+  columnMapping: Record<string, PnlColumnRole>;
   topLevelIssues: ParseIssue[];
 }
 
 /* ──────────────────────── Column detection ─────────────────────── */
 
-const LABEL_ALIASES = [
+type PnlColumnRole = 'Label' | 'Amount' | null;
+
+const LABEL_ALIASES = new Set([
   'account', 'item', 'description', 'name', '',
-];
+]);
 
 const AMOUNT_ALIASES = [
   'amount', 'total', 'balance', 'current period', 'this period', 'ytd', 'period',
 ];
 
-function classifyColumn(header: string): 'Label' | 'Amount' | null {
+function classifyColumn(header: string): PnlColumnRole {
   const n = normalizeHeader(header);
-  if (LABEL_ALIASES.includes(n)) return 'Label';
+  if (LABEL_ALIASES.has(n)) return 'Label';
   if (AMOUNT_ALIASES.some((a) => n === a || n.startsWith(a))) return 'Amount';
   // Date-suffixed amount columns ("Jan 2024", "Q1 2024") — heuristically treat
   // the rightmost number-bearing column as Amount.
@@ -110,27 +112,28 @@ function classifyColumn(header: string): 'Label' | 'Amount' | null {
   return null;
 }
 
-function buildColumnMapping(columns: string[]): Record<string, 'Label' | 'Amount' | null> {
-  const mapping: Record<string, 'Label' | 'Amount' | null> = {};
+function buildColumnMapping(columns: string[]): Record<string, PnlColumnRole> {
+  const mapping: Record<string, PnlColumnRole> = {};
   for (const c of columns) {
     mapping[c] = classifyColumn(c);
   }
   // If no column matched Label, fall back to the first column.
-  const hasLabel = Object.values(mapping).some((v) => v === 'Label');
+  const roles = Object.values(mapping);
+  const hasLabel = roles.includes('Label');
   if (!hasLabel && columns.length > 0) {
     mapping[columns[0]] = 'Label';
   }
   // If no column matched Amount, fall back to the last column.
-  const hasAmount = Object.values(mapping).some((v) => v === 'Amount');
+  const hasAmount = roles.includes('Amount');
   if (!hasAmount && columns.length > 1) {
-    mapping[columns[columns.length - 1]] = 'Amount';
+    mapping[columns.at(-1)!] = 'Amount';
   }
   return mapping;
 }
 
 /* ──────────────────────── Row classification ───────────────────── */
 
-const KEY_SUBTOTAL_LABELS = [
+const KEY_SUBTOTAL_LABELS = new Set([
   'gross profit',
   'gross margin',
   'operating income',
@@ -143,14 +146,14 @@ const KEY_SUBTOTAL_LABELS = [
   'income before income tax',
   'earnings before tax',
   'ebitda',
-];
+]);
 
 const TOTAL_PREFIX_RE = /^total\s+/i;
 const TOTAL_SUFFIX_RE = /\s+total$/i;
 
 function classifyRow(label: string, amount: number | null, indent: number): PnlRowKind {
   const n = label.trim().toLowerCase();
-  if (KEY_SUBTOTAL_LABELS.includes(n)) return 'KEY_SUBTOTAL';
+  if (KEY_SUBTOTAL_LABELS.has(n)) return 'KEY_SUBTOTAL';
   if (TOTAL_PREFIX_RE.test(label) || TOTAL_SUFFIX_RE.test(label)) return 'SUBTOTAL';
   // Section header — has no amount and no obvious math role.
   if (amount === null) return 'SECTION_HEADER';
@@ -223,46 +226,14 @@ export function parseProfitLoss(input: ParseInput): ParseResult {
   }
 
   const pnlRows: PnlRow[] = [];
-  let currentSection: string | null = null;
   let sectionIssueCount = 0;
+  const sectionState: SectionState = { currentSection: null };
 
   input.rows.forEach((raw, idx) => {
-    const rawLabel = String(raw[labelCol] ?? '');
-    const labelStripped = rawLabel.trim();
-    if (labelStripped === '') return; // skip blank rows
-
-    const rawAmount = raw[amountCol];
-    let amount: number | null = null;
-    if (rawAmount !== undefined && rawAmount !== null && String(rawAmount).trim() !== '') {
-      amount = parseDecimal(rawAmount);
-      if (amount === null) {
-        sectionIssueCount++;
-      }
-    }
-
-    const indent = deriveIndent(rawLabel);
-    const kind = classifyRow(labelStripped, amount, indent);
-
-    // Section tracking: a new SECTION_HEADER starts a section; line
-    // items inherit the current section. A SUBTOTAL ends the section
-    // (next non-empty header re-opens).
-    if (kind === 'SECTION_HEADER') {
-      currentSection = labelStripped;
-    }
-
-    pnlRows.push({
-      rowIndex: idx + 1,
-      label: labelStripped,
-      amount,
-      kind,
-      section: kind === 'SECTION_HEADER' ? null : currentSection,
-      indent,
-      raw: rawAmount !== undefined ? String(rawAmount) : null,
-    });
-
-    if (kind === 'SUBTOTAL' && deriveSectionName(labelStripped).toLowerCase() === (currentSection ?? '').toLowerCase()) {
-      currentSection = null;
-    }
+    const parsedRow = parsePnlRow(raw, idx + 1, labelCol, amountCol, sectionState);
+    if (!parsedRow) return;
+    pnlRows.push(parsedRow.row);
+    if (parsedRow.invalidAmount) sectionIssueCount++;
   });
 
   const totals = detectKeyTotals(pnlRows);
@@ -291,6 +262,60 @@ export function parseProfitLoss(input: ParseInput): ParseResult {
     columnMapping,
     topLevelIssues,
   };
+}
+
+interface SectionState {
+  currentSection: string | null;
+}
+
+function parsePnlRow(
+  raw: Record<string, unknown>,
+  rowIndex: number,
+  labelCol: string,
+  amountCol: string,
+  sectionState: SectionState,
+): { row: PnlRow; invalidAmount: boolean } | null {
+  const rawLabel = scalarToString(raw[labelCol]);
+  const labelStripped = rawLabel.trim();
+  if (labelStripped === '') return null;
+
+  const { amount, rawAmount, invalidAmount } = parseAmountCell(raw[amountCol]);
+  const indent = deriveIndent(rawLabel);
+  const kind = classifyRow(labelStripped, amount, indent);
+  updateCurrentSection(sectionState, kind, labelStripped);
+
+  const row: PnlRow = {
+    rowIndex,
+    label: labelStripped,
+    amount,
+    kind,
+    section: kind === 'SECTION_HEADER' ? null : sectionState.currentSection,
+    indent,
+    raw: rawAmount,
+  };
+  closeSectionAfterSubtotal(sectionState, kind, labelStripped);
+  return { row, invalidAmount };
+}
+
+function parseAmountCell(rawAmount: unknown): { amount: number | null; rawAmount: string | null; invalidAmount: boolean } {
+  if (rawAmount === undefined || rawAmount === null || scalarToString(rawAmount).trim() === '') {
+    return { amount: null, rawAmount: rawAmount !== undefined ? scalarToString(rawAmount) : null, invalidAmount: false };
+  }
+  const amount = parseDecimal(rawAmount);
+  return { amount, rawAmount: scalarToString(rawAmount), invalidAmount: amount === null };
+}
+
+function updateCurrentSection(sectionState: SectionState, kind: PnlRowKind, label: string): void {
+  if (kind === 'SECTION_HEADER') {
+    sectionState.currentSection = label;
+  }
+}
+
+function closeSectionAfterSubtotal(sectionState: SectionState, kind: PnlRowKind, label: string): void {
+  const section = sectionState.currentSection;
+  if (kind === 'SUBTOTAL' && deriveSectionName(label).toLowerCase() === (section ?? '').toLowerCase()) {
+    sectionState.currentSection = null;
+  }
 }
 
 function nullTotals(): ParseResult['totals'] {

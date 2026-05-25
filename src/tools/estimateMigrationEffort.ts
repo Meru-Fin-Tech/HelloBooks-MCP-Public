@@ -45,23 +45,12 @@ export function estimateMigrationEffort(args: EstimateMigrationEffortArgs) {
     return { status: 'error' as const, error: 'unknown_source', message: 'Could not detect QBO or Xero from the headers.' };
   }
 
-  const uniqueAccounts = new Set<string>();
-  let earliestDate: string | null = null;
-  let latestDate: string | null = null;
-  for (const j of result.journals) {
-    for (const l of j.lines) {
-      if (l.accountIdentifier) uniqueAccounts.add(l.accountIdentifier);
-    }
-    if (j.date) {
-      if (earliestDate === null || j.date < earliestDate) earliestDate = j.date;
-      if (latestDate === null || j.date > latestDate) latestDate = j.date;
-    }
-  }
+  const sizing = collectSizing(result.journals);
 
   const complexity = estimateComplexity({
     journalCount: result.totalJournals,
     rowCount: result.totalRows,
-    accountCount: uniqueAccounts.size,
+    accountCount: sizing.uniqueAccounts,
   });
 
   const { hours, priceUsd } = quoteForComplexity(complexity, result.totalJournals);
@@ -80,9 +69,9 @@ export function estimateMigrationEffort(args: EstimateMigrationEffortArgs) {
     sizing: {
       totalRows: result.totalRows,
       totalJournals: result.totalJournals,
-      uniqueAccounts: uniqueAccounts.size,
-      earliestDate,
-      latestDate,
+      uniqueAccounts: sizing.uniqueAccounts,
+      earliestDate: sizing.earliestDate,
+      latestDate: sizing.latestDate,
     },
     complexity,
     estimate: {
@@ -105,6 +94,41 @@ export function estimateMigrationEffort(args: EstimateMigrationEffortArgs) {
       note: `Estimated ~${hours} human hours / $${priceUsd} for manual migration. HelloBooks's assisted migration cuts this to ~${Math.max(1, Math.ceil(hours / 10))} hours with the parsed data pre-populated. Click the CTA to start.`,
     },
   };
+}
+
+function collectSizing(
+  journals: NonNullable<ReturnType<typeof parseAndNormalize>>['journals'],
+): { uniqueAccounts: number; earliestDate: string | null; latestDate: string | null } {
+  const uniqueAccounts = new Set<string>();
+  let earliestDate: string | null = null;
+  let latestDate: string | null = null;
+
+  for (const journal of journals) {
+    addJournalAccounts(uniqueAccounts, journal.lines);
+    if (journal.date) {
+      earliestDate = earlierDate(earliestDate, journal.date);
+      latestDate = laterDate(latestDate, journal.date);
+    }
+  }
+
+  return { uniqueAccounts: uniqueAccounts.size, earliestDate, latestDate };
+}
+
+function earlierDate(current: string | null, candidate: string): string {
+  return current === null || candidate < current ? candidate : current;
+}
+
+function laterDate(current: string | null, candidate: string): string {
+  return current === null || candidate > current ? candidate : current;
+}
+
+function addJournalAccounts(
+  uniqueAccounts: Set<string>,
+  lines: NonNullable<ReturnType<typeof parseAndNormalize>>['journals'][number]['lines'],
+): void {
+  for (const line of lines) {
+    if (line.accountIdentifier) uniqueAccounts.add(line.accountIdentifier);
+  }
 }
 
 function estimateComplexity(s: { journalCount: number; rowCount: number; accountCount: number }): Complexity {

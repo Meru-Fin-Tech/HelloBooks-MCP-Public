@@ -13,13 +13,7 @@ import type { ParsedJournal as WaveParsedJournal, ParsedJournalLine as WaveParse
 import type { NormalizedJournal, NormalizedLine } from './types.js';
 
 function normalizeQboLine(line: QboParsedLine): NormalizedLine {
-  return {
-    rowIndex: line.rowIndex,
-    accountIdentifier: line.accountName,
-    debit: line.debit,
-    credit: line.credit,
-    memo: line.memo,
-  };
+  return normalizeLine(line, line.accountName, line.memo);
 }
 
 export function normalizeQboJournal(journal: QboParsedJournal): NormalizedJournal {
@@ -37,13 +31,7 @@ export function normalizeQboJournal(journal: QboParsedJournal): NormalizedJourna
 }
 
 function normalizeXeroLine(line: XeroParsedLine): NormalizedLine {
-  return {
-    rowIndex: line.rowIndex,
-    accountIdentifier: line.accountCode ?? line.accountName,
-    debit: line.debit,
-    credit: line.credit,
-    memo: line.lineDesc ?? line.narration,
-  };
+  return normalizeLine(line, line.accountCode ?? line.accountName, line.lineDesc ?? line.narration);
 }
 
 export function normalizeXeroJournal(journal: XeroParsedJournal): NormalizedJournal {
@@ -61,13 +49,7 @@ export function normalizeXeroJournal(journal: XeroParsedJournal): NormalizedJour
 }
 
 function normalizeZohoLine(line: ZohoParsedLine): NormalizedLine {
-  return {
-    rowIndex: line.rowIndex,
-    accountIdentifier: line.accountName,
-    debit: line.debit,
-    credit: line.credit,
-    memo: line.lineDesc ?? line.notes,
-  };
+  return normalizeLine(line, line.accountName, line.lineDesc ?? line.notes);
 }
 
 export function normalizeZohoJournal(journal: ZohoParsedJournal): NormalizedJournal {
@@ -85,12 +67,20 @@ export function normalizeZohoJournal(journal: ZohoParsedJournal): NormalizedJour
 }
 
 function normalizeWaveLine(line: WaveParsedLine): NormalizedLine {
+  return normalizeLine(line, line.accountName, line.lineDesc ?? line.notes);
+}
+
+function normalizeLine(
+  line: { rowIndex: number; debit: number | null; credit: number | null },
+  accountIdentifier: string | null,
+  memo: string | null,
+): NormalizedLine {
   return {
     rowIndex: line.rowIndex,
-    accountIdentifier: line.accountName,
+    accountIdentifier,
     debit: line.debit,
     credit: line.credit,
-    memo: line.lineDesc ?? line.notes,
+    memo,
   };
 }
 

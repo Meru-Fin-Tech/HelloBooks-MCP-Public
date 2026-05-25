@@ -65,8 +65,8 @@ export function detectDuplicates(journals: NormalizedJournal[]): DetectionFlag[]
 
   // Deterministic ordering — date asc, then by total, then by first id.
   flags.sort((a, b) => {
-    const da = String(a.data?.date ?? '');
-    const db = String(b.data?.date ?? '');
+    const da = dataString(a.data?.date);
+    const db = dataString(b.data?.date);
     if (da !== db) return da.localeCompare(db);
     const ta = Number(a.data?.totalDebits ?? 0);
     const tb = Number(b.data?.totalDebits ?? 0);
@@ -74,4 +74,8 @@ export function detectDuplicates(journals: NormalizedJournal[]): DetectionFlag[]
     return (a.affectedJournalIds[0] ?? '').localeCompare(b.affectedJournalIds[0] ?? '');
   });
   return flags;
+}
+
+function dataString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
 }
