@@ -61,15 +61,17 @@ const PRO_FEATURES = [
 ];
 
 const CPA_FEATURES = [
-  'Unlimited AI credits',
-  'Multi-client dashboard',
-  'White-label option',
-  'Bulk AI operations',
-  'Partner commission (10%)',
-  'Co-branded landing page',
-  'Priority phone support',
-  'Dedicated account manager',
-  'Quarterly business review',
+  'Unlimited AI credits + unlimited users',
+  'Multi-client dashboard with filing-status tracker',
+  'Tax prep: 1040 / 1120 / 1120-S / 1065 / 990 / 1041 / Amendments / Extensions',
+  'E-filing status tracker (live IRS MeF submission on roadmap)',
+  'Client portal with secure document requests + e-sign',
+  'Tax organizers with client-side questionnaire',
+  'CPQ: proposals, engagement letters, change orders, renewals',
+  'Workflow automations + recurring tasks',
+  'Time tracking → Stripe billing',
+  '6-role RBAC (Owner/Admin/Manager/Senior/Staff/Read-Only)',
+  'Suite integration: HelloBooks, HelloTime, HelloGrowth CRM',
 ];
 
 const WAREHOUSE_ADDON_FEATURES = [
@@ -201,12 +203,12 @@ export const PLANS: Plan[] = [
   },
   {
     plan: 'cpa',
-    name: 'CPA / CA Partner',
-    tagline: 'Manage all your clients with AI',
+    name: 'HelloCPA Practice',
+    tagline: 'Run your CPA / CA firm — clients, tax prep, e-filing, billing in one suite',
     monthlyAiCredits: -1,
     features: CPA_FEATURES,
     prices: pricesFor('cpa'),
-    publicSignupUrl: 'https://hellobooks.ai/contact',
+    publicSignupUrl: 'https://hellobooks.ai/practice-management',
   },
   {
     plan: 'warehouse-addon',
