@@ -46,7 +46,7 @@ test('getBaseUrl honors HELLOBOOKS_MCP_BASE_URL env and strips trailing slash', 
   delete process.env.HELLOBOOKS_MCP_BASE_URL;
 });
 
-test('TOOL_CATALOG covers all 13 MCP tools currently registered', () => {
+test('TOOL_CATALOG covers all 14 marketing-catalog MCP tools in the discovery surface', () => {
   const expected = [
     'list_plans',
     'list_credit_packs',
@@ -61,6 +61,7 @@ test('TOOL_CATALOG covers all 13 MCP tools currently registered', () => {
     'list_feature_categories',
     'list_articles',
     'list_videos',
+    'how_munimji_helps',
   ];
   const actual = TOOL_CATALOG.map((t) => t.name);
   assert.deepEqual(actual.slice().sort(), expected.slice().sort());

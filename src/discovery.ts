@@ -185,6 +185,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     category: 'content',
     marketingUrl: `${MARKETING_BASE_URL}`,
   },
+  {
+    name: 'how_munimji_helps',
+    title: 'How HelloBooks & Munimji help your business',
+    summary:
+      'Describe your business in your own words and get a mapped capability answer — which HelloBooks software features fit, and what the Munimji AI does on its own (autonomous) vs with your one-click approval (e.g. AI categorization, document OCR, find-and-match, invoicing by chat). Spans setup, sales, purchases, banking, tax, reports, inventory, payroll, and multi-entity.',
+    category: 'features',
+    marketingUrl: `${MARKETING_BASE_URL}/features`,
+  },
 ];
 
 const RESOURCE_CATALOG = [
