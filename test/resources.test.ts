@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 
 import { RESOURCES, readResource } from '../src/resources/index.js';
 
-test('RESOURCES exposes about + changelog + feature-catalog + 4 comparisons', () => {
+test('RESOURCES exposes about + changelog + feature-catalog + capabilities + 4 comparisons', () => {
   const uris = RESOURCES.map((r) => r.uri).sort((a, b) => a.localeCompare(b));
   assert.deepEqual(uris, [
     'hellobooks://about',
+    'hellobooks://capabilities',
     'hellobooks://changelog',
     'hellobooks://comparison/quickbooks',
     'hellobooks://comparison/tally',
@@ -14,6 +15,20 @@ test('RESOURCES exposes about + changelog + feature-catalog + 4 comparisons', ()
     'hellobooks://comparison/zoho-books',
     'hellobooks://feature-catalog',
   ]);
+});
+
+test('readResource(capabilities) returns the live capability KB as JSON', () => {
+  const out = readResource('hellobooks://capabilities');
+  assert.equal(out.contents[0].mimeType, 'application/json');
+  const parsed = JSON.parse(out.contents[0].text);
+  assert.equal(parsed.areaCount, 10);
+  assert.ok(parsed.capabilityCount >= 1);
+  assert.ok(Array.isArray(parsed.areas));
+  assert.ok(Array.isArray(parsed.capabilities));
+  // The autonomy legend must explain all four levels.
+  for (const lvl of ['autonomous', 'approval', 'assist', 'manual']) {
+    assert.ok(typeof parsed.autonomyLegend[lvl] === 'string' && parsed.autonomyLegend[lvl].length > 20);
+  }
 });
 
 for (const id of ['quickbooks', 'xero', 'zoho-books', 'tally']) {

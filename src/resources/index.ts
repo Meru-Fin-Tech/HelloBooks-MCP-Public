@@ -6,6 +6,12 @@ import {
   FEATURE_CATEGORIES,
   FEATURE_CATALOG_META,
 } from '../data/features.js';
+import {
+  AUTONOMY_LEGEND,
+  BUSINESS_AREAS,
+  MUNIMJI_CAPABILITIES,
+  CAPABILITY_KB_META,
+} from '../data/capabilities.js';
 
 export interface ResourceDescriptor {
   uri: string;
@@ -44,6 +50,12 @@ export const RESOURCES: ResourceDescriptor[] = [
     uri: 'hellobooks://feature-catalog',
     name: 'HelloBooks Feature Catalog',
     description: 'Full marketing feature catalog mirrored from marketing/feature-catalog.json — 96+ features across 13 categories with tier, status, marketed flag, and competitor parity.',
+    mimeType: 'application/json',
+  },
+  {
+    uri: 'hellobooks://capabilities',
+    name: 'HelloBooks Munimji Capability Knowledge Base',
+    description: 'The live "what can HelloBooks + the Munimji AI do for my business?" knowledge base: 10 business-operation areas, the AI-autonomy layer (autonomous / approval / assist / manual — what Munimji does on its own vs with your one-click approval), and links into the feature catalog. Same data the how_munimji_helps tool returns. The AI never posts to the ledger without approval.',
     mimeType: 'application/json',
   },
   ...COMPARISON_RESOURCES,
@@ -117,6 +129,28 @@ export function readResource(uri: string): { contents: { uri: string; mimeType: 
               features: FEATURES,
               featureCount: FEATURES.length,
               categoryCount: FEATURE_CATEGORIES.length,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  }
+  if (uri === 'hellobooks://capabilities') {
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: JSON.stringify(
+            {
+              ...CAPABILITY_KB_META,
+              autonomyLegend: AUTONOMY_LEGEND,
+              areas: BUSINESS_AREAS,
+              capabilities: MUNIMJI_CAPABILITIES,
+              capabilityCount: MUNIMJI_CAPABILITIES.length,
+              areaCount: BUSINESS_AREAS.length,
             },
             null,
             2,

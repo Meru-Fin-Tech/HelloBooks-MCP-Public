@@ -199,6 +199,7 @@ const RESOURCE_CATALOG = [
   { uri: 'hellobooks://about', name: 'About HelloBooks', mimeType: 'text/markdown' },
   { uri: 'hellobooks://changelog', name: 'HelloBooks Changelog', mimeType: 'application/json' },
   { uri: 'hellobooks://feature-catalog', name: 'HelloBooks Feature Catalog', mimeType: 'application/json' },
+  { uri: 'hellobooks://capabilities', name: 'HelloBooks Munimji Capability Knowledge Base', mimeType: 'application/json' },
   { uri: 'hellobooks://comparison/quickbooks', name: 'HelloBooks vs QuickBooks', mimeType: 'text/markdown' },
   { uri: 'hellobooks://comparison/xero', name: 'HelloBooks vs Xero', mimeType: 'text/markdown' },
   { uri: 'hellobooks://comparison/zoho-books', name: 'HelloBooks vs Zoho Books', mimeType: 'text/markdown' },
