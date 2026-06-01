@@ -59,6 +59,8 @@ import { listTaxRates, listTaxRatesSchema } from './tools/listTaxRates.js';
 export { listTaxRates } from './tools/listTaxRates.js';
 import { lookupTaxRate, lookupTaxRateSchema } from './tools/lookupTaxRate.js';
 export { lookupTaxRate } from './tools/lookupTaxRate.js';
+import { howMunimjiHelps, howMunimjiHelpsSchema } from './tools/howMunimjiHelps.js';
+export { howMunimjiHelps } from './tools/howMunimjiHelps.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 import { track } from './analytics.js';
@@ -351,6 +353,14 @@ export function createServer(): McpServer {
     'Take a Trial Balance CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected from headers — YTD columns indicate Xero, Opening Balance indicates Zoho, etc.) and run three checks: (1) tb.unbalanced — debits ≠ credits (every downstream P&L / BS / cash-flow report built from this TB is wrong until fixed); (2) tb.wrong_sign — accounts whose name suggests a class (Revenue / COGS / Expense / AR / AP) carrying a balance on the wrong side (classic posting-error signal); (3) tb.round_balance — exact-multiple-of-$10,000 balances (plug-entry signal). Input is raw CSV text of a Trial Balance report. Max 5,000 rows; max 5 MB. Returns flagged accounts with severity, a roll-up showing whether the TB balances, parse diagnostics, and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes a Trial Balance and asks "does my TB balance?", "are there sign errors?", "what looks suspicious?", or "is this TB clean?". The Trial Balance is the foundation document for every other financial statement — if it does not balance, every downstream report is invalid.',
     analyzeTrialBalanceSchema,
     async (args) => asJsonContent(analyzeTrialBalance(args)),
+  );
+
+  server.tool(
+    'how_munimji_helps',
+    'Explain how HelloBooks and Munimji (the in-app AI assistant) help a specific business — given a free-text description of the user\'s own operations. Returns a curated capability knowledge base: business-operation areas (sales, purchases, banking, tax, reports, inventory, payroll, multi-entity, setup), and for each AI capability WHO does the work — `autonomous` (Munimji does it on its own, e.g. OCR extraction, running reports), `approval` (Munimji prepares the entry and you one-click approve before it posts to the ledger, e.g. AI categorization, find-and-match, creating invoices/bills by chat), `assist` (co-pilot, e.g. guided onboarding, voice), or `manual` (a software feature you run yourself). Each capability links to the backing software features. Use this when a user describes their business and asks "how can HelloBooks help me?", "what can the AI do for my shop/practice/agency?", or "what can Munimji do on its own vs what do I approve?". Pass their description in `businessDescription`; optionally filter by `area` or `autonomy`. The AI never posts to a ledger without approval. For the full software catalog call list_features; for pricing call list_plans.',
+    howMunimjiHelpsSchema,
+    async (args, extra) =>
+      runTool('how_munimji_helps', args, extra, () => howMunimjiHelps(args)),
   );
 
   // Resources

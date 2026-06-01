@@ -14,6 +14,9 @@ import { localPaymentMethods } from '../src/tools/paymentMethods.js';
 import { listFeatures } from '../src/tools/listFeatures.js';
 import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 import { listArticles } from '../src/tools/listArticles.js';
+import { howMunimjiHelps } from '../src/tools/howMunimjiHelps.js';
+import { MUNIMJI_CAPABILITIES } from '../src/data/capabilities.js';
+import { FEATURES } from '../src/data/features.js';
 import { ARTICLES } from '../src/data/articles.js';
 import {
   feedToPlans,
@@ -851,4 +854,75 @@ test('feature_search surfaces articles in results', () => {
   const r = featureSearch({ query: 'quickbooks alternative' });
   assert.ok(r.totalMatches > 0, 'expected article hits for QuickBooks alternative query');
   assert.ok(r.results.some((h) => h.source === 'article'));
+});
+
+// ---------------------------------------------------------------------------
+// how_munimji_helps — capability knowledge base
+// ---------------------------------------------------------------------------
+
+test('how_munimji_helps unfiltered returns areas, capabilities, and the legend', () => {
+  const r = howMunimjiHelps({});
+  assert.equal(r.areas.length, 10, 'expected all 10 business areas');
+  assert.equal(r.capabilityCount, MUNIMJI_CAPABILITIES.length);
+  assert.ok(r.capabilities.length === r.capabilityCount);
+  // Legend must explain all four autonomy levels.
+  for (const lvl of ['autonomous', 'approval', 'assist', 'manual'] as const) {
+    assert.ok(r.autonomyLegend[lvl].length > 20, `legend missing for ${lvl}`);
+  }
+  assert.ok(r.guidance.length > 100, 'guidance string must be present for the host LLM');
+});
+
+test('how_munimji_helps echoes the business description as context', () => {
+  const desc = 'I run a small cloth retail shop, daily cash + UPI sales, monthly GST.';
+  const r = howMunimjiHelps({ businessDescription: desc });
+  assert.equal(r.businessDescription, desc);
+});
+
+test('how_munimji_helps returns null businessDescription when omitted', () => {
+  const r = howMunimjiHelps({});
+  assert.equal(r.businessDescription, null);
+});
+
+test('how_munimji_helps area filter narrows areas and capabilities', () => {
+  const r = howMunimjiHelps({ area: 'banking-cash' });
+  assert.equal(r.areas.length, 1);
+  assert.equal(r.areas[0].key, 'banking-cash');
+  assert.ok(r.capabilities.length > 0);
+  for (const c of r.capabilities) assert.equal(c.area, 'banking-cash');
+});
+
+test('how_munimji_helps autonomy filter narrows to that level', () => {
+  const r = howMunimjiHelps({ autonomy: 'autonomous' });
+  assert.ok(r.capabilities.length > 0);
+  for (const c of r.capabilities) assert.equal(c.autonomy, 'autonomous');
+});
+
+test('how_munimji_helps enriches each capability with resolved software features', () => {
+  const r = howMunimjiHelps({});
+  for (const c of r.capabilities) {
+    assert.ok(c.softwareFeatures.length > 0, `${c.key} should link >=1 software feature`);
+    assert.ok(c.autonomyMeaning.length > 20, `${c.key} should carry an autonomy explanation`);
+    assert.ok(c.exampleAsk.length > 0);
+  }
+});
+
+test('capabilities KB: every softwareFeatureKey resolves to a real feature (drift guard)', () => {
+  const featureKeys = new Set(FEATURES.map((f) => f.key));
+  for (const c of MUNIMJI_CAPABILITIES) {
+    for (const k of c.softwareFeatureKeys) {
+      assert.ok(featureKeys.has(k), `capability "${c.key}" references missing feature key "${k}"`);
+    }
+  }
+});
+
+test('capabilities KB: ledger-mutating actions are never silently autonomous (safety invariant)', () => {
+  // An autonomous capability (Munimji acts without approval) must NOT claim to
+  // post to the books/ledger — that is the agentic-accounting safety model.
+  for (const c of MUNIMJI_CAPABILITIES) {
+    if (c.autonomy !== 'autonomous') continue;
+    assert.ok(
+      !/post(s|ed)?\s+(to\s+)?(your\s+)?(books|ledger|general ledger)/i.test(c.whoDoesWhat),
+      `autonomous capability "${c.key}" must not post to the ledger without approval`,
+    );
+  }
 });
