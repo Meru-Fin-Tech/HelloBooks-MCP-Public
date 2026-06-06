@@ -28,7 +28,8 @@ import express, { type Request, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { createServer } from './server.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import { createServer, SERVER_VERSION } from './server.js';
 import { track } from './analytics.js';
 import {
   generateAgentCard,
@@ -102,19 +103,22 @@ const sessionLimiter = rateLimit({
 interface SessionEntry {
   transport: StreamableHTTPServerTransport;
   createdAt: number;
+  lastActiveAt: number;
 }
 const sessions = new Map<string, SessionEntry>();
 
-// Reap idle sessions (>30 min) so memory doesn't grow unbounded. After each
-// sweep, emit `mcp_sessions_snapshot` — this turns the live /health gauge into
-// a 5-minute-resolution concurrency time series in GA4. `active_sessions` is
-// "recently-active in the last <=30 min", not "calling a tool right now"; the
-// count is per-process. See strategy doc 73 §6e.
+// Reap IDLE sessions (no request in >30 min) so memory doesn't grow unbounded.
+// The clock is `lastActiveAt`, bumped on every request — NOT `createdAt` — so a
+// continuously-used session is never force-closed mid-use. After each sweep,
+// emit `mcp_sessions_snapshot` — this turns the live /health gauge into a
+// 5-minute-resolution concurrency time series in GA4. `active_sessions` is
+// "active in the last <=30 min", not "calling a tool right now"; the count is
+// per-process. See strategy doc 73 §6e.
 const SESSION_TTL_MS = 30 * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
   for (const [id, entry] of sessions) {
-    if (now - entry.createdAt > SESSION_TTL_MS) {
+    if (now - entry.lastActiveAt > SESSION_TTL_MS) {
       entry.transport.close().catch(() => {});
       sessions.delete(id);
     }
@@ -125,44 +129,61 @@ setInterval(() => {
 
 async function handleMcpRequest(req: Request, res: Response): Promise<void> {
   const sid = req.header('mcp-session-id');
-  let entry = sid ? sessions.get(sid) : undefined;
+  const entry = sid ? sessions.get(sid) : undefined;
 
-  if (!entry) {
-    // Country from Cloudflare's edge header — no geo-IP library, no raw IP.
-    const country = req.header('cf-ipcountry') ?? 'unknown';
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (id) => {
-        sessions.set(id, { transport, createdAt: Date.now() });
-        track(
-          'mcp_session_started',
-          { session_id: id, country, transport: 'streamable-http' },
-          id,
-        );
-      },
-    });
-    transport.onclose = () => {
-      const closedId = transport.sessionId;
-      if (!closedId) return;
-      const closing = sessions.get(closedId);
-      sessions.delete(closedId);
-      track(
-        'mcp_session_ended',
-        {
-          session_id: closedId,
-          duration_sec: closing
-            ? Math.round((Date.now() - closing.createdAt) / 1000)
-            : 0,
-        },
-        closedId,
-      );
-    };
-    const server = createServer();
-    await server.connect(transport);
-    entry = { transport, createdAt: Date.now() };
+  if (entry) {
+    // Known session — bump activity clock and reuse its transport.
+    entry.lastActiveAt = Date.now();
+    await entry.transport.handleRequest(req, res, req.body);
+    return;
   }
 
-  await entry.transport.handleRequest(req, res, req.body);
+  // No matching session. Only an `initialize` request (which carries no session
+  // id) may mint a fresh transport. A request bearing an unknown/expired
+  // session id is rejected with 400 — minting a phantom transport for it would
+  // leak an McpServer per request and return a confusing protocol error.
+  if (sid || !isInitializeRequest(req.body)) {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: { code: -32000, message: 'Bad Request: no valid session id for a non-initialize request.' },
+      id: null,
+    });
+    return;
+  }
+
+  // Country from Cloudflare's edge header — no geo-IP library, no raw IP.
+  const country = req.header('cf-ipcountry') ?? 'unknown';
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (id) => {
+      const now = Date.now();
+      sessions.set(id, { transport, createdAt: now, lastActiveAt: now });
+      track(
+        'mcp_session_started',
+        { session_id: id, country, transport: 'streamable-http' },
+        id,
+      );
+    },
+  });
+  transport.onclose = () => {
+    const closedId = transport.sessionId;
+    if (!closedId) return;
+    const closing = sessions.get(closedId);
+    sessions.delete(closedId);
+    track(
+      'mcp_session_ended',
+      {
+        session_id: closedId,
+        duration_sec: closing
+          ? Math.round((Date.now() - closing.createdAt) / 1000)
+          : 0,
+      },
+      closedId,
+    );
+  };
+  const server = createServer();
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
 }
 
 // ---------------------------------------------------------------------------
@@ -181,7 +202,7 @@ app.get('/health', (_req, res) => {
 app.get('/info', (_req, res) => {
   res.json({
     name: 'hellobooks-mcp-public',
-    version: '0.7.0',
+    version: SERVER_VERSION,
     description:
       'Public read-only MCP server for HelloBooks plans, integrations, country support, compliance, competitors, deadlines, local payment methods, feature catalog data, published articles, and product videos.',
     transport: { http: '/mcp', sse: '/mcp' },
