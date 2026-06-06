@@ -194,8 +194,11 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/mcp \
 # → 400, and mcp_request + mcp_error  { status: 400, success: false }
 ```
 
-> SSE note: `GET /mcp` streams are long-lived; `res.on('finish')` fires when the
-> stream ends, so an SSE event is recorded at stream close, not at open.
+> Terminal-event note: each request is recorded exactly once, on the first of
+> `res` `finish` / `close` to fire. `finish` covers a normally completed
+> response; `close` additionally catches aborted clients and long-lived SSE
+> `GET /mcp` streams that end without a `finish` (so they are not undercounted).
+> SSE streams are therefore recorded at stream close, not at open.
 
 ## Running the unit tests
 

@@ -126,14 +126,24 @@ function headerString(value: string | number | string[] | undefined): string {
 /**
  * Express middleware — mount on /mcp only (see src/http.ts).
  *
- * Registers a `finish` listener so the status code and latency are final, then
- * emits the events for the request. Everything inside the listener is wrapped
- * in try/catch; `track` is itself fire-and-forget (never awaited, never throws).
+ * Records exactly one set of events per request, on the first terminal event to
+ * fire. `finish` covers a normally completed response; `close` additionally
+ * catches connections that end WITHOUT a `finish` — aborted clients and
+ * long-lived SSE `GET /mcp` streams — which a `finish`-only listener would drop
+ * entirely, undercounting total requests. The `recorded` guard stops the common
+ * case (both events fire) from double-counting.
+ *
+ * Everything inside the handler is wrapped in try/catch; `track` is itself
+ * fire-and-forget (never awaited, never throws). The middleware only attaches
+ * listeners and calls next() — it never blocks, delays, or alters the request.
  */
 export function mcpAnalytics(req: Request, res: Response, next: NextFunction): void {
   const startedAt = Date.now();
+  let recorded = false;
 
-  res.on('finish', () => {
+  const record = (): void => {
+    if (recorded) return;
+    recorded = true;
     try {
       // On `initialize` the session id is minted during the request and lives
       // on the response header, not the request header — fall back to it so the
@@ -163,7 +173,10 @@ export function mcpAnalytics(req: Request, res: Response, next: NextFunction): v
     } catch {
       /* telemetry is best-effort — never let it break an MCP request */
     }
-  });
+  };
+
+  res.on('finish', record);
+  res.on('close', record);
 
   next();
 }

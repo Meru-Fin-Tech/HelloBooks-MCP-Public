@@ -11,6 +11,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 
 import {
   classifyUserAgent,
@@ -19,6 +20,7 @@ import {
 } from '../src/lib/clientDetection.js';
 import {
   buildMcpAnalyticsEvents,
+  mcpAnalytics,
   rpcMethodOf,
   toolNameOf,
   type McpAnalyticsContext,
@@ -194,4 +196,119 @@ test('origin/referer are reduced to host only (no path/query leaks)', () => {
   );
   assert.equal(events[0].params.origin_host, 'chatgpt.com');
   assert.equal(events[0].params.referer_host, 'chat.example.com');
+});
+
+// --- Middleware terminal-event handling ------------------------------------
+//
+// These exercise the `mcpAnalytics` middleware end to end. `track()` only hits
+// the network when the GA4 env vars are set, so we set them and stub `fetch` to
+// count emitted events (one fetch per event). Always restored in `finally`.
+
+interface FakeReqInit {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+}
+
+function fakeReq(init: FakeReqInit = {}) {
+  const headers = init.headers ?? {};
+  return {
+    path: '/mcp',
+    method: init.method ?? 'POST',
+    body: init.body,
+    header(name: string): string | undefined {
+      return headers[name.toLowerCase()];
+    },
+  };
+}
+
+class FakeRes extends EventEmitter {
+  statusCode = 200;
+  private headers: Record<string, string> = {};
+  setHeader(key: string, value: string): void {
+    this.headers[key.toLowerCase()] = value;
+  }
+  getHeader(key: string): string | undefined {
+    return this.headers[key.toLowerCase()];
+  }
+}
+
+const REAL_FETCH = globalThis.fetch;
+
+function withFetchCounter(run: (counter: () => number) => void): void {
+  process.env.GA4_MEASUREMENT_ID = 'G-MWTEST';
+  process.env.GA4_API_SECRET = 'mw-secret';
+  let calls = 0;
+  globalThis.fetch = (() => {
+    calls += 1;
+    return Promise.resolve(new Response());
+  }) as typeof fetch;
+  try {
+    run(() => calls);
+  } finally {
+    globalThis.fetch = REAL_FETCH;
+    delete process.env.GA4_MEASUREMENT_ID;
+    delete process.env.GA4_API_SECRET;
+  }
+}
+
+test('middleware calls next() synchronously without blocking', () => {
+  let nextCalled = false;
+  // No GA4 env here — track is a no-op; we only assert the request is not held.
+  mcpAnalytics(
+    fakeReq() as never,
+    new FakeRes() as never,
+    () => {
+      nextCalled = true;
+    },
+  );
+  assert.equal(nextCalled, true);
+});
+
+test('middleware records each event exactly once when finish AND close both fire', () => {
+  withFetchCounter((calls) => {
+    const req = fakeReq({
+      body: { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_plans' } },
+      headers: { 'user-agent': 'Claude-User/1.0' },
+    });
+    const res = new FakeRes();
+    mcpAnalytics(req as never, res as never, () => {});
+
+    res.emit('finish');
+    res.emit('close');
+
+    // tools/call, success, non-bot → mcp_request + mcp_tool_call = 2 events,
+    // emitted once despite both terminal events firing.
+    assert.equal(calls(), 2);
+  });
+});
+
+test('middleware records an aborted/SSE request that only emits close', () => {
+  withFetchCounter((calls) => {
+    const req = fakeReq({
+      method: 'GET',
+      headers: { 'user-agent': 'curl/8.4.0' },
+    });
+    const res = new FakeRes();
+    mcpAnalytics(req as never, res as never, () => {});
+
+    // No `finish` (client went away / stream ended) — only `close`.
+    res.emit('close');
+
+    // A plain non-tool, non-bot, success request still records mcp_request.
+    assert.equal(calls(), 1);
+  });
+});
+
+test('middleware never throws even if the response object misbehaves', () => {
+  withFetchCounter(() => {
+    const req = fakeReq();
+    const res = new FakeRes();
+    // getHeader throws — the try/catch in the handler must swallow it.
+    res.getHeader = () => {
+      throw new Error('boom');
+    };
+    mcpAnalytics(req as never, res as never, () => {});
+    assert.doesNotThrow(() => res.emit('finish'));
+  });
 });
