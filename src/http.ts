@@ -31,6 +31,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createServer, SERVER_VERSION } from './server.js';
 import { track } from './analytics.js';
+import { mcpAnalytics } from './middleware/mcpAnalytics.js';
 import {
   generateAgentCard,
   generateAiPluginManifest,
@@ -297,7 +298,11 @@ function renderShareError(title: string, message: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — HelloBooks AI Agent</title><meta name="robots" content="noindex"><style>body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 24px;color:#0f172a;line-height:1.6}h1{font-size:24px;margin-bottom:8px}p{color:#64748b}a{color:#2563eb;text-decoration:none;font-weight:500}</style></head><body><h1>${title}</h1><p>${message}</p><p><a href="https://hellobooks.ai/mcp">Learn about HelloBooks AI Agent &rarr;</a></p></body></html>`;
 }
 
-app.use('/mcp', ipLimiter, sessionLimiter);
+// Analytics first in the /mcp chain so even rate-limited (429) responses are
+// recorded. The middleware only registers a `res.finish` listener and calls
+// next() — it never blocks or short-circuits the request. See
+// src/middleware/mcpAnalytics.ts and docs/MCP_ANALYTICS.md.
+app.use('/mcp', mcpAnalytics, ipLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP error');
 });
