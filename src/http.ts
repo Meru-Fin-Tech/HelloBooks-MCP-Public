@@ -46,6 +46,11 @@ import {
   generateSitemap,
 } from './discovery.js';
 import {
+  CATALOG_FEEDS,
+  generateCatalogFeed,
+  generateCatalogFeedIndex,
+} from './catalogFeeds.js';
+import {
   defaultShareStore,
   renderSharePage,
   isValidSlug,
@@ -218,6 +223,7 @@ app.get('/info', (_req, res) => {
       openapi: '/openapi.json',
       llms_txt: '/llms.txt',
       catalog: '/catalog.json',
+      catalog_feeds: '/catalog/index.json',
       changelog: '/changelog.json',
       sitemap: '/sitemap.xml',
       robots: '/robots.txt',
@@ -262,6 +268,27 @@ app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson())
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+
+// ---------------------------------------------------------------------------
+// Per-catalog JSON feeds — the API-based source-of-truth surface.
+// ---------------------------------------------------------------------------
+//
+// Every catalog the MCP serves over JSON-RPC is also published here as a plain
+// HTTP GET JSON endpoint generated from the same src/data/* modules, so the
+// marketing website (and AI crawlers) can consume the data via API instead of
+// keeping drift-prone copies. See ./catalogFeeds.ts. Index lists them all.
+
+app.get('/catalog/index.json', (_req, res) => sendJson(res, generateCatalogFeedIndex()));
+for (const feed of CATALOG_FEEDS) {
+  app.get(`/catalog/${feed.slug}.json`, (_req, res) => {
+    const body = generateCatalogFeed(feed.slug);
+    if (!body) {
+      res.status(404).json({ error: 'unknown-catalog' });
+      return;
+    }
+    sendJson(res, body);
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Share-URL surface — minted by analytical MCP tools, rendered here.

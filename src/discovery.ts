@@ -54,7 +54,7 @@ function stripTrailingSlashes(value: string): string {
 }
 
 /** Returns the most-recent changelog entry date (YYYY-MM-DD) or deploy time. */
-function getCatalogLastModified(): Date {
+export function getCatalogLastModified(): Date {
   const top = CHANGELOG[0];
   if (top?.date) {
     const d = new Date(top.date + 'T00:00:00Z');
@@ -572,6 +572,7 @@ ${resources}
 - [MCP discovery](${baseUrl}/.well-known/mcp.json)
 - [OpenAPI 3.1](${baseUrl}/openapi.json)
 - [Catalog JSON](${baseUrl}/catalog.json)
+- [Catalog data feeds index](${baseUrl}/catalog/index.json) — per-catalog JSON: features, integrations, competitors, compliance deadlines, country support, tax rates, capabilities, payment methods, articles, videos, plans
 - [Changelog JSON](${baseUrl}/changelog.json)
 - [Sitemap](${baseUrl}/sitemap.xml)
 - [RSS feed](${baseUrl}/feed.xml)
@@ -658,6 +659,7 @@ export function generateSitemap(): string {
   const entries: { loc: string; changefreq: string; priority: string }[] = [
     { loc: `${baseUrl}/`, changefreq: 'daily', priority: '1.0' },
     { loc: `${baseUrl}/catalog.json`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/catalog/index.json`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/llms.txt`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/.well-known/agent.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/.well-known/ai-plugin.json`, changefreq: 'weekly', priority: '0.7' },
