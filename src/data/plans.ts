@@ -34,7 +34,7 @@ export interface Plan {
 }
 
 const FREE_FEATURES = [
-  '500 AI credits/month',
+  '5,000 AI credits/month',
   'All 154 features',
   'Up to 3 users',
   '1 bank account + 1 credit card',
@@ -46,7 +46,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
-  '1,500 AI credits/month',
+  '15,000 AI credits/month',
   'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
@@ -187,7 +187,7 @@ export const PLANS: Plan[] = [
     plan: 'free',
     name: 'Free',
     tagline: 'Everything you need to start',
-    monthlyAiCredits: 500,
+    monthlyAiCredits: 5000,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
@@ -196,7 +196,7 @@ export const PLANS: Plan[] = [
     plan: 'pro',
     name: 'Pro',
     tagline: 'AI-powered automation for growing businesses',
-    monthlyAiCredits: 1500,
+    monthlyAiCredits: 15000,
     features: PRO_FEATURES,
     prices: pricesFor('pro'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
@@ -254,10 +254,10 @@ export interface CreditPack {
 }
 
 const PACK_META: { id: CreditPackId; name: string; credits: number }[] = [
-  { id: 'boost', name: 'Boost credit pack', credits: 500 },
-  { id: 'power', name: 'Power credit pack', credits: 1500 },
-  { id: 'mega', name: 'Mega credit pack', credits: 5000 },
-  { id: 'ultra', name: 'Ultra credit pack', credits: 15000 },
+  { id: 'boost', name: 'Boost credit pack', credits: 5000 },
+  { id: 'power', name: 'Power credit pack', credits: 15000 },
+  { id: 'mega', name: 'Mega credit pack', credits: 50000 },
+  { id: 'ultra', name: 'Ultra credit pack', credits: 150000 },
 ];
 
 export const CREDIT_PACKS: CreditPack[] = PACK_META.map((meta) => ({
