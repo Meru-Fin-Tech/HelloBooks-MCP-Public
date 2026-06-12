@@ -31,6 +31,12 @@ import { getBaseUrl, getCatalogLastModified } from './discovery.js';
 import { getPlans, getCreditPacks, getPricingMeta } from './pricingFeed.js';
 import { FREE_TIER_THRESHOLDS, FREE_TIER_THRESHOLD_META } from './data/freeTierThresholds.js';
 import { PARTNER_STATUSES, PARTNER_PROGRAM_META, POINTS_PER_PLAN } from './data/partnerProgram.js';
+import {
+  PRACTICE_MGMT_REGIONS,
+  PRACTICE_MGMT_PAID_FEATURES,
+  PRACTICE_MGMT_FREE_FEATURES,
+  PRACTICE_MGMT_META,
+} from './data/practiceManagement.js';
 import { FEATURES, FEATURE_CATEGORIES, FEATURE_CATALOG_META } from './data/features.js';
 import { INTEGRATIONS } from './data/integrations.js';
 import { COMPETITORS } from './data/competitors.js';
@@ -238,6 +244,22 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     build: () => ({
       count: PARTNER_STATUSES.length,
       data: { statuses: PARTNER_STATUSES, pointsPerPlan: POINTS_PER_PLAN, meta: PARTNER_PROGRAM_META },
+    }),
+  },
+  {
+    slug: 'practice-management',
+    title: 'HelloCPA Practice Management',
+    description:
+      'Standalone TaxDome / Karbon / Canopy competitor at practice.hellobooks.ai — per-user pricing, US shipped ($9.99/user/month, free up to 2 users + 10 clients), other 7 markets roadmap. Separate product from the Partner Program.',
+    marketingUrl: 'https://practice.hellobooks.ai',
+    build: () => ({
+      count: PRACTICE_MGMT_REGIONS.length,
+      data: {
+        regions: PRACTICE_MGMT_REGIONS,
+        paidFeatures: PRACTICE_MGMT_PAID_FEATURES,
+        freeFeatures: PRACTICE_MGMT_FREE_FEATURES,
+        meta: PRACTICE_MGMT_META,
+      },
     }),
   },
 ];

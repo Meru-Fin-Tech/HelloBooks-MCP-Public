@@ -17,6 +17,8 @@ import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTier
 export { freeTierEligibility } from './tools/freeTierEligibility.js';
 import { partnerProgramInfo, partnerProgramInfoSchema } from './tools/partnerProgramInfo.js';
 export { partnerProgramInfo } from './tools/partnerProgramInfo.js';
+import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/practiceManagementInfo.js';
+export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
@@ -187,6 +189,14 @@ export function createServer(): McpServer {
     partnerProgramInfoSchema,
     async (args, extra) =>
       runTool('partner_program_info', args, extra, () => partnerProgramInfo(args)),
+  );
+
+  server.tool(
+    'practice_management_info',
+    'Return HelloCPA Practice Management info — the standalone product at practice.hellobooks.ai for running a CPA / CA / bookkeeping practice (proposals + CPQ, workflow, time tracking, billing, 6-role RBAC, Gmail/Outlook/Calendar sync, CSV migration from TaxDome / Karbon / Canopy). NOT the Partner Program and NOT a tier in list_plans. Per-user pricing model — US shipped at $9.99/user/month (free up to 2 users + 10 clients, 90-day trial, enterprise at 50+ users). 7 other markets (IN, GB, AU, CA, AE, SG, NZ) are roadmap as of 2026-06-12. Call with no args for the full 8-region matrix + features + meta, or with `country` for one region\'s status + pricing + competitor frame.',
+    practiceManagementInfoSchema,
+    async (args, extra) =>
+      runTool('practice_management_info', args, extra, () => practiceManagementInfo(args)),
   );
 
   server.tool(
