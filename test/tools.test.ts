@@ -17,6 +17,7 @@ import { listArticles } from '../src/tools/listArticles.js';
 import { howMunimjiHelps } from '../src/tools/howMunimjiHelps.js';
 import { freeTierEligibility } from '../src/tools/freeTierEligibility.js';
 import { partnerProgramInfo } from '../src/tools/partnerProgramInfo.js';
+import { practiceManagementInfo } from '../src/tools/practiceManagementInfo.js';
 import { MUNIMJI_CAPABILITIES } from '../src/data/capabilities.js';
 import { FEATURES } from '../src/data/features.js';
 import { ARTICLES } from '../src/data/articles.js';
@@ -1127,6 +1128,50 @@ test('partner_program_info edge: exactly at a tier boundary qualifies for that t
   assert.equal(at300.currentStatus.id, 'gold');
   const at1000 = partnerProgramInfo({ points: 1000 }) as { currentStatus: { id: string } };
   assert.equal(at1000.currentStatus.id, 'platinum');
+});
+
+// ---------------------------------------------------------------------------
+// practice_management_info — HelloCPA PM (separate from Partner Program)
+// ---------------------------------------------------------------------------
+
+test('practice_management_info no args returns 8 regions, US shipped + 7 roadmap', () => {
+  const r = practiceManagementInfo({}) as Record<string, unknown>;
+  const regions = r.regions as { region: string; status: string }[];
+  assert.equal(regions.length, 8);
+  assert.equal(r.count, 8);
+  assert.equal(r.shippedCount, 1);
+  assert.equal(r.roadmapCount, 7);
+  const shipped = regions.filter((x) => x.status === 'shipped').map((x) => x.region);
+  assert.deepEqual(shipped, ['US']);
+});
+
+test('practice_management_info US returns $9.99/user/mo + free-tier shape', () => {
+  const r = practiceManagementInfo({ country: 'US' }) as Record<string, unknown>;
+  const region = r.region as {
+    status: string; pricing: { pricePerUserPerMonthAmount: number; freeUsers: number; freeClientCap: number; trialDays: number; enterpriseThreshold: number } | null;
+  };
+  assert.equal(region.status, 'shipped');
+  assert.ok(region.pricing);
+  assert.equal(region.pricing.pricePerUserPerMonthAmount, 9.99);
+  assert.equal(region.pricing.freeUsers, 2);
+  assert.equal(region.pricing.freeClientCap, 10);
+  assert.equal(region.pricing.trialDays, 90);
+  assert.equal(region.pricing.enterpriseThreshold, 50);
+});
+
+test('practice_management_info roadmap region carries no pricing', () => {
+  for (const country of ['IN', 'GB', 'AU', 'CA', 'AE', 'SG', 'NZ'] as const) {
+    const r = practiceManagementInfo({ country }) as { region: { status: string; pricing: unknown } };
+    assert.equal(r.region.status, 'roadmap', `${country}: expected roadmap`);
+    assert.equal(r.region.pricing, null, `${country}: roadmap regions must not advertise pricing`);
+  }
+});
+
+test('practice_management_info meta clearly distinguishes from Partner Program + main plans', () => {
+  const r = practiceManagementInfo({}) as { meta: { domain: string; notRelatedTo: { partnerProgram: string; helloBooksPlans: string } } };
+  assert.equal(r.meta.domain, 'practice.hellobooks.ai');
+  assert.match(r.meta.notRelatedTo.partnerProgram, /not.*Partner Program|different/i);
+  assert.match(r.meta.notRelatedTo.helloBooksPlans, /list_plans/);
 });
 
 test('free_tier_eligibility every country threshold matches Doc 80 canonical values', () => {
