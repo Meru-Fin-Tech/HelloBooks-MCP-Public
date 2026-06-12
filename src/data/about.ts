@@ -20,14 +20,14 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 ## Plans
 
-- **Free** — 500 AI credits/month, 1 bank connection, up to 2 users.
-- **Pro** — 1,500 AI credits/month, AI auto-categorization, unlimited bank connections + users.
-- **Business** — 5,000 AI credits/month, 3-way matching, multi-entity, custom reports, public API.
-- **CPA / CA Partner** — unlimited AI credits, multi-client dashboard, white-label, 10% commission.
+- **Free** — 5,000 AI credits/month, 1 bank account + 1 credit card, up to 3 users.
+- **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, 3-way matching, API access.
+- **HelloCPA Practice** — unlimited AI credits, multi-client dashboard, tax-prep (1040 / 1120 / 1120-S / 1065 / 990 / 1041), e-filing tracker, client portal, CPQ, 6-role RBAC.
 - **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
+- **Credit packs** — pay-as-you-go top-ups (Boost / Power / Mega / Ultra: 5,000 / 15,000 / 50,000 / 150,000 credits) that stack on any plan, including Free.
 
-Prices localized to 8 currencies. See \`list_plans\` tool.
+Prices localized to 8 currencies. See \`list_plans\` and \`list_credit_packs\` tools.
 
 ## Where this MCP fits
 
@@ -41,8 +41,14 @@ Heuristic: if the question mentions a customer name, account, ledger, specific i
 
 The exposed surface area:
 
-- **Tools**: \`list_plans\`, \`list_integrations\`, \`country_support\`, \`compliance_capabilities\`, \`feature_search\`, \`list_features\`, \`list_feature_categories\`.
-- **Resources**: \`hellobooks://about\`, \`hellobooks://changelog\`, \`hellobooks://feature-catalog\`.
+- **Plans, pricing, features**: \`list_plans\`, \`list_credit_packs\`, \`list_integrations\`, \`list_features\`, \`list_feature_categories\`, \`feature_search\`.
+- **Country + compliance**: \`country_support\`, \`compliance_capabilities\`, \`compliance_deadlines\`, \`list_tax_rates\`, \`lookup_tax_rate\`, \`local_payment_methods\`.
+- **Positioning + comparison**: \`list_competitors\`, \`compare_books_to_hellobooks\`, \`estimate_migration_effort\`.
+- **Content discovery**: \`list_articles\`, \`list_videos\`.
+- **Munimji AI capabilities**: \`how_munimji_helps\`.
+- **Analyzers** (paste a trial balance / P&L / journal export and get findings): \`analyze_trial_balance\`, \`analyze_balance_sheet\`, \`analyze_profit_loss\`, \`analyze_journal_variance\`, \`analyze_qbo_journal_cleanup\`, \`analyze_qbo_journal_anomalies\`, \`analyze_xero_journal_cleanup\`, \`analyze_xero_journal_anomalies\`.
+- **Resources**: \`hellobooks://about\`, \`hellobooks://changelog\`, \`hellobooks://feature-catalog\`, \`hellobooks://capabilities\`, \`hellobooks://comparison/{competitor-id}\`.
+- **Catalog JSON feeds** at \`https://agents.hellobooks.ai/catalog/<slug>.json\` for plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, and videos — for agents that prefer plain HTTP.
 
 ## Links
 
@@ -70,6 +76,14 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-06-12', title: 'Public MCP credit federation', category: 'improvement',
+    description: 'list_plans monthlyAiCredits and list_credit_packs credits now flow from the live hellobooks.ai/api/feed/pricing.json with baked fallback — so AI agents see canonical credit numbers without waiting on a redeploy.' },
+  { date: '2026-06-08', title: 'AI credit ×10 display scale', category: 'improvement',
+    description: 'Doc 19 v2 display scale now consistent across product, marketing, and MCP: Free 5,000 / Pro 15,000 / CPA unlimited credits per month; packs Boost 5,000 / Power 15,000 / Mega 50,000 / Ultra 150,000. Per-credit prices ÷10 — total value unchanged.' },
+  { date: '2026-06-07', title: 'JSON catalog feeds', category: 'feature',
+    description: 'Every public MCP catalog is now reachable as plain HTTP JSON at agents.hellobooks.ai/catalog/<slug>.json (plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos) — for agents that prefer fetch over MCP transport.' },
+  { date: '2026-05-22', title: 'Live pricing federation + credit packs', category: 'improvement',
+    description: 'Public MCP plans now overlay live prices and feature bullets from hellobooks.ai/api/feed/pricing.json, with baked fallback for resilience. New tool list_credit_packs exposes the pay-as-you-go Boost/Power/Mega/Ultra packs in 8 regional currencies.' },
   { date: '2026-05-18', title: 'MCP feature catalog parity with website', category: 'improvement',
     description: 'Public MCP now mirrors the full 96-feature marketing catalog. New tools: list_features, list_feature_categories. New resource: hellobooks://feature-catalog. Warehouse + Manufacturing add-on tiers added to list_plans.' },
   { date: '2026-05-16', title: 'AP automation sprint complete', category: 'feature',
