@@ -173,7 +173,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'free_tier_eligibility',
-    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 supported countries (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Free is unlimited features and unlimited AI credits subject to the monthly allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or HelloCPA Practice. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
+    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 supported countries (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Free is unlimited features and unlimited AI credits subject to the monthly allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or Business. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
     freeTierEligibilitySchema,
     async (args, extra) =>
       runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),

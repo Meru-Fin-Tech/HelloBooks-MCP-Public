@@ -13,7 +13,7 @@ import type {
 
 const CATEGORY_KEYS: FeatureCategoryKey[] = FEATURE_CATEGORIES.map((c) => c.key);
 const TIERS: FeatureTier[] = [
-  'free', 'pro', 'cpa', 'warehouse-addon', 'manufacturing-addon',
+  'free', 'pro', 'business', 'cpa', 'warehouse-addon', 'manufacturing-addon',
 ];
 
 export const listFeaturesSchema = {

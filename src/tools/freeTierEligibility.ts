@@ -47,7 +47,7 @@ function evaluate(t: FreeTierThreshold, revenue: number): CountryEligibility {
   const formatted = `${t.symbol}${Math.abs(headroom).toLocaleString('en-US')}`;
   const message = freeEligible
     ? `Eligible for Free — ${formatted} of headroom before the ${t.display} annual invoice turnover cap.`
-    : `Not eligible for Free — exceeds the ${t.display} annual invoice turnover cap by ${formatted}. Move to Pro or HelloCPA Practice.`;
+    : `Not eligible for Free — exceeds the ${t.display} annual invoice turnover cap by ${formatted}. Move to Pro or Business.`;
   return { ...t, freeEligible, headroom, message };
 }
 

@@ -32,11 +32,13 @@ import {
 // test() callback runs — disables the live fetch for the whole suite.)
 process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
 
-test('list_plans returns all 5 tiers when unfiltered (incl. add-ons)', () => {
+test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
   const names = r.plans.map((p) => p.plan).sort((a, b) => a.localeCompare(b));
+  // Web-Fire #514 (2026-06-12): Business is back as a 4th tier; CPA is now
+  // the free Partner Program. Add-ons unchanged.
   assert.deepEqual(names, [
-    'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
+    'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
   ]);
   // Core plans have prices for 8 countries; add-ons are USD-only
   for (const p of r.plans) {
@@ -46,6 +48,33 @@ test('list_plans returns all 5 tiers when unfiltered (incl. add-ons)', () => {
     } else {
       assert.equal(p.prices.length, 8);
     }
+  }
+});
+
+test('list_plans Business tier carries Doc 19 v3 prices in all 8 regions', () => {
+  const r = listPlans({ plan: 'business' });
+  assert.equal(r.plans.length, 1);
+  const biz = r.plans[0];
+  assert.equal(biz.monthlyAiCredits, 50_000);
+  const expected: Record<string, number> = {
+    US: 39.99, IN: 1999, CA: 51.99, GB: 31.99,
+    AU: 59.99, AE: 147, SG: 51.99, NZ: 63.99,
+  };
+  for (const p of biz.prices) {
+    assert.equal(p.monthly, expected[p.country], `${p.country}: Business monthly drift vs Web-Fire pricingConfig.ts`);
+  }
+});
+
+test('list_plans cpa plan id resolves to the free Partner Program', () => {
+  const r = listPlans({ plan: 'cpa' });
+  assert.equal(r.plans.length, 1);
+  const partner = r.plans[0];
+  assert.equal(partner.name, 'Partner Program');
+  assert.equal(partner.monthlyAiCredits, 0); // partners refer paying clients; no free credits to the partner
+  for (const p of partner.prices) {
+    assert.equal(p.monthly, 0, `${p.country}: Partner Program is free globally`);
+    assert.equal(p.annual, 0);
+    assert.ok(!('perClient' in p) || p.perClient === undefined, `${p.country}: perClient should not be populated post-Web-Fire #514`);
   }
 });
 
@@ -195,9 +224,11 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   assert.equal(ca?.monthly, 12.99);
   // features come from the feed
   assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
-  // CPA carries the per-client price from feed limits
+  // perClient is vestigial post-Web-Fire #514 — the federation no longer
+  // populates it on the cpa plan, even when the feed carries a non-zero
+  // perClientPrice (the field is kept optional on PlanPrice for back-compat).
   const cpaUs = plans.find((p) => p.plan === 'cpa')?.prices.find((pr) => pr.country === 'US');
-  assert.equal(cpaUs?.perClient, 3.33);
+  assert.equal(cpaUs?.perClient, undefined);
 });
 
 test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
@@ -228,9 +259,11 @@ test('feedToPlans takes monthlyAiCredits from the feed when present', () => {
   // Pro carries the sentinel feed value
   const pro = plans.find((p) => p.plan === 'pro');
   assert.equal(pro?.monthlyAiCredits, 99999);
-  // CPA's feed entry omits monthlyAiCredits -> falls back to baked (-1 = unlimited)
+  // CPA's feed entry omits monthlyAiCredits -> falls back to baked (Partner
+  // Program = 0 credits; partners refer paying clients and don't receive
+  // free AI credit allowances themselves).
   const cpa = plans.find((p) => p.plan === 'cpa');
-  assert.equal(cpa?.monthlyAiCredits, -1);
+  assert.equal(cpa?.monthlyAiCredits, 0);
 });
 
 test('feedToCreditPacks takes pack credit size from the feed when present', () => {
