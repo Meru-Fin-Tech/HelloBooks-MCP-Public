@@ -59,13 +59,21 @@ const feedTierSchema = z.object({
   annualPrice: z.number(),
   anchorMonthlyPrice: z.number(),
   features: z.array(z.string()),
-  limits: z.object({ perClientPrice: z.number() }).passthrough(),
+  // monthlyAiCredits is the per-month AI-credit allowance (-1 = unlimited);
+  // optional so a feed that omits it falls back to the baked catalog rather
+  // than failing validation and freezing the snapshot. See feedToPlans below.
+  limits: z.object({
+    perClientPrice: z.number(),
+    monthlyAiCredits: z.number().optional(),
+  }).passthrough(),
 });
 
 const feedAddOnSchema = z.object({
   id: z.string(),
   currency: z.string(),
   price: z.number(),
+  // Pack size in AI credits. Optional for the same fallback-safety reason.
+  credits: z.number().optional(),
 });
 
 const feedRegionSchema = z.object({
@@ -87,9 +95,14 @@ export type PricingFeed = z.infer<typeof feedSchema>;
 
 /**
  * Build the plan catalog from the feed. The baked plan structure (plan id,
- * name, tagline, AI credits, signup URL) is kept; only prices and feature
- * bullets are overlaid. Plans absent from the feed (the Warehouse /
- * Manufacturing add-on modules) keep their baked values untouched.
+ * name, tagline, signup URL) is kept; prices, feature bullets, and the
+ * monthly AI-credit allowance are overlaid when the feed carries them.
+ * Plans absent from the feed (Warehouse / Manufacturing add-on modules)
+ * keep their baked values untouched.
+ *
+ * monthlyAiCredits is region-invariant, so the top-level tier is the
+ * canonical source. ?? (not ||) keeps a feed-supplied 0 as an intentional
+ * override; only undefined falls back to baked.
  */
 export function feedToPlans(feed: PricingFeed): Plan[] {
   return BAKED_PLANS.map((baked) => {
@@ -118,13 +131,19 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
       ...baked,
       prices,
       features: feedTier.features.length > 0 ? feedTier.features : baked.features,
+      monthlyAiCredits: feedTier.limits.monthlyAiCredits ?? baked.monthlyAiCredits,
     };
   });
 }
 
-/** Build the credit-pack catalog from the feed, overlaying per-region prices. */
+/**
+ * Build the credit-pack catalog from the feed, overlaying per-region prices.
+ * Pack credit counts are region-invariant, so the top-level addOns entry is
+ * the canonical source; per-region addOns drive only the per-region price.
+ */
 export function feedToCreditPacks(feed: PricingFeed): CreditPack[] {
   return BAKED_PACKS.map((baked) => {
+    const topLevelAddon = feed.addOns.find((a) => a.id === baked.id);
     const prices: PackPrice[] = COUNTRIES.map((country) => {
       const region = feed.regions.find((r) => r.region === country);
       const addon = region?.addOns.find((a) => a.id === baked.id);
@@ -137,7 +156,11 @@ export function feedToCreditPacks(feed: PricingFeed): CreditPack[] {
         price: addon.price,
       };
     });
-    return { ...baked, prices };
+    return {
+      ...baked,
+      prices,
+      credits: topLevelAddon?.credits ?? baked.credits,
+    };
   });
 }
 
