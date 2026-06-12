@@ -13,6 +13,8 @@ import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
 import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
 export { listCreditPacks } from './tools/listCreditPacks.js';
+import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
+export { freeTierEligibility } from './tools/freeTierEligibility.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
@@ -163,10 +165,18 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_credit_packs',
-    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 500, Power 1,500, Mega 5,000, Ultra 15,000 credits) priced in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or `country` (ISO code).',
+    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits) priced in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or `country` (ISO code).',
     listCreditPacksSchema,
     async (args, extra) =>
       runTool('list_credit_packs', args, extra, () => listCreditPacks(args)),
+  );
+
+  server.tool(
+    'free_tier_eligibility',
+    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 supported countries (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Free is unlimited features and unlimited AI credits subject to the monthly allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or HelloCPA Practice. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
+    freeTierEligibilitySchema,
+    async (args, extra) =>
+      runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),
   );
 
   server.tool(

@@ -39,6 +39,7 @@ const EXPECTED_SLUGS = [
   'payment-methods',
   'articles',
   'videos',
+  'free-tier-thresholds',
 ];
 
 test('every expected catalog is exposed as a feed', () => {
