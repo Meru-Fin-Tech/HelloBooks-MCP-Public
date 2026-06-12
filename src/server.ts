@@ -162,7 +162,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_plans',
-    'List HelloBooks pricing plans with monthly + annual prices in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Covers three core tiers — Free, Pro, CPA/CA Partner — plus two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets (AI auto-categorization, unlimited users, multi-entity, 3-way matching, API access, etc.), and the public signup URL. Filter by `plan` (one of free / pro / cpa) or `country` (ISO code). Pricing follows Doc 19 v2 (2026-05-08): Free-first + single Pro tier; the previous Business tier was merged into Pro.',
+    'List HelloBooks pricing plans with monthly + annual prices in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Covers four core tiers — Free / Pro / Business / Partner Program (the `cpa` plan id) — plus two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets (AI auto-categorization, unlimited users, multi-entity, 3-way matching, API access, etc.), and the public signup URL. Filter by `plan` (one of free / pro / business / cpa) or `country` (ISO code). Pricing follows Doc 19 v3 (Web-Fire #514, 2026-06-12): Business re-introduced as a 4th tier sized ~4× Pro to match Partner Points; the retired "$59.99/mo + $4.99/client" CPA SKU is gone and the `cpa` plan id now resolves to the free Partner Program (call `partner_program_info` for the status ladder + points math). HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
     listPlansSchema,
     async (args, extra) => runTool('list_plans', args, extra, () => listPlans(args)),
   );
