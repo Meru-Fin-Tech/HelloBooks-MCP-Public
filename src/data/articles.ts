@@ -1,29 +1,34 @@
 /**
- * Article catalog — curated subset of published long-form content on
- * hellobooks.ai. The site hosts 800+ blog posts plus structured /compare
- * pages; this catalog surfaces the highest-intent, decision-grade pieces so
- * an AI agent can route "do you have a blog about X?" queries to a real URL
- * without scraping the full archive.
+ * Article catalog — published long-form content on hellobooks.ai.
  *
- * Sources (verified live as of 2026-05-14):
- *   - /compare/<slug> — head-to-head competitor pages
- *   - /blog/<slug>    — flagship blog posts (curated)
+ * Two pools, merged in `ARTICLES`:
  *
- * Public-only: each entry is a slug + the same title/excerpt the marketing
- * site shows publicly. No customer-data refs, no per-account fields, no
- * env-driven config. Drafts in marketing/blog-posts/ are explicitly excluded
- * until they land on the live site.
+ *   1. **Curated** (this file, `CURATED_ARTICLES`) — the highest-intent,
+ *      decision-grade pieces with rich excerpts, tags, and country
+ *      relevance. Hand-edited and the source of truth for /compare pages
+ *      and flagship blog posts.
  *
- * Catalog is intentionally curated, not exhaustive. To find an article not
- * listed here, AI agents should still link to https://hellobooks.ai/blog or
- * use site search. We track flagship content here.
+ *   2. **Discovered** (`./articlesDiscovered.ts`) — bulk import from
+ *      hellobooks.ai/sitemap.xml. Titles are slug-derived (lower fidelity
+ *      than curated) and every entry carries the `discovered` tag so
+ *      callers can distinguish. Regenerate with
+ *      `npm run sync:discovered-articles`.
  *
- * Authoring: the exported `ARTICLES` array is built from two factory
- * helpers (`compareArticle`, `blogArticle`) so each row only carries its
- * unique fields. The slug doubles as the id AND as the URL path segment;
- * the published date for the compare batch is a single source-of-truth
+ * `ARTICLES` deduplicates by `id` (= slug). A slug present in both pools
+ * keeps the curated copy.
+ *
+ * Public-only: each entry is a slug + title (curated also carries excerpt
+ * + tags). No customer-data refs, no per-account fields, no env-driven
+ * config. Drafts in marketing/blog-posts/ are explicitly excluded until
+ * they land on the live site.
+ *
+ * Authoring: the curated array is built from two factory helpers
+ * (`compareArticle`, `blogArticle`) so each row only carries its unique
+ * fields. The slug doubles as the id AND as the URL path segment; the
+ * published date for the compare batch is a single source-of-truth
  * constant (`COMPARE_PUBLISHED_AT`).
  */
+import { DISCOVERED_ARTICLES } from './articlesDiscovered.js';
 
 export type CountryRelevance = 'IN' | 'AU' | 'US' | 'CA' | 'GB' | 'AE' | 'SG' | 'NZ' | 'global';
 
@@ -80,7 +85,8 @@ function blogArticle(
   };
 }
 
-export const ARTICLES: Article[] = [
+/** Curated, hand-edited articles. Exported so the sync script can dedupe. */
+export const CURATED_ARTICLES: Article[] = [
   // ---------------------------------------------------------------------------
   // Comparison pages — /compare/<slug>
   // ---------------------------------------------------------------------------
@@ -379,4 +385,16 @@ export const ARTICLES: Article[] = [
     ['month-end close', 'close process', 'finance teams'],
     '2025-12-25',
   ),
+];
+
+const CURATED_IDS = new Set(CURATED_ARTICLES.map((a) => a.id));
+
+/**
+ * Merged catalog — curated entries first (richer metadata), then any
+ * discovered entries whose slug isn't already covered by a curated row.
+ * Dedup keeps the curated copy on collision.
+ */
+export const ARTICLES: Article[] = [
+  ...CURATED_ARTICLES,
+  ...DISCOVERED_ARTICLES.filter((a) => !CURATED_IDS.has(a.id)),
 ];
