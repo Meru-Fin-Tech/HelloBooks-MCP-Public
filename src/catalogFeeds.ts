@@ -30,6 +30,7 @@ import { SERVER_VERSION } from './server.js';
 import { getBaseUrl, getCatalogLastModified } from './discovery.js';
 import { getPlans, getCreditPacks, getPricingMeta } from './pricingFeed.js';
 import { FREE_TIER_THRESHOLDS, FREE_TIER_THRESHOLD_META } from './data/freeTierThresholds.js';
+import { PARTNER_STATUSES, PARTNER_PROGRAM_META, POINTS_PER_PLAN } from './data/partnerProgram.js';
 import { FEATURES, FEATURE_CATEGORIES, FEATURE_CATALOG_META } from './data/features.js';
 import { INTEGRATIONS } from './data/integrations.js';
 import { COMPETITORS } from './data/competitors.js';
@@ -226,6 +227,17 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     build: () => ({
       count: FREE_TIER_THRESHOLDS.length,
       data: { thresholds: FREE_TIER_THRESHOLDS, meta: FREE_TIER_THRESHOLD_META },
+    }),
+  },
+  {
+    slug: 'partner-program',
+    title: 'Partner Program — status ladder',
+    description:
+      'Status ladder for the HelloBooks Partner Program (free reseller channel for accountants/CPAs). Bronze → Silver → Gold → Platinum with the points needed and the wholesale discount each unlocks. Pro client = 1 pt/mo · Business client = 4 pts/mo.',
+    marketingUrl: `${MARKETING_BASE_URL}/partner-program`,
+    build: () => ({
+      count: PARTNER_STATUSES.length,
+      data: { statuses: PARTNER_STATUSES, pointsPerPlan: POINTS_PER_PLAN, meta: PARTNER_PROGRAM_META },
     }),
   },
 ];

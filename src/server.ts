@@ -15,6 +15,8 @@ import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.
 export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
 export { freeTierEligibility } from './tools/freeTierEligibility.js';
+import { partnerProgramInfo, partnerProgramInfoSchema } from './tools/partnerProgramInfo.js';
+export { partnerProgramInfo } from './tools/partnerProgramInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
@@ -177,6 +179,14 @@ export function createServer(): McpServer {
     freeTierEligibilitySchema,
     async (args, extra) =>
       runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),
+  );
+
+  server.tool(
+    'partner_program_info',
+    'Return the HelloBooks Partner Program structure — free reseller channel for accountants/CPAs/bookkeepers who put their clients on Pro/Business plans. Earned wholesale discount model (no commission): Bronze 5% at 25 pts / Silver 10% at 75 / Gold 15% at 300 / Platinum 20% at 1,000+. Pro client = 1 pt/mo, Business client = 4 pts/mo. Call with no args for the full ladder + meta; with `points` for current status + how many points to next tier; with `proClients` and/or `businessClients` to derive points from the client book and then return the same status verdict. The Partner Program is the `cpa` plan id in list_plans (the retired $59.99 SKU is gone). HelloCPA Practice Management at practice.hellobooks.ai is a different product and NOT the Partner Program.',
+    partnerProgramInfoSchema,
+    async (args, extra) =>
+      runTool('partner_program_info', args, extra, () => partnerProgramInfo(args)),
   );
 
   server.tool(

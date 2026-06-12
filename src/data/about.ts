@@ -46,14 +46,14 @@ Heuristic: if the question mentions a customer name, account, ledger, specific i
 
 The exposed surface area:
 
-- **Plans, pricing, features**: \`list_plans\`, \`list_credit_packs\`, \`free_tier_eligibility\`, \`list_integrations\`, \`list_features\`, \`list_feature_categories\`, \`feature_search\`.
+- **Plans, pricing, features**: \`list_plans\`, \`list_credit_packs\`, \`free_tier_eligibility\`, \`partner_program_info\`, \`list_integrations\`, \`list_features\`, \`list_feature_categories\`, \`feature_search\`.
 - **Country + compliance**: \`country_support\`, \`compliance_capabilities\`, \`compliance_deadlines\`, \`list_tax_rates\`, \`lookup_tax_rate\`, \`local_payment_methods\`.
 - **Positioning + comparison**: \`list_competitors\`, \`compare_books_to_hellobooks\`, \`estimate_migration_effort\`.
 - **Content discovery**: \`list_articles\`, \`list_videos\`.
 - **Munimji AI capabilities**: \`how_munimji_helps\`.
 - **Analyzers** (paste a trial balance / P&L / journal export and get findings): \`analyze_trial_balance\`, \`analyze_balance_sheet\`, \`analyze_profit_loss\`, \`analyze_journal_variance\`, \`analyze_qbo_journal_cleanup\`, \`analyze_qbo_journal_anomalies\`, \`analyze_xero_journal_cleanup\`, \`analyze_xero_journal_anomalies\`.
 - **Resources**: \`hellobooks://about\`, \`hellobooks://changelog\`, \`hellobooks://feature-catalog\`, \`hellobooks://capabilities\`, \`hellobooks://comparison/{competitor-id}\`.
-- **Catalog JSON feeds** at \`https://agents.hellobooks.ai/catalog/<slug>.json\` for plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos, and free-tier-thresholds — for agents that prefer plain HTTP.
+- **Catalog JSON feeds** at \`https://agents.hellobooks.ai/catalog/<slug>.json\` for plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos, free-tier-thresholds, and partner-program — for agents that prefer plain HTTP.
 
 ## Links
 
@@ -81,6 +81,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-06-12', title: 'Partner Program info tool', category: 'feature',
+    description: 'New partner_program_info MCP tool exposes the Partner Program status ladder (Bronze 5% at 25 pts / Silver 10% at 75 / Gold 15% at 300 / Platinum 20% at 1,000+), points math (Pro = 1 pt/mo, Business = 4 pts/mo), and a current-status projector that accepts either explicit points or a client-book split. Same data at /catalog/partner-program.json.' },
   { date: '2026-06-12', title: 'Business tier returns; CPA SKU becomes Partner Program', category: 'feature',
     description: 'Mirroring Web-Fire PR #514: Business re-introduced as the 4th tier (50,000 cr/mo @ $39.99/mo, $399/yr, $79.99 anchor — sized at ~4× Pro to match Partner Points math). The retired flat "$59.99/mo + $4.99/client + 10% commission" CPA SKU is gone; the `cpa` plan id now resolves to the free Partner Program (Bronze 5% → Platinum 20% wholesale discount, Pro=1pt / Business=4pts). HelloCPA Practice Management is a separate product at practice.hellobooks.ai — not surfaced by list_plans.' },
   { date: '2026-06-12', title: 'Free-tier turnover gate tool', category: 'feature',

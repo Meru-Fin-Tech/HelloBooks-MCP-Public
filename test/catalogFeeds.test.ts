@@ -40,6 +40,7 @@ const EXPECTED_SLUGS = [
   'articles',
   'videos',
   'free-tier-thresholds',
+  'partner-program',
 ];
 
 test('every expected catalog is exposed as a feed', () => {
