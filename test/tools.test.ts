@@ -120,6 +120,10 @@ test('list_credit_packs country filter narrows prices to that market', () => {
 
 // --- pricing federation ------------------------------------------------------
 
+// Pro carries a feed-sourced AI-credit allowance and boost carries a
+// feed-sourced pack size — sentinel values that differ from baked so the
+// override path is provable. CPA omits monthlyAiCredits so the fallback
+// path is also exercised in the same fixture.
 const FEED_FIXTURE: PricingFeed = {
   tiers: [
     {
@@ -129,7 +133,7 @@ const FEED_FIXTURE: PricingFeed = {
       annualPrice: 77,
       anchorMonthlyPrice: 14.99,
       features: ['Feed-sourced Pro feature'],
-      limits: { perClientPrice: 0 },
+      limits: { perClientPrice: 0, monthlyAiCredits: 99999 },
     },
     {
       id: 'cpa',
@@ -141,7 +145,7 @@ const FEED_FIXTURE: PricingFeed = {
       limits: { perClientPrice: 3.33 },
     },
   ],
-  addOns: [{ id: 'boost', currency: 'USD', price: 3.33 }],
+  addOns: [{ id: 'boost', currency: 'USD', price: 3.33, credits: 88888 }],
   regions: [
     {
       region: 'US',
@@ -153,7 +157,7 @@ const FEED_FIXTURE: PricingFeed = {
           annualPrice: 77,
           anchorMonthlyPrice: 14.99,
           features: ['Feed-sourced Pro feature'],
-          limits: { perClientPrice: 0 },
+          limits: { perClientPrice: 0, monthlyAiCredits: 99999 },
         },
         {
           id: 'cpa',
@@ -165,7 +169,7 @@ const FEED_FIXTURE: PricingFeed = {
           limits: { perClientPrice: 3.33 },
         },
       ],
-      addOns: [{ id: 'boost', currency: 'USD', price: 3.33 }],
+      addOns: [{ id: 'boost', currency: 'USD', price: 3.33, credits: 88888 }],
     },
   ],
   updatedAt: '2026-05-22T00:00:00.000Z',
@@ -216,6 +220,26 @@ test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
   // power pack absent from the fixture -> all baked
   const power = packs.find((p) => p.id === 'power');
   assert.equal(power?.prices.find((pr) => pr.country === 'US')?.price, 12.99);
+});
+
+test('feedToPlans takes monthlyAiCredits from the feed when present', () => {
+  const plans = feedToPlans(FEED_FIXTURE);
+  // Pro carries the sentinel feed value
+  const pro = plans.find((p) => p.plan === 'pro');
+  assert.equal(pro?.monthlyAiCredits, 99999);
+  // CPA's feed entry omits monthlyAiCredits -> falls back to baked (-1 = unlimited)
+  const cpa = plans.find((p) => p.plan === 'cpa');
+  assert.equal(cpa?.monthlyAiCredits, -1);
+});
+
+test('feedToCreditPacks takes pack credit size from the feed when present', () => {
+  const packs = feedToCreditPacks(FEED_FIXTURE);
+  // boost carries the sentinel feed value
+  const boost = packs.find((p) => p.id === 'boost');
+  assert.equal(boost?.credits, 88888);
+  // power is absent from the fixture -> baked credit size retained
+  const power = packs.find((p) => p.id === 'power');
+  assert.equal(power?.credits, 15000);
 });
 
 test('list_videos returns the curated catalog plus the channel link', () => {
