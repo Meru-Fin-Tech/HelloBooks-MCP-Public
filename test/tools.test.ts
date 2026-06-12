@@ -16,6 +16,7 @@ import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 import { listArticles } from '../src/tools/listArticles.js';
 import { howMunimjiHelps } from '../src/tools/howMunimjiHelps.js';
 import { freeTierEligibility } from '../src/tools/freeTierEligibility.js';
+import { partnerProgramInfo } from '../src/tools/partnerProgramInfo.js';
 import { MUNIMJI_CAPABILITIES } from '../src/data/capabilities.js';
 import { FEATURES } from '../src/data/features.js';
 import { ARTICLES } from '../src/data/articles.js';
@@ -1041,6 +1042,91 @@ test('free_tier_eligibility revenue at exact cap is still eligible (inclusive)',
   const r = freeTierEligibility({ country: 'AE', annualInvoiceRevenue: 187_500 }) as Record<string, unknown>;
   assert.equal(r.freeEligible, true);
   assert.equal(r.headroom, 0);
+});
+
+// ---------------------------------------------------------------------------
+// partner_program_info — Web-Fire #514 / Growth-Strategy partner-handbook.md
+// ---------------------------------------------------------------------------
+
+test('partner_program_info no args returns the full status ladder + meta', () => {
+  const r = partnerProgramInfo({}) as Record<string, unknown>;
+  const statuses = r.statuses as { id: string; discountPercent: number }[];
+  assert.equal(statuses.length, 5);
+  const ids = statuses.map((s) => s.id);
+  assert.deepEqual(ids, ['unranked', 'bronze', 'silver', 'gold', 'platinum']);
+  // discount-only model — meta calls it out
+  const meta = r.meta as { commission: string; joiningFee: number; planId: string };
+  assert.equal(meta.planId, 'cpa');
+  assert.equal(meta.joiningFee, 0);
+  assert.match(meta.commission, /discount-only/);
+  // no points-derived verdict appears without input
+  assert.ok(!('currentStatus' in r));
+});
+
+test('partner_program_info canonical thresholds match the handbook', () => {
+  const r = partnerProgramInfo({}) as { statuses: { id: string; minPoints: number; discountPercent: number }[] };
+  const byId = Object.fromEntries(r.statuses.map((s) => [s.id, s]));
+  assert.equal(byId.unranked?.minPoints, 0);
+  assert.equal(byId.unranked?.discountPercent, 0);
+  assert.equal(byId.bronze?.minPoints, 25);
+  assert.equal(byId.bronze?.discountPercent, 5);
+  assert.equal(byId.silver?.minPoints, 75);
+  assert.equal(byId.silver?.discountPercent, 10);
+  assert.equal(byId.gold?.minPoints, 300);
+  assert.equal(byId.gold?.discountPercent, 15);
+  assert.equal(byId.platinum?.minPoints, 1000);
+  assert.equal(byId.platinum?.discountPercent, 20);
+});
+
+test('partner_program_info points-only input projects status + next tier', () => {
+  // 50 points = Bronze (25-74); next is Silver at 75 → 25 more needed.
+  const r = partnerProgramInfo({ points: 50 }) as Record<string, unknown>;
+  const cur = r.currentStatus as { id: string };
+  const next = r.nextStatus as { id: string } | null;
+  assert.equal(cur.id, 'bronze');
+  assert.equal(next?.id, 'silver');
+  assert.equal(r.pointsToNextStatus, 25);
+  assert.equal(r.discountPercent, 5);
+  assert.match(String(r.message), /Bronze/);
+  assert.match(String(r.message), /25 more points/);
+});
+
+test('partner_program_info Platinum has no next tier', () => {
+  const r = partnerProgramInfo({ points: 5000 }) as Record<string, unknown>;
+  const cur = r.currentStatus as { id: string };
+  assert.equal(cur.id, 'platinum');
+  assert.equal(r.nextStatus, null);
+  assert.equal(r.pointsToNextStatus, null);
+  assert.equal(r.discountPercent, 20);
+});
+
+test('partner_program_info client counts derive points via Pro=1pt + Business=4pt', () => {
+  // Handbook worked example: 60 Pro + 10 Business = 100 pts → Silver / 10%.
+  const r = partnerProgramInfo({ proClients: 60, businessClients: 10 }) as Record<string, unknown>;
+  const cur = r.currentStatus as { id: string };
+  assert.equal(r.points, 100);
+  assert.equal(cur.id, 'silver');
+  assert.equal(r.discountPercent, 10);
+  assert.deepEqual(r.derivedFrom, { proClients: 60, businessClients: 10 });
+});
+
+test('partner_program_info explicit points overrides client-derived points', () => {
+  const r = partnerProgramInfo({ points: 0, proClients: 999, businessClients: 999 }) as Record<string, unknown>;
+  assert.equal(r.points, 0);
+  const cur = r.currentStatus as { id: string };
+  assert.equal(cur.id, 'unranked');
+  // When explicit points is supplied, derivedFrom stays null even though
+  // client counts were also provided.
+  assert.equal(r.derivedFrom, null);
+});
+
+test('partner_program_info edge: exactly at a tier boundary qualifies for that tier (inclusive)', () => {
+  const at75 = partnerProgramInfo({ points: 75 }) as { currentStatus: { id: string } };
+  assert.equal(at75.currentStatus.id, 'silver');
+  const at300 = partnerProgramInfo({ points: 300 }) as { currentStatus: { id: string } };
+  assert.equal(at300.currentStatus.id, 'gold');
+  const at1000 = partnerProgramInfo({ points: 1000 }) as { currentStatus: { id: string } };
+  assert.equal(at1000.currentStatus.id, 'platinum');
 });
 
 test('free_tier_eligibility every country threshold matches Doc 80 canonical values', () => {
