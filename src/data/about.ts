@@ -27,7 +27,9 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
 - **Credit packs** — pay-as-you-go top-ups (Boost / Power / Mega / Ultra: 5,000 / 15,000 / 50,000 / 150,000 credits) that stack on any plan, including Free.
 
-Prices localized to 8 currencies. See \`list_plans\` and \`list_credit_packs\` tools.
+Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$500K / AE AED 187.5K). Above the cap the entity must move to Pro or HelloCPA Practice. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
+
+Prices localized to 8 currencies. See \`list_plans\`, \`list_credit_packs\`, and \`free_tier_eligibility\` tools.
 
 ## Where this MCP fits
 
@@ -41,14 +43,14 @@ Heuristic: if the question mentions a customer name, account, ledger, specific i
 
 The exposed surface area:
 
-- **Plans, pricing, features**: \`list_plans\`, \`list_credit_packs\`, \`list_integrations\`, \`list_features\`, \`list_feature_categories\`, \`feature_search\`.
+- **Plans, pricing, features**: \`list_plans\`, \`list_credit_packs\`, \`free_tier_eligibility\`, \`list_integrations\`, \`list_features\`, \`list_feature_categories\`, \`feature_search\`.
 - **Country + compliance**: \`country_support\`, \`compliance_capabilities\`, \`compliance_deadlines\`, \`list_tax_rates\`, \`lookup_tax_rate\`, \`local_payment_methods\`.
 - **Positioning + comparison**: \`list_competitors\`, \`compare_books_to_hellobooks\`, \`estimate_migration_effort\`.
 - **Content discovery**: \`list_articles\`, \`list_videos\`.
 - **Munimji AI capabilities**: \`how_munimji_helps\`.
 - **Analyzers** (paste a trial balance / P&L / journal export and get findings): \`analyze_trial_balance\`, \`analyze_balance_sheet\`, \`analyze_profit_loss\`, \`analyze_journal_variance\`, \`analyze_qbo_journal_cleanup\`, \`analyze_qbo_journal_anomalies\`, \`analyze_xero_journal_cleanup\`, \`analyze_xero_journal_anomalies\`.
 - **Resources**: \`hellobooks://about\`, \`hellobooks://changelog\`, \`hellobooks://feature-catalog\`, \`hellobooks://capabilities\`, \`hellobooks://comparison/{competitor-id}\`.
-- **Catalog JSON feeds** at \`https://agents.hellobooks.ai/catalog/<slug>.json\` for plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, and videos — for agents that prefer plain HTTP.
+- **Catalog JSON feeds** at \`https://agents.hellobooks.ai/catalog/<slug>.json\` for plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos, and free-tier-thresholds — for agents that prefer plain HTTP.
 
 ## Links
 
@@ -76,6 +78,10 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-06-12', title: 'Free-tier turnover gate tool', category: 'feature',
+    description: 'New free_tier_eligibility MCP tool exposes the Doc 80 invoice-turnover caps (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Agents can now answer "is my business eligible for HelloBooks Free?" without guessing. Same data available at /catalog/free-tier-thresholds.json.' },
+  { date: '2026-06-12', title: 'Sitemap-discovered articles', category: 'improvement',
+    description: 'list_articles + the articles catalog feed grew from 41 hand-curated entries to 886 (curated flagship content + 845 bulk-imported from hellobooks.ai/sitemap.xml). AI agents asking "do you have a blog about X?" now hit ~95% of the marketing site instead of ~5%.' },
   { date: '2026-06-12', title: 'Public MCP credit federation', category: 'improvement',
     description: 'list_plans monthlyAiCredits and list_credit_packs credits now flow from the live hellobooks.ai/api/feed/pricing.json with baked fallback — so AI agents see canonical credit numbers without waiting on a redeploy.' },
   { date: '2026-06-08', title: 'AI credit ×10 display scale', category: 'improvement',
