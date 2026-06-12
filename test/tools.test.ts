@@ -873,6 +873,21 @@ test('list_articles includes compare pages alongside blog posts', () => {
   assert.ok(kinds.has('blog'), 'catalog should include blog posts');
 });
 
+test('list_articles surfaces the sitemap-discovered pool alongside curated', () => {
+  // Sanity that articlesDiscovered.ts is wired in. The pool is bulk-imported
+  // from hellobooks.ai/sitemap.xml and every entry carries the `discovered`
+  // tag — distinguishing it from curated flagship content.
+  const discovered = ARTICLES.filter((a) => a.tags.includes('discovered'));
+  assert.ok(discovered.length >= 500, `expected the discovered pool to land >=500 articles, got ${discovered.length}`);
+  // Curated entries do NOT carry the `discovered` tag, so a kind=compare
+  // article (always curated) should never have it.
+  for (const a of ARTICLES) {
+    if (a.kind === 'compare') {
+      assert.ok(!a.tags.includes('discovered'), `${a.id}: compare entries are curated, should not carry the discovered tag`);
+    }
+  }
+});
+
 test('feature_search surfaces articles in results', () => {
   // A query that should match a compare page or flagship blog.
   const r = featureSearch({ query: 'quickbooks alternative' });
