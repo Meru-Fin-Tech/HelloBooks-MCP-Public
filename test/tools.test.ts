@@ -15,6 +15,7 @@ import { listFeatures } from '../src/tools/listFeatures.js';
 import { listFeatureCategories } from '../src/tools/listFeatureCategories.js';
 import { listArticles } from '../src/tools/listArticles.js';
 import { howMunimjiHelps } from '../src/tools/howMunimjiHelps.js';
+import { freeTierEligibility } from '../src/tools/freeTierEligibility.js';
 import { MUNIMJI_CAPABILITIES } from '../src/data/capabilities.js';
 import { FEATURES } from '../src/data/features.js';
 import { ARTICLES } from '../src/data/articles.js';
@@ -963,5 +964,65 @@ test('capabilities KB: ledger-mutating actions are never silently autonomous (sa
       !/post(s|ed)?\s+(to\s+)?(your\s+)?(books|ledger|general ledger)/i.test(c.whoDoesWhat),
       `autonomous capability "${c.key}" must not post to the ledger without approval`,
     );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// free_tier_eligibility — Doc 80 / Acc-V3 #1501 turnover gate
+// ---------------------------------------------------------------------------
+
+test('free_tier_eligibility no args returns the full 8-country threshold table', () => {
+  const r = freeTierEligibility({}) as { thresholds: { country: string }[]; count: number; meta: { basis: string } };
+  assert.equal(r.count, 8);
+  assert.equal(r.meta.basis, 'annual-invoice-turnover');
+  const countries = r.thresholds.map((t) => t.country).sort();
+  assert.deepEqual(countries, ['AE', 'AU', 'CA', 'GB', 'IN', 'NZ', 'SG', 'US']);
+});
+
+test('free_tier_eligibility country only returns that threshold without a verdict', () => {
+  const r = freeTierEligibility({ country: 'IN' }) as Record<string, unknown>;
+  assert.equal(r.country, 'IN');
+  assert.equal(r.currency, 'INR');
+  assert.equal(r.annualInvoiceTurnoverLimit, 4_000_000);
+  assert.equal(r.display, '₹40 lakh');
+  assert.equal(r.basis, 'invoices');
+  assert.ok(!('freeEligible' in r), 'verdict should only appear when revenue is supplied');
+});
+
+test('free_tier_eligibility country + revenue under cap returns eligible', () => {
+  const r = freeTierEligibility({ country: 'US', annualInvoiceRevenue: 80_000 }) as Record<string, unknown>;
+  assert.equal(r.freeEligible, true);
+  assert.equal(r.headroom, 20_000);
+  assert.match(String(r.message), /Eligible for Free/);
+});
+
+test('free_tier_eligibility country + revenue over cap returns NOT eligible with negative headroom', () => {
+  const r = freeTierEligibility({ country: 'GB', annualInvoiceRevenue: 150_000 }) as Record<string, unknown>;
+  assert.equal(r.freeEligible, false);
+  assert.equal(r.headroom, -60_000);
+  assert.match(String(r.message), /Not eligible for Free/);
+  assert.match(String(r.message), /£90K/);
+});
+
+test('free_tier_eligibility revenue at exact cap is still eligible (inclusive)', () => {
+  const r = freeTierEligibility({ country: 'AE', annualInvoiceRevenue: 187_500 }) as Record<string, unknown>;
+  assert.equal(r.freeEligible, true);
+  assert.equal(r.headroom, 0);
+});
+
+test('free_tier_eligibility every country threshold matches Doc 80 canonical values', () => {
+  const expected: Record<string, number> = {
+    IN: 4_000_000,
+    US: 100_000,
+    GB: 90_000,
+    AU: 75_000,
+    CA: 30_000,
+    NZ: 60_000,
+    SG: 500_000,
+    AE: 187_500,
+  };
+  const r = freeTierEligibility({}) as { thresholds: { country: string; annualInvoiceTurnoverLimit: number }[] };
+  for (const t of r.thresholds) {
+    assert.equal(t.annualInvoiceTurnoverLimit, expected[t.country], `${t.country}: threshold drift vs Doc 80`);
   }
 });

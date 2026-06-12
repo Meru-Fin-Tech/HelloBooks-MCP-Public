@@ -29,6 +29,7 @@
 import { SERVER_VERSION } from './server.js';
 import { getBaseUrl, getCatalogLastModified } from './discovery.js';
 import { getPlans, getCreditPacks, getPricingMeta } from './pricingFeed.js';
+import { FREE_TIER_THRESHOLDS, FREE_TIER_THRESHOLD_META } from './data/freeTierThresholds.js';
 import { FEATURES, FEATURE_CATEGORIES, FEATURE_CATALOG_META } from './data/features.js';
 import { INTEGRATIONS } from './data/integrations.js';
 import { COMPETITORS } from './data/competitors.js';
@@ -214,6 +215,17 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     build: () => ({
       count: VIDEOS.length,
       data: { videos: VIDEOS, channel: YOUTUBE_CHANNEL },
+    }),
+  },
+  {
+    slug: 'free-tier-thresholds',
+    title: 'Free-tier turnover thresholds',
+    description:
+      'Per-country annual-invoice-turnover caps for the Free plan (Doc 80 / Acc-V3 #1501). Above the cap, an entity must move to Pro or HelloCPA Practice.',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+    build: () => ({
+      count: FREE_TIER_THRESHOLDS.length,
+      data: { thresholds: FREE_TIER_THRESHOLDS, meta: FREE_TIER_THRESHOLD_META },
     }),
   },
 ];
