@@ -90,14 +90,14 @@ test('list_credit_packs returns all 4 packs with 8-country pricing', () => {
   }
 });
 
-test('list_credit_packs credit allowances match Doc 19 v2', () => {
+test('list_credit_packs credit allowances match Doc 19 v2 (×10 display scale)', () => {
   const byId = Object.fromEntries(
     listCreditPacks({}).creditPacks.map((p) => [p.id, p.credits]),
   );
-  assert.equal(byId.boost, 500);
-  assert.equal(byId.power, 1500);
-  assert.equal(byId.mega, 5000);
-  assert.equal(byId.ultra, 15000);
+  assert.equal(byId.boost, 5000);
+  assert.equal(byId.power, 15000);
+  assert.equal(byId.mega, 50000);
+  assert.equal(byId.ultra, 150000);
 });
 
 test('list_credit_packs id filter restricts to a single pack', () => {
@@ -202,7 +202,7 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   assert.equal(warehouse.prices[0].monthly, 9);
   // free is absent from the fixture feed.tiers -> baked free returned untouched
   const free = plans.find((p) => p.plan === 'free');
-  assert.equal(free?.monthlyAiCredits, 500);
+  assert.equal(free?.monthlyAiCredits, 5000);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
