@@ -30,6 +30,7 @@ export type FeatureCategoryKey =
 export type FeatureTier =
   | 'free'
   | 'pro'
+  | 'business'
   | 'cpa'
   | 'warehouse-addon'
   | 'manufacturing-addon';

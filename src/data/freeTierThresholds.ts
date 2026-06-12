@@ -59,5 +59,5 @@ export const FREE_TIER_THRESHOLD_META = {
   source: 'HelloBooks pricing — Doc 80 (lock-in Docs 86/87, 2026-04)',
   backendEnforcement: 'HelloBooks-Backend-Accounting-V3 PR #1501 (merged)',
   notes:
-    'Free plan limits ANNUAL INVOICE TURNOVER per entity in the country currency. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used. An entity that crosses its threshold must upgrade to a paid plan (Pro or HelloCPA Practice); features and AI credits are unaffected by this gate.',
+    'Free plan limits ANNUAL INVOICE TURNOVER per entity in the country currency. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used. An entity that crosses its threshold must upgrade to a paid plan (Pro or Business); features and AI credits are unaffected by this gate.',
 } as const;

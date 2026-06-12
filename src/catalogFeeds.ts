@@ -221,7 +221,7 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     slug: 'free-tier-thresholds',
     title: 'Free-tier turnover thresholds',
     description:
-      'Per-country annual-invoice-turnover caps for the Free plan (Doc 80 / Acc-V3 #1501). Above the cap, an entity must move to Pro or HelloCPA Practice.',
+      'Per-country annual-invoice-turnover caps for the Free plan (Doc 80 / Acc-V3 #1501). Above the cap, an entity must move to Pro or Business.',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
     build: () => ({
       count: FREE_TIER_THRESHOLDS.length,

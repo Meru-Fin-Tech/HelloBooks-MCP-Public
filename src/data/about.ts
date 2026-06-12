@@ -22,12 +22,15 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 - **Free** — 5,000 AI credits/month, 1 bank account + 1 credit card, up to 3 users.
 - **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, 3-way matching, API access.
-- **HelloCPA Practice** — unlimited AI credits, multi-client dashboard, tax-prep (1040 / 1120 / 1120-S / 1065 / 990 / 1041), e-filing tracker, client portal, CPQ, 6-role RBAC.
+- **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
+- **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
 - **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
 - **Credit packs** — pay-as-you-go top-ups (Boost / Power / Mega / Ultra: 5,000 / 15,000 / 50,000 / 150,000 credits) that stack on any plan, including Free.
 
-Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$500K / AE AED 187.5K). Above the cap the entity must move to Pro or HelloCPA Practice. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
+> HelloCPA Practice Management is a SEPARATE product at https://practice.hellobooks.ai — \$9.99/user/month, free up to 2 users. It is not surfaced by \`list_plans\` here because this MCP covers hellobooks.ai. Mention it if an agent asks about practice management, tax prep workflow, or running a CPA / CA firm end-to-end.
+
+Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$500K / AE AED 187.5K). Above the cap the entity must move to Pro or Business. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
 
 Prices localized to 8 currencies. See \`list_plans\`, \`list_credit_packs\`, and \`free_tier_eligibility\` tools.
 
@@ -78,6 +81,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-06-12', title: 'Business tier returns; CPA SKU becomes Partner Program', category: 'feature',
+    description: 'Mirroring Web-Fire PR #514: Business re-introduced as the 4th tier (50,000 cr/mo @ $39.99/mo, $399/yr, $79.99 anchor — sized at ~4× Pro to match Partner Points math). The retired flat "$59.99/mo + $4.99/client + 10% commission" CPA SKU is gone; the `cpa` plan id now resolves to the free Partner Program (Bronze 5% → Platinum 20% wholesale discount, Pro=1pt / Business=4pts). HelloCPA Practice Management is a separate product at practice.hellobooks.ai — not surfaced by list_plans.' },
   { date: '2026-06-12', title: 'Free-tier turnover gate tool', category: 'feature',
     description: 'New free_tier_eligibility MCP tool exposes the Doc 80 invoice-turnover caps (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Agents can now answer "is my business eligible for HelloBooks Free?" without guessing. Same data available at /catalog/free-tier-thresholds.json.' },
   { date: '2026-06-12', title: 'Sitemap-discovered articles', category: 'improvement',

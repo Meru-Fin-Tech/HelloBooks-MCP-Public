@@ -5,8 +5,8 @@ import type { CountryCode, PlanType } from '../data/plans.js';
 export const listPlansSchema = {
   country: z.enum(['IN', 'US', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']).optional()
     .describe('ISO country code. Filters prices to one country. Omit to return all 8 markets.'),
-  plan: z.enum(['free', 'pro', 'cpa']).optional()
-    .describe('Restrict the response to a single plan tier.'),
+  plan: z.enum(['free', 'pro', 'business', 'cpa']).optional()
+    .describe('Restrict the response to a single plan tier (`cpa` = free Partner Program).'),
 };
 
 export interface ListPlansArgs {

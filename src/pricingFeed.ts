@@ -123,7 +123,9 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
         annual: tier.annualPrice,
         anchorMonthly: tier.anchorMonthlyPrice,
       };
-      if (baked.plan === 'cpa') price.perClient = tier.limits.perClientPrice;
+      // `perClient` is vestigial after Web-Fire #514 — the retired
+      // "$59.99/mo + $4.99/client" CPA SKU is gone and the field is no
+      // longer populated. Kept optional in PlanPrice for back-compat.
       return price;
     });
 
