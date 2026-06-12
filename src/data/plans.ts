@@ -129,7 +129,7 @@ interface RegionConfig {
    * intact. perClient was the retired flat-SKU per-client fee — now 0.
    */
   cpa: { monthly: number; annual: number; perClient: number };
-  // One-time pay-as-you-go AI credit top-up packs (Doc 19 v2).
+  // One-time pay-as-you-go AI credit top-up packs (Doc 19 v3, 2026-06-12).
   packs: { boost: number; power: number; mega: number; ultra: number };
 }
 
