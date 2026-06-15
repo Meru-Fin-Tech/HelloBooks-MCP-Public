@@ -324,6 +324,12 @@ export const FEATURES: Feature[] = [
   { key: 'compliance-calendar', label: 'Compliance Calendar',
     category: 'tax-compliance', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'Country-specific compliance deadlines surfaced as a calendar widget on the dashboard.' },
+  { key: 'filing-tokens', label: 'Filing Token Bundles',
+    category: 'tax-compliance', tier: 'pro', status: 'live', marketed: false,
+    shortDescription: 'Purchase and manage token bundles for Form 1099 e-filing. Balance shown inline on the 1099 page.' },
+  { key: 'form-1099-state-leg-entry', label: 'Form 1099 State & Filing-Leg Entry',
+    category: 'tax-compliance', tier: 'pro', status: 'live', marketed: false,
+    shortDescription: 'Per-recipient state and filing-leg (CF/SF) entry UI within the Form 1099 editor for multi-state 1099 reporting.' },
   { key: 'multi-jurisdiction-tax-ai', label: 'Multi-Jurisdiction AI Tax Intelligence',
     category: 'tax-compliance', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'AI categorization is tax-aware in 4 jurisdictions out of the box: India (TDS 194C/I/J/H/Q + GST CGST/SGST/IGST/RCM + TCS 206C), UK (VAT codes + CIS 20%/30% + DRC + MTD-aware), Australia (GST + no-ABN PAYG 47% + LCT + WET), UAE (5% VAT + 9% CT + Free Zone vs Mainland + Designated Zones). Cross-cutting PSP detection routes Stripe/Razorpay payouts to Undeposited Funds Clearing per GAAP/IFRS.',
@@ -442,6 +448,9 @@ export const FEATURES: Feature[] = [
   { key: 'prompt-templates', label: 'Prompt Templates Library',
     category: 'ai-automation', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'Reusable prompt templates with slot-fill — standardize AI workflows across teams.' },
+  { key: 'chatbot-inline-softnotes', label: 'AI Chat Inline Soft-Note Rendering',
+    category: 'ai-automation', tier: 'pro', status: 'live', marketed: false,
+    shortDescription: 'The AI assistant renders soft-note attachments inline within the conversation thread for richer context.' },
 
   // ── Integrations (feature-tier mapping; partner list in integrations.ts) ─
   { key: 'stripe-connect', label: 'Stripe Connect',
@@ -477,6 +486,9 @@ export const FEATURES: Feature[] = [
   { key: 'upwork-sync', label: 'Upwork (Freelance Spend)',
     category: 'integrations', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'Auto-import freelance contractor spend from Upwork with project mapping.' },
+  { key: 'tally-journal-capture-banner', label: 'Tally Journal Capture Guidance',
+    category: 'integrations', tier: 'pro', status: 'live', marketed: false,
+    shortDescription: 'In-app banner on the Tally Reconciliation page guiding users through automated journal entry capture from Tally syncs.' },
 
   // ── Mobile ──────────────────────────────────────────────────────────────
   { key: 'mobile-ios', label: 'iOS App',
@@ -529,6 +541,9 @@ export const FEATURES: Feature[] = [
   { key: 'export-csv', label: 'Universal CSV Export',
     category: 'operations', tier: 'free', status: 'live', marketed: true,
     shortDescription: 'Export any list, report, or transaction set to CSV with one click.' },
+  { key: 'rbac-route-gating', label: 'Feature-Flag Route Access Control',
+    category: 'operations', tier: 'pro', status: 'live', marketed: false,
+    shortDescription: 'Reports and Banking Settings routes are gated by RBAC permission checks, preventing unauthorised access per user role.' },
 
   // ── Industry Modules ────────────────────────────────────────────────────
   { key: 'pos', label: 'POS (Point of Sale)',
@@ -546,6 +561,23 @@ export const FEATURES: Feature[] = [
   { key: 'timex', label: 'TimeX (Payroll & Attendance)',
     category: 'industry-modules', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'Sister-product TimeX handles payroll, leave, attendance — auto-syncs PAYG/PT/PF/ESI to HelloBooks GL.' },
+  { key: 'owner-suite-consolidated-cashflow', label: 'Consolidated Cash Flow (Owner Suite)',
+    category: 'industry-modules', tier: 'business', status: 'live', marketed: true,
+    shortDescription: 'Multi-entity cash flow report across all group entities with direct/indirect toggle and per-org contributor drill-down.',
+    competitorParity: ['None — HelloBooks USP. No competitor offers consolidated cross-entity cash flow in a single dashboard for SMB owners.'] },
+  { key: 'owner-suite-consolidated-budget', label: 'Consolidated Budget vs Actual (Owner Suite)',
+    category: 'industry-modules', tier: 'business', status: 'live', marketed: true,
+    shortDescription: 'Budget variance analysis rolled up across all group entities, with department and project drill-down.',
+    competitorParity: ['None — HelloBooks USP. Consolidated budget vs actual across entities is enterprise-only in Xero/QuickBooks — not available to SMBs.'] },
+  { key: 'owner-suite-merchant-insights', label: 'Merchant Insights Panel (Owner Suite)',
+    category: 'industry-modules', tier: 'business', status: 'live', marketed: false,
+    shortDescription: 'Customer lifetime value and vendor spend patterns surfaced across all entities in Owner Suite Mode B.' },
+  { key: 'owner-suite-activity-insights', label: 'Activity Insights — Cross-Tenant Audit Timeline (Owner Suite)',
+    category: 'industry-modules', tier: 'business', status: 'live', marketed: false,
+    shortDescription: 'Unified audit event feed across multiple entities with cross-tenant timeline and drill-down per org.' },
+  { key: 'owner-suite-tally-health', label: 'Tally Health Dashboard (Owner Suite)',
+    category: 'industry-modules', tier: 'business', status: 'live', marketed: false,
+    shortDescription: 'Monitor Tally integration sync status per org with configurable auto-sync schedules and per-org interval controls.' },
 ];
 
 export const FEATURE_CATALOG_META = {
