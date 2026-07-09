@@ -88,8 +88,8 @@ export const INTEGRATIONS: Integration[] = [
     description: 'Pre-fill Business Activity Statements; direct SBR lodgement in progress.',
     countries: ['AU'], status: 'beta' },
   { id: 'hmrc-mtd', name: 'HMRC Making Tax Digital', category: 'tax-compliance',
-    description: 'MTD VAT return preparation and submission to HMRC (production access in progress).',
-    countries: ['GB'], status: 'beta' },
+    description: 'MTD VAT returns computed from your ledger (boxes 1–9) and submitted directly via the HMRC MTD API after government-gateway authorisation.',
+    countries: ['GB'], status: 'live' },
 
   // Accounting sync
   { id: 'quickbooks', name: 'QuickBooks Online', category: 'accounting-sync',
