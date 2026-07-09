@@ -82,21 +82,21 @@ export const INTEGRATIONS: Integration[] = [
     description: 'E-way bill generation and cancellation API.',
     countries: ['IN'], status: 'live' },
   { id: 'ato-stp', name: 'ATO Single Touch Payroll', category: 'tax-compliance',
-    description: 'STP Phase 2 reporting to the Australian Taxation Office.',
-    countries: ['AU'], status: 'live' },
+    description: 'STP Phase 2 payroll reporting to the ATO (in progress).',
+    countries: ['AU'], status: 'beta' },
   { id: 'ato-bas', name: 'ATO BAS Lodgement', category: 'tax-compliance',
-    description: 'Pre-fill and lodge Business Activity Statements.',
-    countries: ['AU'], status: 'live' },
+    description: 'Pre-fill Business Activity Statements; direct SBR lodgement in progress.',
+    countries: ['AU'], status: 'beta' },
   { id: 'hmrc-mtd', name: 'HMRC Making Tax Digital', category: 'tax-compliance',
-    description: 'MTD VAT submission to HMRC.',
-    countries: ['GB'], status: 'live' },
+    description: 'MTD VAT return preparation and submission to HMRC (production access in progress).',
+    countries: ['GB'], status: 'beta' },
 
   // Accounting sync
   { id: 'quickbooks', name: 'QuickBooks Online', category: 'accounting-sync',
-    description: 'Two-way sync of customers, vendors, invoices, bills, and journals.',
+    description: 'Guided one-time migration of customers, vendors, invoices, bills, and journals from QuickBooks (import, not a live two-way sync).',
     countries: ['US', 'CA', 'GB', 'AU', 'IN'], status: 'live' },
   { id: 'xero', name: 'Xero', category: 'accounting-sync',
-    description: 'Two-way sync with Xero ledgers.',
+    description: 'Guided one-time migration from Xero ledgers (import, not a live two-way sync).',
     countries: ['AU', 'GB', 'US', 'NZ'], status: 'live' },
   { id: 'tally', name: 'Tally', category: 'accounting-sync',
     description: 'Desktop bridge for Tally Prime data exchange.',
@@ -137,6 +137,6 @@ export const INTEGRATIONS: Integration[] = [
 
   // Additional accounting-sync partners surfaced on the marketing site
   { id: 'freshbooks', name: 'FreshBooks', category: 'accounting-sync',
-    description: 'Bi-directional sync with FreshBooks ledgers for migration or dual-bookkeeping scenarios.',
+    description: 'Guided migration / import from FreshBooks ledgers (not a live two-way sync).',
     countries: ['US', 'CA', 'GB', 'AU'], status: 'live' },
 ];
