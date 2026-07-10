@@ -81,6 +81,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-07-10', title: 'Catalog accuracy refresh — Free tier is 2,500 credits/month', category: 'fix',
+    description: 'Free plan corrected to 2,500 AI credits/month (the catalog had mirrored an older 5,000 figure). Pro stays 15,000, Business 50,000, Partner Program unlimited. The same refresh fixed the feature count (96 → 152), marked US multi-state sales tax live, removed integrations that do not ship (Yodlee, FreshBooks), added the Nova Scotia HST 14% rate, and corrected the credit-pack figures on the discovery surface. All pricing mirrors Web-Fire pricingConfig.ts on main.' },
   { date: '2026-06-12', title: 'HelloCPA Practice Management info tool', category: 'feature',
     description: 'New practice_management_info MCP tool exposes the standalone HelloCPA Practice Management product on practice.hellobooks.ai — per-user pricing ($9.99/user/month US, free up to 2 users + 10 clients, 90-day trial). US shipped; 7 other markets roadmap. Distinct from the Partner Program. Same data at /catalog/practice-management.json.' },
   { date: '2026-06-12', title: 'Partner Program info tool', category: 'feature',
@@ -94,7 +96,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   { date: '2026-06-12', title: 'Public MCP credit federation', category: 'improvement',
     description: 'list_plans monthlyAiCredits and list_credit_packs credits now flow from the live hellobooks.ai/api/feed/pricing.json with baked fallback — so AI agents see canonical credit numbers without waiting on a redeploy.' },
   { date: '2026-06-08', title: 'AI credit ×10 display scale', category: 'improvement',
-    description: 'Doc 19 v2 display scale now consistent across product, marketing, and MCP: Free 5,000 / Pro 15,000 / CPA unlimited credits per month; packs Boost 5,000 / Power 15,000 / Mega 50,000 / Ultra 150,000. Per-credit prices ÷10 — total value unchanged.' },
+    description: 'Doc 19 v2 display scale now consistent across product, marketing, and MCP: Free 5,000 / Pro 15,000 / CPA unlimited credits per month; packs Boost 5,000 / Power 15,000 / Mega 50,000 / Ultra 150,000. Per-credit prices ÷10 — total value unchanged. (Superseded: the Free allowance was later reduced to 2,500 credits/month — see the 2026-07-10 entry.)' },
   { date: '2026-06-07', title: 'JSON catalog feeds', category: 'feature',
     description: 'Every public MCP catalog is now reachable as plain HTTP JSON at agents.hellobooks.ai/catalog/<slug>.json (plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos) — for agents that prefer fetch over MCP transport.' },
   { date: '2026-05-22', title: 'Live pricing federation + credit packs', category: 'improvement',
