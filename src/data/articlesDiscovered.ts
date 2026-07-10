@@ -5,9 +5,11 @@
  * Source of truth: https://hellobooks.ai/sitemap.xml (blog URLs only).
  * Titles are slug-derived (lower fidelity than the curated catalog in
  * articles.ts) and every entry carries the `discovered` tag so callers
- * can distinguish curated flagship content from bulk import. To
- * regenerate after the marketing site publishes new posts:
- *   npm run sync:discovered-articles
+ * can distinguish curated flagship content from bulk import.
+ *
+ * This is the BAKED fallback. At runtime src/articlesFeed.ts federates the
+ * same sitemap live, so new posts appear without regenerating this file.
+ * To refresh the baked snapshot: npm run sync:discovered-articles
  *
  * Do NOT hand-edit — re-running the script overwrites this file.
  */
