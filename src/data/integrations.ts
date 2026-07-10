@@ -32,12 +32,9 @@ export interface Integration {
 export const INTEGRATIONS: Integration[] = [
   // Banking
   { id: 'plaid', name: 'Plaid', category: 'banking',
-    description: 'Bank feed aggregation across 12,000+ US/CA/GB institutions.',
-    countries: ['US', 'CA', 'GB'], status: 'live',
+    description: 'Bank feed aggregation across 11,000+ US institutions.',
+    countries: ['US'], status: 'live',
     publicUrl: 'https://plaid.com' },
-  { id: 'yodlee', name: 'Yodlee', category: 'banking',
-    description: 'Multi-region bank feed coverage including AU, NZ, SG.',
-    countries: ['AU', 'NZ', 'SG', 'IN'], status: 'live' },
 
   // Payments
   { id: 'stripe', name: 'Stripe', category: 'payment',
@@ -54,7 +51,7 @@ export const INTEGRATIONS: Integration[] = [
 
   // Payroll
   { id: 'gusto', name: 'Gusto', category: 'payroll',
-    description: 'US payroll posting back to journal entries.',
+    description: 'US contractor payments + 1099 sync posting to the GL.',
     countries: ['US'], status: 'coming-soon',
     publicUrl: 'https://hellobooks.ai/integration/gusto' },
   { id: 'hellotime-payroll', name: 'HelloTime Payroll', category: 'payroll',
@@ -94,7 +91,7 @@ export const INTEGRATIONS: Integration[] = [
   // Accounting sync
   { id: 'quickbooks', name: 'QuickBooks Online', category: 'accounting-sync',
     description: 'Guided one-time migration of customers, vendors, invoices, bills, and journals from QuickBooks (import, not a live two-way sync).',
-    countries: ['US', 'CA', 'GB', 'AU', 'IN'], status: 'live' },
+    countries: ['US'], status: 'live' },
   { id: 'xero', name: 'Xero', category: 'accounting-sync',
     description: 'Guided one-time migration from Xero ledgers (import, not a live two-way sync).',
     countries: ['AU', 'GB', 'US', 'NZ'], status: 'live' },
@@ -102,7 +99,7 @@ export const INTEGRATIONS: Integration[] = [
     description: 'Desktop bridge for Tally Prime data exchange.',
     countries: ['IN'], status: 'live' },
   { id: 'zoho-books', name: 'Zoho Books', category: 'accounting-sync',
-    description: 'Read-only sync of Zoho ledgers.',
+    description: 'Guided one-time migration/import from Zoho Books ledgers (import, not a live two-way sync).',
     countries: [], status: 'beta' },
 
   // Ecommerce
@@ -135,8 +132,7 @@ export const INTEGRATIONS: Integration[] = [
     countries: [], status: 'live',
     publicUrl: 'https://hellobooks.ai/integration/upwork' },
 
-  // Additional accounting-sync partners surfaced on the marketing site
-  { id: 'freshbooks', name: 'FreshBooks', category: 'accounting-sync',
-    description: 'Guided migration / import from FreshBooks ledgers (not a live two-way sync).',
-    countries: ['US', 'CA', 'GB', 'AU'], status: 'live' },
+  { id: 'wave', name: 'Wave', category: 'accounting-sync',
+    description: 'Guided one-time migration/import from Wave ledgers (import, not a live two-way sync).',
+    countries: ['US', 'CA'], status: 'live' },
 ];

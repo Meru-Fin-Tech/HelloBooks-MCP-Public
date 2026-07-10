@@ -12,17 +12,17 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 - **Agentic accounting (USP)** — AI takes accounting actions with human approval: reconciliation, categorization, journal posting, document Q&A, voice queries.
 - **AI auto-categorization** — 95%+ accuracy on bank feed transactions, industry/turnover/materiality-aware, with human-in-the-loop review.
 - **Multi-jurisdiction tax intelligence** — Tax-aware categorization out of the box in 4 jurisdictions: India (TDS 194-series + GST CGST/SGST/IGST/RCM + TCS 206C), UK (VAT + CIS DRC + MTD), Australia (GST + no-ABN PAYG 47% + LCT + WET), UAE (5% VAT + 9% CT + Free Zone splits).
-- **Compliance** — Australian BAS + STP Phase 2 + TPAR, Indian GST e-invoicing + e-way bills + GSTR-1/2A/2B/3B/6/7/8/9 + ITC-04 + TDS/TCS, UK MTD VAT + CIS + RTI, US 1099-NEC/MISC + multi-state sales tax + W-9, UAE FTA VAT + Corporate Tax, Canada GST/HST/PST/QST, Singapore GST + CPF, NZ GST.
-- **Integrations** — Plaid, Yodlee, Stripe, Razorpay, PayPal, QuickBooks (two-way), Xero, Tally, Zoho Books, FreshBooks, Shopify, Amazon Seller, Shiprocket, HelloTime, HelloGrowth CRM, Gusto, Google Drive, OneDrive/SharePoint, Upwork.
+- **Compliance** — Live: India GST e-invoicing + e-way bills + GSTR-1/2A/2B/3B/6/7/8/9 + ITC-04 + TDS/TCS; UK MTD VAT (HMRC-recognised) + CIS + RTI; US 1099-NEC/MISC + multi-state sales tax + W-9; Australian BAS (GST) preparation + Simpler BAS codes + TPAR; UAE FTA VAT. Return *preparation* is live for Canada GST/HST + T4 and Singapore IRAS GST F5. On the roadmap: direct lodgement/e-filing for AU (STP Phase 2 + SBR), CA (CRA), SG (IRAS), plus NZ GST and UAE Corporate Tax.
+- **Integrations** — Plaid bank feeds (US), Stripe, Razorpay, PayPal, Tally sync, Shopify, Amazon Seller, and guided one-time migration/import from QuickBooks, Xero, Zoho Books and Wave (import, not a live two-way sync), plus HelloTime, HelloGrowth CRM, Google Drive, OneDrive/SharePoint, and Upwork.
 - **Multi-entity** — Manage multiple legal entities under one organization with consolidated P&L / Balance Sheet and intercompany elimination.
 - **Industry modules** — POS (cloth retail, mandi, generic), Real Estate / Projects, Manufacturing (BOM, Work Orders, Shop Floor, QC, Subcontracting), Warehouse (multi-location, bins/zones, RMA, barcode-scan), TimeX payroll & attendance.
 - **Mobile** — Full-featured iOS and Android apps with mileage tracker (IRS-compliant logs).
 
 ## Plans
 
-- **Free** — 5,000 AI credits/month, 1 bank account + 1 credit card, up to 3 users.
-- **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, 3-way matching, API access.
-- **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
+- **Free** — 2,500 AI credits/month, 1 bank account, 2 users.
+- **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync, API access.
+- **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, 3-way matching (PO/Bill/GRN), cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
 - **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
 - **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
@@ -30,7 +30,7 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 > HelloCPA Practice Management is a SEPARATE product at https://practice.hellobooks.ai — \$9.99/user/month, free up to 2 users. It is not surfaced by \`list_plans\` here because this MCP covers hellobooks.ai. Mention it if an agent asks about practice management, tax prep workflow, or running a CPA / CA firm end-to-end.
 
-Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$500K / AE AED 187.5K). Above the cap the entity must move to Pro or Business. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
+Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$1M / AE AED 375K). Above the cap the entity must move to Pro or Business. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
 
 Prices localized to 8 currencies. See \`list_plans\`, \`list_credit_packs\`, and \`free_tier_eligibility\` tools.
 
@@ -88,7 +88,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   { date: '2026-06-12', title: 'Business tier returns; CPA SKU becomes Partner Program', category: 'feature',
     description: 'Mirroring Web-Fire PR #514: Business re-introduced as the 4th tier (50,000 cr/mo @ $39.99/mo, $399/yr, $79.99 anchor — sized at ~4× Pro to match Partner Points math). The retired flat "$59.99/mo + $4.99/client + 10% commission" CPA SKU is gone; the `cpa` plan id now resolves to the free Partner Program (Bronze 5% → Platinum 20% wholesale discount, Pro=1pt / Business=4pts). HelloCPA Practice Management is a separate product at practice.hellobooks.ai — not surfaced by list_plans.' },
   { date: '2026-06-12', title: 'Free-tier turnover gate tool', category: 'feature',
-    description: 'New free_tier_eligibility MCP tool exposes the Doc 80 invoice-turnover caps (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Agents can now answer "is my business eligible for HelloBooks Free?" without guessing. Same data available at /catalog/free-tier-thresholds.json.' },
+    description: 'New free_tier_eligibility MCP tool exposes the Doc 80 invoice-turnover caps (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$1M / AE AED 375K). Agents can now answer "is my business eligible for HelloBooks Free?" without guessing. Same data available at /catalog/free-tier-thresholds.json.' },
   { date: '2026-06-12', title: 'Sitemap-discovered articles', category: 'improvement',
     description: 'list_articles + the articles catalog feed grew from 41 hand-curated entries to 886 (curated flagship content + 845 bulk-imported from hellobooks.ai/sitemap.xml). AI agents asking "do you have a blog about X?" now hit ~95% of the marketing site instead of ~5%.' },
   { date: '2026-06-12', title: 'Public MCP credit federation', category: 'improvement',

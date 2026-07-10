@@ -62,7 +62,7 @@ const IN_METHODS: PaymentMethod[] = [
     rail: 'instant',
     useCases: ['payroll', 'contractor-payout', 'invoice-collection', 'b2b-supplier', 'p2p'],
     authority: 'NPCI',
-    helloProductSupport: 'live',
+    helloProductSupport: 'partner-only',
     notes: [
       'Unified Payments Interface — 24x7 instant settlement via VPAs.',
       'Per-transaction limit ₹1,00,000 for most categories (₹2,00,000–5,00,000 for specific categories per NPCI circulars).',
@@ -76,7 +76,7 @@ const IN_METHODS: PaymentMethod[] = [
     rail: 'instant',
     useCases: ['invoice-collection', 'p2p'],
     authority: 'NPCI',
-    helloProductSupport: 'live',
+    helloProductSupport: 'partner-only',
     notes: [
       'Domestic card scheme; lower MDR than international cards. Useful for AR collection on HelloBooks invoices.',
       'RuPay credit cards on UPI are accepted via VPA-linked flows (NPCI 2022 enablement).',

@@ -41,27 +41,26 @@ export interface Plan {
 }
 
 const FREE_FEATURES = [
-  '5,000 AI credits/month',
-  'All 154 features',
-  'Up to 3 users',
-  '1 bank account + 1 credit card',
+  '2,500 AI credits / month',
+  '2 users · 1 bank account',
   'Unlimited invoices, bills & quotes',
   'AP/AR aging reports',
   'P&L, Balance Sheet, Cash Flow',
   'Full mobile app (iOS & Android)',
-  '"Powered by HelloBooks" badge',
+  '"Powered by HelloBooks" badge on invoices',
 ];
 
 const PRO_FEATURES = [
-  '15,000 AI credits/month',
+  '15,000 AI credits / month',
   'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
   'Multi-entity management',
-  '3-way matching (PO / Bill / GRN)',
-  'AI Analysis & Comparative View on every report',
   'API access',
+  'AI Analysis & Comparative View on every report',
   'Recurring invoices, bills & approvals',
+  'GST filing (GSTR-1, 3B, 9) + e-invoicing',
+  'Tally sync',
   'Multi-currency with auto FX',
   'Remove "Powered by" badge',
   'Priority email support',
@@ -69,7 +68,7 @@ const PRO_FEATURES = [
 
 const BUSINESS_FEATURES = [
   'Everything in Pro, plus:',
-  '50,000 AI credits/month',
+  '50,000 AI credits to get started',
   'Advanced inventory: lot/batch + multi-warehouse allocations',
   'Cohort, retention & CFO analytics',
   'Audit log + advanced role-based access',
@@ -225,7 +224,7 @@ export const PLANS: Plan[] = [
     plan: 'free',
     name: 'Free',
     tagline: 'Everything you need to start',
-    monthlyAiCredits: 5000,
+    monthlyAiCredits: 2500,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
@@ -252,7 +251,7 @@ export const PLANS: Plan[] = [
     plan: 'cpa',
     name: 'Partner Program',
     tagline: 'Free to join — resell Pro/Business, earn a wholesale discount that grows with you',
-    monthlyAiCredits: 0,
+    monthlyAiCredits: -1,
     features: CPA_FEATURES,
     prices: pricesFor('cpa'),
     publicSignupUrl: 'https://hellobooks.ai/partner-program/apply',
