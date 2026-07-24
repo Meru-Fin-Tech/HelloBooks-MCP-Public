@@ -20,6 +20,10 @@
 
 import type { CountryCode } from './plans.js';
 
+// NOTE: 'cess' is currently RESERVED — no TAX_RATES row uses it (the old IN
+// compensation-cess rows were folded into the GST 2.0 40% demerit slab). Keep it
+// in the union: it is still a valid value for the listTaxRates scheme filter and
+// the agent-facing tool enum, so removing it would be a breaking API change.
 export type RateScheme = 'standard' | 'reduced' | 'zero' | 'exempt' | 'composition' | 'cess' | 'state-summary';
 
 export interface TaxRate {
