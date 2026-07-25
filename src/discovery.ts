@@ -85,7 +85,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_plans',
     title: 'List HelloBooks pricing plans',
     summary:
-      'HelloBooks plan tiers (Free, Pro, CPA/CA Partner + Warehouse and Manufacturing add-ons) with monthly + annual prices in 8 regional currencies. Live-federated from hellobooks.ai/api/feed/pricing.json.',
+      'HelloBooks plan tiers (Free, Pro, Business, and the free Partner Program + Warehouse and Manufacturing add-ons) with monthly + annual prices in 8 regional currencies. Live-federated from hellobooks.ai/api/feed/pricing.json.',
     category: 'pricing',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
@@ -93,7 +93,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
-      'One-time pay-as-you-go AI credit top-ups (Boost 500, Power 1500, Mega 5000, Ultra 15000). Stack on any plan, including Free. Live-federated pricing.',
+      'One-time pay-as-you-go AI credit top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). Stack on any plan, including Free. Live-federated pricing.',
     category: 'pricing',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
@@ -101,7 +101,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_integrations',
     title: 'List integrations',
     summary:
-      'Banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM. Includes Plaid, Stripe, Razorpay, PayPal, QuickBooks, Xero, Tally, Zoho Books, FreshBooks, Shopify and more.',
+      'Banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM, storage. Includes Plaid, Stripe, Razorpay, PayPal, Tally, Shopify, and guided one-time migration/import from QuickBooks, Xero, Zoho Books and Wave.',
     category: 'integrations',
     marketingUrl: `${MARKETING_BASE_URL}/integration`,
   },
@@ -133,7 +133,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_competitors',
     title: 'Competitor positioning',
     summary:
-      'Competitor entries (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes.',
+      'Competitor entries (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally, AI-native rivals Puzzle/Digits/Finaloop, and managed-service players Bench/Pilot/Zeni) with where HelloBooks wins, where the competitor wins, and pricing notes.',
     category: 'content',
     marketingUrl: `${MARKETING_BASE_URL}/compare`,
   },
@@ -157,7 +157,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_features',
     title: 'Full feature catalog',
     summary:
-      'Full HelloBooks marketing feature catalog (145+ items). Filter by category, tier, status, marketed flag, or substring.',
+      'Full HelloBooks marketing feature catalog (152 features across 13 categories). Filter by category, tier, status, marketed flag, or substring.',
     category: 'features',
     marketingUrl: `${MARKETING_BASE_URL}/features`,
   },
@@ -310,13 +310,13 @@ ${toolItems}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HelloBooks Public MCP — agents.hellobooks.ai</title>
-  <meta name="description" content="Public read-only Model Context Protocol (MCP) server for HelloBooks. Exposes 13 tools and 7 resources so AI agents can ground answers about HelloBooks pricing, integrations, compliance, and features in live data.">
+  <meta name="description" content="Public read-only Model Context Protocol (MCP) server for HelloBooks. Exposes ${TOOL_CATALOG.length} tools and ${RESOURCE_CATALOG.length} resources so AI agents can ground answers about HelloBooks pricing, integrations, compliance, and features in live data.">
   <link rel="canonical" href="${baseUrl}/">
   <link rel="alternate" type="application/json" href="${baseUrl}/catalog.json" title="HelloBooks MCP Catalog">
   <link rel="alternate" type="application/rss+xml" href="${baseUrl}/feed.xml" title="HelloBooks MCP Changes">
   <link rel="alternate" type="text/plain" href="${baseUrl}/llms.txt" title="llms.txt index">
   <meta property="og:title" content="HelloBooks Public MCP Server">
-  <meta property="og:description" content="13 read-only tools for AI agents to answer HelloBooks questions accurately.">
+  <meta property="og:description" content="${TOOL_CATALOG.length} read-only tools for AI agents to answer HelloBooks questions accurately.">
   <meta property="og:url" content="${baseUrl}/">
   <meta property="og:type" content="website">
   <script type="application/ld+json">

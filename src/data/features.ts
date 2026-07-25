@@ -277,8 +277,8 @@ export const FEATURES: Feature[] = [
     category: 'tax-compliance', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'Quarterly BAS with PAYG withholding, GST, FBT, and instalments.' },
   { key: 'us-sales-tax', label: 'US Sales Tax (Avalara)',
-    category: 'tax-compliance', tier: 'pro', status: 'beta', marketed: false,
-    shortDescription: 'Avalara-powered US sales tax calculation and filing.' },
+    category: 'tax-compliance', tier: 'pro', status: 'live', marketed: true,
+    shortDescription: 'Avalara-powered US multi-state sales tax calculation, nexus tracking, and GL posting.' },
   { key: 'tds-tcs', label: 'TDS / TCS (India)',
     category: 'tax-compliance', tier: 'pro', status: 'live', marketed: true,
     shortDescription: 'TDS deduction at source with 26AS reconciliation; TCS collection with returns.' },
@@ -413,7 +413,7 @@ export const FEATURES: Feature[] = [
     competitorParity: ['None — HelloBooks USP'] },
   { key: 'ai-credits', label: 'AI Credits (Per-Tier Allocation)',
     category: 'ai-automation', tier: 'free', status: 'live', marketed: true,
-    shortDescription: '5,000 (Free) / 15,000 (Pro) / 50,000 (Business) AI credits per month for AI-powered actions.' },
+    shortDescription: '2,500 (Free) / 15,000 (Pro) / 50,000 (Business) AI credits per month for AI-powered actions.' },
   { key: 'ai-calls', label: 'AI Calls (Outbound Voice Agent)',
     category: 'ai-automation', tier: 'pro', status: 'beta', marketed: false,
     shortDescription: 'Outbound AI voice agent for collections, reminders, and accounting interviews. ElevenLabs-powered.' },
@@ -581,10 +581,12 @@ export const FEATURES: Feature[] = [
 ];
 
 export const FEATURE_CATALOG_META = {
-  version: '1.1.0',
-  lastUpdated: '2026-05-18',
+  version: '1.2.0',
+  lastUpdated: '2026-07-10',
+  totalFeatures: 152,
   source: 'https://github.com/Meru-Fin-Tech/marketing/blob/main/feature-catalog.json',
   description:
-    'Authoritative HelloBooks feature catalog. Mirrors marketing/feature-catalog.json. ' +
+    'Authoritative HelloBooks feature catalog — 152 features across 13 categories ' +
+    '(146 live, 5 beta, 1 planned). Mirrors marketing/feature-catalog.json. ' +
     'Filter by `marketed` to show on public website, `tier` for pricing pages, `status` for roadmap views.',
 };

@@ -13,13 +13,17 @@
  * Sources:
  *   - IN GST: cbic.gov.in/htdocs-cbec/gst/gst-rate-finder
  *   - UK VAT: gov.uk/guidance/rates-of-vat-on-different-goods-and-services
- *   - AU GST: ato.gov.au/business/gst
+ *   - AU GST: ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst
  *   - US sales tax: streamlined state-by-state summary (avalara public refs)
  *   - CA GST/HST: canada.ca/en/revenue-agency/services/forms-publications/publications/rc4022
  */
 
 import type { CountryCode } from './plans.js';
 
+// NOTE: 'cess' is currently RESERVED — no TAX_RATES row uses it (the old IN
+// compensation-cess rows were folded into the GST 2.0 40% demerit slab). Keep it
+// in the union: it is still a valid value for the listTaxRates scheme filter and
+// the agent-facing tool enum, so removing it would be a breaking API change.
 export type RateScheme = 'standard' | 'reduced' | 'zero' | 'exempt' | 'composition' | 'cess' | 'state-summary';
 
 export interface TaxRate {
@@ -227,7 +231,7 @@ export const TAX_RATES: TaxRate[] = [
     label: 'Standard (10%)',
     exampleCategories: ['most goods and services'],
     effectiveFrom: '2000-07-01',
-    source: 'https://www.ato.gov.au/business/gst',
+    source: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst',
   },
   {
     id: 'AU-zero-0',
@@ -238,7 +242,7 @@ export const TAX_RATES: TaxRate[] = [
     label: 'GST-free',
     exampleCategories: ['basic food', 'medical services', 'exports'],
     effectiveFrom: '2000-07-01',
-    source: 'https://www.ato.gov.au/business/gst',
+    source: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst',
   },
 
   // ── United States — sales-tax summary (state-level) ─────────────────
@@ -289,8 +293,21 @@ export const TAX_RATES: TaxRate[] = [
     scheme: 'standard',
     rate: 15,
     label: 'HST – Atlantic (15%)',
-    exampleCategories: ['NB, NS, NL, PE'],
+    exampleCategories: ['NB, NL, PE'],
+    notes: 'New Brunswick, Newfoundland &amp; Labrador, Prince Edward Island. Nova Scotia left this group on 2025-04-01 when it dropped to 14% — see CA-hst-14-ns.',
     effectiveFrom: '2016-07-01',
+    source: 'https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses.html',
+  },
+  {
+    id: 'CA-hst-14-ns',
+    country: 'CA',
+    taxType: 'HST',
+    scheme: 'standard',
+    rate: 14,
+    label: 'HST – Nova Scotia (14%)',
+    exampleCategories: ['goods and services taxable under HST in Nova Scotia'],
+    notes: 'Nova Scotia cut its HST from 15% to 14% (provincial part 10%→9%, federal GST 5% unchanged) effective 2025-04-01 — the first Canadian HST rate change since 2016.',
+    effectiveFrom: '2025-04-01',
     source: 'https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses.html',
   },
 

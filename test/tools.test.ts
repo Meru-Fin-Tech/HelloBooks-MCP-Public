@@ -72,7 +72,7 @@ test('list_plans cpa plan id resolves to the free Partner Program', () => {
   assert.equal(r.plans.length, 1);
   const partner = r.plans[0];
   assert.equal(partner.name, 'Partner Program');
-  assert.equal(partner.monthlyAiCredits, 0); // partners refer paying clients; no free credits to the partner
+  assert.equal(partner.monthlyAiCredits, -1); // pricingConfig main: cpa credits = -1 (unlimited sentinel)
   for (const p of partner.prices) {
     assert.equal(p.monthly, 0, `${p.country}: Partner Program is free globally`);
     assert.equal(p.annual, 0);
@@ -240,7 +240,7 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   assert.equal(warehouse.prices[0].monthly, 9);
   // free is absent from the fixture feed.tiers -> baked free returned untouched
   const free = plans.find((p) => p.plan === 'free');
-  assert.equal(free?.monthlyAiCredits, 5000);
+  assert.equal(free?.monthlyAiCredits, 2500);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
@@ -262,10 +262,9 @@ test('feedToPlans takes monthlyAiCredits from the feed when present', () => {
   const pro = plans.find((p) => p.plan === 'pro');
   assert.equal(pro?.monthlyAiCredits, 99999);
   // CPA's feed entry omits monthlyAiCredits -> falls back to baked (Partner
-  // Program = 0 credits; partners refer paying clients and don't receive
-  // free AI credit allowances themselves).
+  // Program credits = -1, the unlimited sentinel, per pricingConfig main).
   const cpa = plans.find((p) => p.plan === 'cpa');
-  assert.equal(cpa?.monthlyAiCredits, 0);
+  assert.equal(cpa?.monthlyAiCredits, -1);
 });
 
 test('feedToCreditPacks takes pack credit size from the feed when present', () => {
@@ -756,8 +755,8 @@ test('feature_search now surfaces marketing catalog features', () => {
 
 test('list_features returns the full marketing catalog', () => {
   const r = listFeatures({});
-  // Catalog has 96 features as of 2026-05-18 — assert >= 90 to allow growth
-  assert.ok(r.totalMatches >= 90, `expected >= 90 features, got ${r.totalMatches}`);
+  // Catalog has 152 features as of 2026-07-10 — assert >= 150 to allow growth
+  assert.ok(r.totalMatches >= 150, `expected >= 150 features, got ${r.totalMatches}`);
 });
 
 test('list_features tier filter restricts to a single tier', () => {
@@ -797,9 +796,13 @@ test('list_integrations includes the new storage + freelance categories', () => 
   assert.ok(freelance.integrations.some((i) => i.id === 'upwork'));
 });
 
-test('list_integrations finds FreshBooks under accounting-sync', () => {
+test('list_integrations exposes the real migration sources under accounting-sync', () => {
   const r = listIntegrations({ category: 'accounting-sync' });
-  assert.ok(r.integrations.some((i) => i.id === 'freshbooks'));
+  // QBO / Xero / Zoho / Wave / Tally have real importers; FreshBooks + Yodlee were fabricated and removed.
+  for (const id of ['quickbooks', 'xero', 'zoho-books', 'wave', 'tally']) {
+    assert.ok(r.integrations.some((i) => i.id === id), `expected ${id} in accounting-sync`);
+  }
+  assert.ok(!r.integrations.some((i) => i.id === 'freshbooks'), 'freshbooks was fabricated and should be gone');
 });
 
 // ---------------------------------------------------------------------------
@@ -1040,7 +1043,7 @@ test('free_tier_eligibility country + revenue over cap returns NOT eligible with
 });
 
 test('free_tier_eligibility revenue at exact cap is still eligible (inclusive)', () => {
-  const r = freeTierEligibility({ country: 'AE', annualInvoiceRevenue: 187_500 }) as Record<string, unknown>;
+  const r = freeTierEligibility({ country: 'AE', annualInvoiceRevenue: 375_000 }) as Record<string, unknown>;
   assert.equal(r.freeEligible, true);
   assert.equal(r.headroom, 0);
 });
@@ -1182,8 +1185,8 @@ test('free_tier_eligibility every country threshold matches Doc 80 canonical val
     AU: 75_000,
     CA: 30_000,
     NZ: 60_000,
-    SG: 500_000,
-    AE: 187_500,
+    SG: 1_000_000,
+    AE: 375_000,
   };
   const r = freeTierEligibility({}) as { thresholds: { country: string; annualInvoiceTurnoverLimit: number }[] };
   for (const t of r.thresholds) {

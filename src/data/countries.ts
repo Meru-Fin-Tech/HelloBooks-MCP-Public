@@ -164,7 +164,7 @@ export const COUNTRY_SUPPORT: CountrySupport[] = [
       { key: 'vat-uae', label: 'UAE VAT',
         description: '5% VAT tracking with FTA-compliant tax invoices.' },
       { key: 'corp-tax-uae', label: 'UAE Corporate Tax',
-        description: '9% corporate tax computation support.' },
+        description: '9% corporate-tax categorization & tracking with Free Zone splits; full computation and FTA filing on the roadmap.' },
     ],
     compliance: [
       { key: 'fta-vat', label: 'FTA VAT', authority: 'Federal Tax Authority',

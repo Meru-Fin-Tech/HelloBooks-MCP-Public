@@ -64,7 +64,7 @@ export const COMPETITORS: Competitor[] = [
       'AI auto-categorization with pattern learning vs. QuickBooks rule-based categorisation',
       'AI accounting agent monitors books and surfaces anomalies 24/7',
       'AI-powered bills + invoice OCR ingests payables without manual entry',
-      'Unlimited users on every plan vs. QuickBooks per-seat ladder ($38 → $115 → $275/mo)',
+      'Unlimited users on every paid plan vs. QuickBooks per-seat ladder ($38 → $75 → $115 → $275/mo)',
       'Multi-currency with live FX on all paid plans vs. QuickBooks Plus-only ($115/mo)',
       'Guided one-time QuickBooks migration (company-file import) — run QuickBooks in parallel during cut-over',
       'India GST e-invoice + Form 24Q TDS, ATO BAS + STP2, HMRC MTD shipping as built-ins',
@@ -76,9 +76,9 @@ export const COMPETITORS: Competitor[] = [
       'Mature payroll product on US side; ours integrates HelloTime + partner payroll',
       'Years of audit + compliance battle-testing at scale',
     ],
-    pricingNote: 'Public USD pricing $38–$275/mo (Simple Start → Advanced); promo cuts ~50% for first 3 months.',
+    pricingNote: 'Public USD pricing $38–$275/mo across four tiers (Simple Start $38 / Essentials $75 / Plus $115 / Advanced $275); promo cuts ~50% for first 3 months.',
     publicUrl: 'https://quickbooks.intuit.com',
-    comparisonUrl: 'https://hellobooks.ai/compare/quickbooks',
+    comparisonUrl: 'https://hellobooks.ai/compare/hellobooks-vs-quickbooks',
   },
   {
     id: 'xero',
@@ -92,12 +92,12 @@ export const COMPETITORS: Competitor[] = [
       'strong UK depth and a sizeable advisor network. HelloBooks competes on AI ' +
       'automation (Xero ships bank rules, not learning categorisation), removing ' +
       'plan-tier feature gating, and giving multi-currency + unlimited invoices on ' +
-      'plans where Xero would push you to Premium ($90/mo).',
+      'plans where Xero reserves them for its top tiers.',
     whereWeWin: [
       'True AI categorization that learns patterns vs. Xero hand-tuned bank rules',
       'AI accounting agent with autonomous bookkeeping suggestions — Xero has no equivalent',
-      'No artificial invoice / bill caps — Xero Starter is 20 invoices/mo',
-      'Multi-currency included on all paid plans; Xero gates it on Premium ($90/mo)',
+      "No artificial invoice / bill caps — Xero's entry plan (Ignite) limits invoices/bills per month",
+      'Multi-currency included on all paid plans; Xero reserves it for its Comprehensive / Ultimate tiers',
       'AI-powered payables vs. manual bill entry in Xero',
       'Guided QuickBooks migration path — Xero has no QB migration path',
       'Built-in CPA practice management; Xero requires separate Xero HQ product',
@@ -109,9 +109,9 @@ export const COMPETITORS: Competitor[] = [
       'Deep ANZ payroll and tax compliance (Modern Awards, AU STP2, NZ IRD)',
       'Industry-standard among ANZ accounting firms — workflow lock-in is real',
     ],
-    pricingNote: 'Public pricing varies by region; AU starts AUD 35/mo (Starter, capped), Premium AUD 89/mo for multi-currency.',
+    pricingNote: 'Public pricing varies by region. AU/NZ/UK moved to the Ignite / Grow / Comprehensive / Ultimate lineup in the 2025 rebrand — the entry plan (Ignite) is invoice-capped; multi-currency sits on Comprehensive and above.',
     publicUrl: 'https://www.xero.com',
-    comparisonUrl: 'https://hellobooks.ai/compare/xero',
+    comparisonUrl: 'https://hellobooks.ai/compare/hellobooks-vs-xero',
   },
   {
     id: 'freshbooks',
@@ -138,9 +138,9 @@ export const COMPETITORS: Competitor[] = [
       'Mature proposal + estimate workflow',
       'Simpler interface for solo operators who only need invoicing + expenses',
     ],
-    pricingNote: 'Public USD pricing $23–$70/mo (Lite/Plus/Premium); +$11/mo per additional user.',
+    pricingNote: 'Public USD pricing roughly $21–$65/mo (Lite/Plus/Premium); +$11/mo per additional user; Lite caps billable clients at 5.',
     publicUrl: 'https://www.freshbooks.com',
-    comparisonUrl: 'https://hellobooks.ai/compare/freshbooks',
+    comparisonUrl: 'https://hellobooks.ai/compare/hellobooks-vs-freshbooks',
   },
   {
     id: 'wave',
@@ -197,7 +197,7 @@ export const COMPETITORS: Competitor[] = [
       'Longer track record in the Indian market — established trust',
       'Deeper international footprint outside India + AE',
     ],
-    pricingNote: 'INR ₹749–₹4,999/mo (Standard → Ultimate, varies by org volume); Zoho One bundle pricing varies.',
+    pricingNote: 'INR ₹749–₹7,999/mo (Standard ₹749 / Professional ₹1,499 / Premium ₹2,999 / Elite ₹4,999 / Ultimate ₹7,999); free tier for businesses under ₹25L turnover; Zoho One bundle priced separately.',
     publicUrl: 'https://www.zoho.com/books',
   },
   {
@@ -283,7 +283,7 @@ export const COMPETITORS: Competitor[] = [
       'Free Plan + Pro at $9.99/mo (then $19.99) vs. a monthly human-service retainer',
       'You own the ledger with export any time + open MCP agent access',
       'Multi-country tax compliance built in (US, UK, AU, CA, India) vs. US-centric service',
-      'Unlimited users on every plan',
+      'Unlimited users on every paid plan',
     ],
     whereTheyWin: [
       'A dedicated human finance team and fractional CFO for high-touch buyers',
@@ -312,7 +312,7 @@ export const COMPETITORS: Competitor[] = [
       'Free Plan + Pro at $9.99/mo (then $19.99) vs. premium managed pricing (hundreds+/mo)',
       'You own the ledger with export any time + open MCP access',
       'Multi-country tax compliance built in vs. US-startup-centric service',
-      'Unlimited users on every plan',
+      'Unlimited users on every paid plan',
     ],
     whereTheyWin: [
       'Dedicated finance concierge with bill pay, invoicing, and CFO services',
@@ -323,5 +323,91 @@ export const COMPETITORS: Competitor[] = [
     pricingNote: 'Premium managed pricing (historically from several hundred US$/mo); concierge finance-team model.',
     publicUrl: 'https://www.zeni.ai',
     comparisonUrl: 'https://hellobooks.ai/compare/hellobooks-vs-zeni',
+  },
+  {
+    id: 'puzzle',
+    name: 'Puzzle',
+    primaryCountry: 'US',
+    alsoIn: [],
+    tier: 'secondary',
+    segment: 'US AI-native accounting software for startups',
+    positioningSummary:
+      'Puzzle is AI-native general-ledger software aimed at US startups and their ' +
+      'accountants, positioned as a modern, accrual-first replacement for QuickBooks. ' +
+      'It is the closest pure-software match to HelloBooks on the "AI-first ledger" ' +
+      'pitch. HelloBooks competes on multi-country statutory compliance (India GST, ' +
+      'HMRC MTD, ATO BAS), a Free tier, and a built-in mobile app + AI chatbot — where ' +
+      'Puzzle is US-centric and priced for funded companies.',
+    whereWeWin: [
+      'Multi-country tax compliance built in (India GST, HMRC MTD, ATO BAS) vs. US-only',
+      'Free plan + $9.99/mo founding Pro vs. Puzzle paid-from-day-one tiers',
+      'Full native mobile app (iOS + Android); Puzzle is web-first',
+      'AI chatbot + OCR bills/invoices as part of the same product',
+      'Own the ledger with open MCP agent access',
+    ],
+    whereTheyWin: [
+      'Accrual-first, GAAP-oriented ledger tuned for VC-backed startups',
+      'Strong startup-accountant partner channel in the US',
+      'Automated equity, SAFE, and burn-rate tracking for fundraising',
+      'Purpose-built for US startup back-office workflows',
+    ],
+    pricingNote: 'Public USD tiered pricing (free-to-start historically, paid Founder/Growth tiers); verify current tiers on puzzle.io.',
+    publicUrl: 'https://puzzle.io',
+  },
+  {
+    id: 'digits',
+    name: 'Digits',
+    primaryCountry: 'US',
+    alsoIn: [],
+    tier: 'secondary',
+    segment: 'US AI accounting + reporting for accounting firms and startups',
+    positioningSummary:
+      'Digits builds AI-native accounting and financial-reporting software, increasingly ' +
+      'sold to accounting firms as an AI bookkeeping engine on top of the general ledger. ' +
+      'HelloBooks overlaps on AI bookkeeping and real-time reporting but wins with a ' +
+      'full owner-facing product (invoicing, bills, inventory, payroll loop via HelloTime) ' +
+      'and multi-country compliance, rather than a firm-facing reporting layer.',
+    whereWeWin: [
+      'Complete owner-facing accounting suite (AR/AP, inventory, payroll loop) vs. reporting-led tooling',
+      'Multi-country statutory compliance vs. US-centric focus',
+      'Free plan + transparent self-serve pricing',
+      'Native mobile app + AI chatbot for owners, not just accountants',
+    ],
+    whereTheyWin: [
+      'Polished AI-generated financial reports and dashboards',
+      'Strong positioning with US accounting firms as an AI engine',
+      'Deep transaction-level AI categorization and search',
+      'Modern, design-forward reporting UX',
+    ],
+    pricingNote: 'Public pricing varies; firm and business tiers — verify current plans on digits.com.',
+    publicUrl: 'https://digits.com',
+  },
+  {
+    id: 'finaloop',
+    name: 'Finaloop',
+    primaryCountry: 'US',
+    alsoIn: [],
+    tier: 'secondary',
+    segment: 'US AI bookkeeping for e-commerce / DTC brands',
+    positioningSummary:
+      'Finaloop is AI-native, done-for-you bookkeeping built specifically for e-commerce ' +
+      'and DTC brands, with deep Shopify / Amazon / payment-processor reconciliation and ' +
+      'real-time books. HelloBooks competes for e-commerce sellers who also want ' +
+      'multi-country compliance, a Free tier, and to own their ledger rather than rely on ' +
+      'a monthly service — while acknowledging Finaloop’s e-commerce reconciliation depth.',
+    whereWeWin: [
+      'Own the ledger with export + MCP access vs. a monthly service you can be locked out of',
+      'Multi-country compliance (India GST, UK MTD, AU BAS) vs. US e-commerce focus',
+      'Free plan + self-serve Pro pricing vs. revenue-scaled service retainer',
+      'General-purpose across industries, not e-commerce only',
+    ],
+    whereTheyWin: [
+      'Purpose-built e-commerce / DTC reconciliation (Shopify, Amazon, Stripe, PayPal) at depth',
+      'Real-time inventory-COGS accounting tuned for product brands',
+      'Done-for-you model — the brand owner touches the books minimally',
+      'Sales-channel and processor fee handling out of the box',
+    ],
+    pricingNote: 'Revenue-scaled subscription (historically from ~US$65/mo, rising with GMV); verify on finaloop.com.',
+    publicUrl: 'https://www.finaloop.com',
   },
 ];

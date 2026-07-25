@@ -50,7 +50,7 @@ export const PRACTICE_MGMT_REGIONS: readonly PracticeMgmtRegion[] = [
     currency: 'USD', symbol: '$',
     countryName: 'United States',
     audienceLabel: 'US CPAs, EAs, bookkeepers and tax advisors',
-    competitorFrame: ['TaxDome', 'Karbon', 'Canopy', 'Aero Workflow', 'Practice Ignition'],
+    competitorFrame: ['TaxDome', 'Karbon', 'Canopy', 'Aero Workflow', 'Ignition'],
     pricing: {
       pricePerUserPerMonth: '$9.99 / user / month',
       pricePerUserPerMonthAmount: 9.99,
@@ -81,7 +81,7 @@ export const PRACTICE_MGMT_REGIONS: readonly PracticeMgmtRegion[] = [
     currency: 'AUD', symbol: 'A$',
     countryName: 'Australia',
     audienceLabel: 'Australian CA/CPA/IPA practices',
-    competitorFrame: ['Karbon', 'TaxDome', 'Practice Ignition'],
+    competitorFrame: ['Karbon', 'TaxDome', 'Ignition'],
     pricing: null,
   },
   {

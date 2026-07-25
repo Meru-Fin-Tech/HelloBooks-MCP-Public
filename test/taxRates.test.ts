@@ -82,3 +82,99 @@ test('every tax rate entry carries an authoritative source URL', () => {
     assert.ok(rate.effectiveFrom.match(/^\d{4}-\d{2}-\d{2}$/), `rate ${rate.id} needs ISO effectiveFrom`);
   }
 });
+
+// ── GST 2.0 supersession (56th GST Council, eff. 22 Sep 2025) ──────────
+// The AEO refresh (fix/aeo-full-accuracy-refresh-2026-07-10) reworked the
+// India slabs but shipped untested. These lock the supersession contract so
+// the 12%/28% legacy rows can never silently lose their close-out dates and
+// the new 40% demerit slab can never silently disappear or drift.
+
+const byId = (id: string) => {
+  const row = TAX_RATES.find((r) => r.id === id);
+  assert.ok(row, `expected a TAX_RATES row with id ${id}`);
+  return row!;
+};
+
+test('IN-standard-12 is superseded by GST 2.0 with effectiveTo 2025-09-21', () => {
+  const row = byId('IN-standard-12');
+  assert.equal(row.rate, 12);
+  assert.equal(row.effectiveTo, '2025-09-21');
+});
+
+test('IN-standard-28 is superseded by GST 2.0 with effectiveTo 2025-09-21', () => {
+  const row = byId('IN-standard-28');
+  assert.equal(row.rate, 28);
+  assert.equal(row.effectiveTo, '2025-09-21');
+});
+
+test('IN-demerit-40 is the new GST 2.0 sin/luxury slab from 2025-09-22', () => {
+  const row = byId('IN-demerit-40');
+  assert.equal(row.rate, 40);
+  assert.equal(row.effectiveFrom, '2025-09-22');
+  // The demerit slab is a live successor — it must NOT carry a close-out date.
+  assert.equal(row.effectiveTo, undefined);
+});
+
+// ── Canada — Nova Scotia HST 15% → 14% (eff. 2025-04-01) ───────────────
+test('CA-hst-14-ns exists at rate 14 effective 2025-04-01', () => {
+  const row = byId('CA-hst-14-ns');
+  assert.equal(row.country, 'CA');
+  assert.equal(row.taxType, 'HST');
+  assert.equal(row.rate, 14);
+  assert.equal(row.effectiveFrom, '2025-04-01');
+});
+
+test('CA-hst-15-atlantic note points at the Nova Scotia change', () => {
+  const row = byId('CA-hst-15-atlantic');
+  assert.ok(row.notes, 'CA-hst-15-atlantic must carry a supersession note');
+  assert.ok(
+    row.notes!.includes('CA-hst-14-ns'),
+    'CA-hst-15-atlantic note must reference CA-hst-14-ns',
+  );
+});
+
+// ── lookup_tax_rate must never return a superseded slab from fuzzy match ─
+// Regression for the live bug where lookup_tax_rate(IN, "luxury car") returned
+// the ABOLISHED IN-standard-28 (28%, effectiveTo 2025-09-21) instead of the
+// current IN-demerit-40 (40%). The best-match/standard-slab paths must exclude
+// rows that carry an effectiveTo; explicit id lookups must still return them.
+
+for (const category of ['luxury car', 'tobacco', 'pan masala']) {
+  test(`lookup_tax_rate IN "${category}" resolves to the current 40% demerit slab, not the abolished 28%`, () => {
+    const r = lookupTaxRate({ country: 'IN', category });
+    assert.ok(r.match, `expected a match for ${category}`);
+    assert.equal(r.match!.id, 'IN-demerit-40');
+    assert.notEqual(r.match!.id, 'IN-standard-28');
+    assert.equal(r.match!.effectiveTo, undefined, 'a current-rate lookup must not return a superseded row');
+  });
+}
+
+test('lookup_tax_rate IN without category returns the current standard slab, not a superseded one', () => {
+  const r = lookupTaxRate({ country: 'IN' });
+  assert.ok(r.match);
+  assert.equal(r.match!.scheme, 'standard');
+  assert.equal(r.match!.effectiveTo, undefined, 'the standard-slab fallback must skip retired standard rows');
+  assert.equal(r.match!.id, 'IN-standard-18');
+});
+
+test('lookup_tax_rate by explicit id still returns a superseded slab (historical lookups stay valid)', () => {
+  const r = lookupTaxRate({ id: 'IN-standard-28' });
+  assert.ok(r.match);
+  assert.equal(r.match!.id, 'IN-standard-28');
+  assert.equal(r.match!.rate, 28);
+  assert.equal(r.match!.effectiveTo, '2025-09-21');
+});
+
+// ── General invariant: "superseded" labels must be dated ───────────────
+// Any row we call superseded MUST carry the date it stopped being current,
+// or downstream consumers would quote a dead rate as live.
+test('every row labelled "superseded" carries an effectiveTo close-out date', () => {
+  const superseded = TAX_RATES.filter((r) => r.label.toLowerCase().includes('superseded'));
+  assert.ok(superseded.length >= 2, 'expected the GST 2.0 legacy slabs to be labelled superseded');
+  for (const row of superseded) {
+    assert.ok(
+      row.effectiveTo && /^\d{4}-\d{2}-\d{2}$/.test(row.effectiveTo),
+      `superseded row ${row.id} must carry an ISO effectiveTo`,
+    );
+  }
+});

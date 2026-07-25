@@ -68,11 +68,16 @@ export function lookupTaxRate(args: LookupTaxRateArgs) {
     };
   }
 
-  const candidates = TAX_RATES.filter((r) => r.country === args.country);
+  // Best-match / standard-slab lookups answer "what is the CURRENT rate?", so
+  // exclude superseded slabs — any row carrying an `effectiveTo` has been
+  // closed out (e.g. the GST 2.0 legacy 12%/28% slabs) and must never win a
+  // fuzzy match. Explicit `id` lookups above are intentionally NOT filtered:
+  // historical lookups by id (e.g. IN-standard-28) remain valid.
+  const candidates = TAX_RATES.filter((r) => r.country === args.country && !r.effectiveTo);
   if (candidates.length === 0) {
     return {
       match: null,
-      message: `No rates configured for country ${args.country}.`,
+      message: `No currently-effective rates configured for country ${args.country}.`,
       disclaimer: TAX_RATE_DISCLAIMER,
     };
   }

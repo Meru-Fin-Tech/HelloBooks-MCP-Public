@@ -49,8 +49,8 @@ export const FREE_TIER_THRESHOLDS: readonly FreeTierThreshold[] = [
   { country: 'AU', currency: 'AUD', symbol: 'A$',    annualInvoiceTurnoverLimit:    75_000, display: 'A$75K',     basis: 'invoices' },
   { country: 'CA', currency: 'CAD', symbol: 'C$',    annualInvoiceTurnoverLimit:    30_000, display: 'C$30K',     basis: 'invoices' },
   { country: 'NZ', currency: 'NZD', symbol: 'NZ$',   annualInvoiceTurnoverLimit:    60_000, display: 'NZ$60K',    basis: 'invoices' },
-  { country: 'SG', currency: 'SGD', symbol: 'S$',    annualInvoiceTurnoverLimit:   500_000, display: 'S$500K',    basis: 'invoices' },
-  { country: 'AE', currency: 'AED', symbol: 'AED ',  annualInvoiceTurnoverLimit:   187_500, display: 'AED 187.5K', basis: 'invoices' },
+  { country: 'SG', currency: 'SGD', symbol: 'S$',    annualInvoiceTurnoverLimit: 1_000_000, display: 'S$1M',      basis: 'invoices' },
+  { country: 'AE', currency: 'AED', symbol: 'AED ',  annualInvoiceTurnoverLimit:   375_000, display: 'AED 375K',   basis: 'invoices' },
 ];
 
 export const FREE_TIER_THRESHOLD_META = {
