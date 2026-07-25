@@ -133,6 +133,38 @@ test('CA-hst-15-atlantic note points at the Nova Scotia change', () => {
   );
 });
 
+// ── lookup_tax_rate must never return a superseded slab from fuzzy match ─
+// Regression for the live bug where lookup_tax_rate(IN, "luxury car") returned
+// the ABOLISHED IN-standard-28 (28%, effectiveTo 2025-09-21) instead of the
+// current IN-demerit-40 (40%). The best-match/standard-slab paths must exclude
+// rows that carry an effectiveTo; explicit id lookups must still return them.
+
+for (const category of ['luxury car', 'tobacco', 'pan masala']) {
+  test(`lookup_tax_rate IN "${category}" resolves to the current 40% demerit slab, not the abolished 28%`, () => {
+    const r = lookupTaxRate({ country: 'IN', category });
+    assert.ok(r.match, `expected a match for ${category}`);
+    assert.equal(r.match!.id, 'IN-demerit-40');
+    assert.notEqual(r.match!.id, 'IN-standard-28');
+    assert.equal(r.match!.effectiveTo, undefined, 'a current-rate lookup must not return a superseded row');
+  });
+}
+
+test('lookup_tax_rate IN without category returns the current standard slab, not a superseded one', () => {
+  const r = lookupTaxRate({ country: 'IN' });
+  assert.ok(r.match);
+  assert.equal(r.match!.scheme, 'standard');
+  assert.equal(r.match!.effectiveTo, undefined, 'the standard-slab fallback must skip retired standard rows');
+  assert.equal(r.match!.id, 'IN-standard-18');
+});
+
+test('lookup_tax_rate by explicit id still returns a superseded slab (historical lookups stay valid)', () => {
+  const r = lookupTaxRate({ id: 'IN-standard-28' });
+  assert.ok(r.match);
+  assert.equal(r.match!.id, 'IN-standard-28');
+  assert.equal(r.match!.rate, 28);
+  assert.equal(r.match!.effectiveTo, '2025-09-21');
+});
+
 // ── General invariant: "superseded" labels must be dated ───────────────
 // Any row we call superseded MUST carry the date it stopped being current,
 // or downstream consumers would quote a dead rate as live.
