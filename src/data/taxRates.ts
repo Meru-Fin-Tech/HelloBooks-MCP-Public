@@ -30,8 +30,22 @@ export interface TaxRate {
   /** Stable id — `<country>-<scheme>-<slab>`, e.g. `IN-standard-18`. */
   id: string;
   country: CountryCode;
-  /** Statutory tax type — GST, VAT, ST, HST, etc. */
-  taxType: 'GST' | 'IGST' | 'CGST-SGST' | 'VAT' | 'Sales-Tax' | 'HST' | 'TDS' | 'TCS';
+  /**
+   * Statutory tax type — GST, VAT, ST, HST, etc.
+   *
+   * DESIGN NOTE (Canada provincial taxes): we name the actual statutory
+   * instrument rather than lumping everything under 'Sales-Tax'. The catalog
+   * already distinguishes GST / HST / CGST-SGST / IGST — all technically
+   * value-added or sales-type taxes — by their real-world name, so BC/SK/MB
+   * provincial sales tax gets its own 'PST' member and Québec's tax gets 'QST'.
+   * QST especially deserves the split: it is a distinct VAT-style tax
+   * administered by Revenu Québec (not CRA), and the Accounting backend's
+   * "Canada GST/HST Return (GST34)" computes a separate QST block for QC
+   * entities — folding it into 'Sales-Tax' would erase that reality.
+   * Manitoba's tax is legally "RST" (Retail Sales Tax) but is functionally a
+   * PST, so it carries taxType 'PST' with the label disambiguating it as RST.
+   */
+  taxType: 'GST' | 'IGST' | 'CGST-SGST' | 'VAT' | 'Sales-Tax' | 'HST' | 'PST' | 'QST' | 'TDS' | 'TCS';
   scheme: RateScheme;
   /** Percentage as a number — e.g. 18 for 18%. Composition rates use the published flat number. */
   rate: number;
@@ -309,6 +323,57 @@ export const TAX_RATES: TaxRate[] = [
     notes: 'Nova Scotia cut its HST from 15% to 14% (provincial part 10%→9%, federal GST 5% unchanged) effective 2025-04-01 — the first Canadian HST rate change since 2016.',
     effectiveFrom: '2025-04-01',
     source: 'https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses.html',
+  },
+  // Provincial sales taxes in the non-HST provinces — these stack ON TOP of
+  // the federal GST 5% (CA-gst-5), they do not replace it. See DESIGN NOTE on
+  // the taxType union for why PST/QST are their own statutory types.
+  {
+    id: 'CA-pst-7-bc',
+    country: 'CA',
+    taxType: 'PST',
+    scheme: 'standard',
+    rate: 7,
+    label: 'PST – British Columbia (7%)',
+    exampleCategories: ['most goods', 'software', 'legal services', 'telecommunications'],
+    notes: 'BC Provincial Sales Tax, levied on top of the federal GST 5% (combined 12%). Administered by the BC Ministry of Finance, not CRA. Some services and most food are exempt.',
+    effectiveFrom: '2013-04-01',
+    source: 'https://www2.gov.bc.ca/gov/content/taxes/sales-taxes/pst',
+  },
+  {
+    id: 'CA-pst-6-sk',
+    country: 'CA',
+    taxType: 'PST',
+    scheme: 'standard',
+    rate: 6,
+    label: 'PST – Saskatchewan (6%)',
+    exampleCategories: ['most goods', 'services', 'construction contracts'],
+    notes: 'Saskatchewan Provincial Sales Tax, levied on top of the federal GST 5% (combined 11%). Raised from 5% to 6% effective 2017-03-23. Administered by the Saskatchewan Ministry of Finance.',
+    effectiveFrom: '2017-03-23',
+    source: 'https://www.saskatchewan.ca/business/taxes-licensing/provincial-taxes-policies-and-bulletins/provincial-sales-tax',
+  },
+  {
+    id: 'CA-pst-7-mb',
+    country: 'CA',
+    taxType: 'PST',
+    scheme: 'standard',
+    rate: 7,
+    label: 'RST – Manitoba (7%)',
+    exampleCategories: ['most goods', 'certain services', 'insurance premiums'],
+    notes: 'Manitoba Retail Sales Tax (RST) — legally named RST but functionally a PST, hence taxType PST. Levied on top of the federal GST 5% (combined 12%). Reduced from 8% to 7% effective 2019-07-01. Administered by Manitoba Finance.',
+    effectiveFrom: '2019-07-01',
+    source: 'https://www.gov.mb.ca/finance/taxation/taxes/retail.html',
+  },
+  {
+    id: 'CA-qst-9975-qc',
+    country: 'CA',
+    taxType: 'QST',
+    scheme: 'standard',
+    rate: 9.975,
+    label: 'QST – Québec (9.975%)',
+    exampleCategories: ['most goods and services'],
+    notes: 'Québec Sales Tax (QST / TVQ) — a VAT-style tax administered by Revenu Québec (not CRA), levied on top of the federal GST 5% (combined 14.975%). Rate has been 9.975% since 2013-01-01, when it was de-coupled from the GST-inclusive base. Aligns with the QST block computed by the Accounting "Canada GST/HST Return (GST34)" flow for QC entities.',
+    effectiveFrom: '2013-01-01',
+    source: 'https://www.revenuquebec.ca/en/businesses/consumption-taxes/gsthst-and-qst/basic-rules-for-applying-the-gsthst-and-qst/',
   },
 
   // ── Singapore GST ───────────────────────────────────────────────────

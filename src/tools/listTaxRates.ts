@@ -13,8 +13,8 @@ import type { CountryCode } from '../data/plans.js';
 export const listTaxRatesSchema = {
   country: z.enum(['IN', 'US', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']).optional()
     .describe('Filter to one jurisdiction. Omit to return every supported country.'),
-  taxType: z.enum(['GST', 'IGST', 'CGST-SGST', 'VAT', 'Sales-Tax', 'HST', 'TDS', 'TCS']).optional()
-    .describe('Filter by statutory tax type (GST, VAT, Sales-Tax, HST, etc.).'),
+  taxType: z.enum(['GST', 'IGST', 'CGST-SGST', 'VAT', 'Sales-Tax', 'HST', 'PST', 'QST', 'TDS', 'TCS']).optional()
+    .describe('Filter by statutory tax type (GST, VAT, Sales-Tax, HST, PST, QST, etc.).'),
   scheme: z.enum(['standard', 'reduced', 'zero', 'exempt', 'composition', 'cess', 'state-summary']).optional()
     .describe('Filter by slab category — standard, reduced, zero, exempt, composition, cess.'),
 };

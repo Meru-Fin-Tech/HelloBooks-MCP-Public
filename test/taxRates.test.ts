@@ -76,6 +76,41 @@ test('lookup_tax_rate GB exports query selects zero or reduced slab plausibly', 
   assert.equal(r.match!.id, 'GB-zero-0');
 });
 
+test('Canada provincial sales taxes exist at the correct rates', () => {
+  // BC PST 7%, SK PST 6%, MB RST 7% (taxType PST), QC QST 9.975%.
+  const expected = [
+    { id: 'CA-pst-7-bc', taxType: 'PST', rate: 7 },
+    { id: 'CA-pst-6-sk', taxType: 'PST', rate: 6 },
+    { id: 'CA-pst-7-mb', taxType: 'PST', rate: 7 },
+    { id: 'CA-qst-9975-qc', taxType: 'QST', rate: 9.975 },
+  ];
+  for (const { id, taxType, rate } of expected) {
+    const r = lookupTaxRate({ id });
+    assert.ok(r.match, `${id} must exist in the catalog`);
+    assert.equal(r.match!.country, 'CA');
+    assert.equal(r.match!.taxType, taxType, `${id} should be taxType ${taxType}`);
+    assert.equal(r.match!.rate, rate, `${id} should be ${rate}%`);
+    assert.equal(r.match!.scheme, 'standard');
+  }
+});
+
+test('list_tax_rates taxType=PST returns the three BC/SK/MB provincial rates', () => {
+  const r = listTaxRates({ taxType: 'PST' });
+  assert.equal(r.count, 3);
+  const ids = new Set(r.rates.map((x) => x.id));
+  assert.ok(ids.has('CA-pst-7-bc'));
+  assert.ok(ids.has('CA-pst-6-sk'));
+  assert.ok(ids.has('CA-pst-7-mb'));
+  for (const rate of r.rates) assert.equal(rate.taxType, 'PST');
+});
+
+test('list_tax_rates taxType=QST returns only Québec', () => {
+  const r = listTaxRates({ taxType: 'QST' });
+  assert.equal(r.count, 1);
+  assert.equal(r.rates[0]!.id, 'CA-qst-9975-qc');
+  assert.equal(r.rates[0]!.rate, 9.975);
+});
+
 test('every tax rate entry carries an authoritative source URL', () => {
   for (const rate of TAX_RATES) {
     assert.ok(rate.source.startsWith('https://'), `rate ${rate.id} must link an https source`);
