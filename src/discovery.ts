@@ -31,12 +31,15 @@
  */
 
 import { CHANGELOG } from './data/about.js';
+// Single source of truth for the server version lives in server.ts. Importing it
+// here (instead of re-declaring a literal) prevents the discovery surface from
+// drifting behind the MCP handshake version, as it had at 0.7.0 vs 1.5.0.
+import { SERVER_VERSION } from './server.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
 const GITHUB_REPO_URL = 'https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public';
 const SERVER_NAME = 'hellobooks-public';
-const SERVER_VERSION = '0.7.0';
 const CONTACT_EMAIL = 'hello@hellobooks.ai';
 
 /** Process start as a deploy-time fallback for Last-Modified. */
