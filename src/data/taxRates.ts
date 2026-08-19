@@ -24,7 +24,21 @@ import type { CountryCode } from './plans.js';
 // compensation-cess rows were folded into the GST 2.0 40% demerit slab). Keep it
 // in the union: it is still a valid value for the listTaxRates scheme filter and
 // the agent-facing tool enum, so removing it would be a breaking API change.
-export type RateScheme = 'standard' | 'reduced' | 'zero' | 'exempt' | 'composition' | 'cess' | 'state-summary';
+//
+// 'input-taxed' is the Australian GST third category (taxable / GST-free /
+// input-taxed). It is statutorily distinct from 'exempt': no GST is charged AND
+// no input-tax credit can be claimed. Kept as its own scheme rather than folded
+// into 'exempt' so the AU financial-supplies / residential-rent treatment reads
+// truthfully. See https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales
+export type RateScheme =
+  | 'standard'
+  | 'reduced'
+  | 'zero'
+  | 'exempt'
+  | 'input-taxed'
+  | 'composition'
+  | 'cess'
+  | 'state-summary';
 
 export interface TaxRate {
   /** Stable id — `<country>-<scheme>-<slab>`, e.g. `IN-standard-18`. */
@@ -258,6 +272,28 @@ export const TAX_RATES: TaxRate[] = [
     effectiveFrom: '2000-07-01',
     source: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst',
   },
+  {
+    id: 'AU-input-taxed-0',
+    country: 'AU',
+    taxType: 'GST',
+    scheme: 'input-taxed',
+    rate: 0,
+    label: 'Input-taxed',
+    exampleCategories: [
+      'financial supplies',
+      'lending money / provision of credit for a fee',
+      'residential rent',
+      'sale of existing residential premises',
+    ],
+    notes:
+      'Third Australian GST category (distinct from GST-free): no GST is charged on the sale, ' +
+      'AND the supplier cannot claim GST credits on related purchases. Most common cases are ' +
+      'financial supplies and renting/selling residential premises. Note: LCT (Luxury Car Tax, ' +
+      '33% above the LCT threshold) and WET (Wine Equalisation Tax, 29% wholesale) are separate ' +
+      'Commonwealth taxes, not GST slabs, so they are intentionally not modelled here.',
+    effectiveFrom: '2000-07-01',
+    source: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales',
+  },
 
   // ── United States — sales-tax summary (state-level) ─────────────────
   {
@@ -385,9 +421,51 @@ export const TAX_RATES: TaxRate[] = [
     rate: 9,
     label: 'Standard (9%)',
     exampleCategories: ['most goods and services'],
-    notes: 'Stepped up from 8% on 2024-01-01.',
+    notes: 'Stepped up from 8% on 2024-01-01 (the second of two increases; 7%→8% on 2023-01-01). See SG-standard-8 for the superseded 8% slab.',
     effectiveFrom: '2024-01-01',
-    source: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)',
+    source: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/basics-of-gst/current-gst-rates',
+  },
+  {
+    id: 'SG-standard-8',
+    country: 'SG',
+    taxType: 'GST',
+    scheme: 'standard',
+    rate: 8,
+    label: 'Standard (8%) — superseded by 9%',
+    exampleCategories: ['most goods and services'],
+    notes: 'The interim 8% rate that applied for calendar year 2023 (raised from 7% on 2023-01-01, then to 9% on 2024-01-01). Retained for historical / 2023-dated invoices only.',
+    effectiveFrom: '2023-01-01',
+    effectiveTo: '2023-12-31',
+    source: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/basics-of-gst/current-gst-rates',
+  },
+  {
+    id: 'SG-zero-0',
+    country: 'SG',
+    taxType: 'GST',
+    scheme: 'zero',
+    rate: 0,
+    label: 'Zero-rated',
+    exampleCategories: ['export of goods', 'international services'],
+    notes: 'Zero-rated supplies carry 0% GST but the supplier can still claim input tax. Distinct from exempt supplies.',
+    effectiveFrom: '1994-04-01',
+    source: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/charging-gst-(output-tax)/when-to-charge-0-gst-(zero-rate)',
+  },
+  {
+    id: 'SG-exempt-0',
+    country: 'SG',
+    taxType: 'GST',
+    scheme: 'exempt',
+    rate: 0,
+    label: 'Exempt',
+    exampleCategories: [
+      'most financial services',
+      'sale and lease of residential property',
+      'supply of digital payment tokens',
+      'investment precious metals',
+    ],
+    notes: 'Fourth Schedule to the GST Act. No GST is charged and input tax is generally not claimable. Digital payment tokens have been exempt since 2020-01-01.',
+    effectiveFrom: '1994-04-01',
+    source: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/charging-gst-(output-tax)/when-is-gst-not-charged/supplies-exempt-from-gst',
   },
 
   // ── New Zealand GST ─────────────────────────────────────────────────
@@ -402,6 +480,39 @@ export const TAX_RATES: TaxRate[] = [
     effectiveFrom: '2010-10-01',
     source: 'https://www.ird.govt.nz/gst',
   },
+  {
+    id: 'NZ-zero-0',
+    country: 'NZ',
+    taxType: 'GST',
+    scheme: 'zero',
+    rate: 0,
+    label: 'Zero-rated',
+    exampleCategories: [
+      'exported goods',
+      'services supplied to non-residents (remote services)',
+      'sale of a going concern',
+      'land transactions between GST-registered persons',
+    ],
+    notes: 'Zero-rated (0%) supplies still allow the supplier to claim input tax. Distinct from exempt supplies.',
+    effectiveFrom: '1986-10-01',
+    source: 'https://www.ird.govt.nz/gst/charging-gst/zero-rated-supplies',
+  },
+  {
+    id: 'NZ-exempt-0',
+    country: 'NZ',
+    taxType: 'GST',
+    scheme: 'exempt',
+    rate: 0,
+    label: 'Exempt',
+    exampleCategories: [
+      'rental of residential dwellings',
+      'most financial services',
+      'sale of donated goods by non-profit bodies',
+    ],
+    notes: 'Exempt supplies carry no GST and the supplier cannot claim input tax. Financial services can instead be zero-rated when supplied to a GST-registered person making 75%+ taxable supplies.',
+    effectiveFrom: '1986-10-01',
+    source: 'https://www.ird.govt.nz/gst/charging-gst/exempt-supplies',
+  },
 
   // ── UAE VAT ─────────────────────────────────────────────────────────
   {
@@ -412,6 +523,42 @@ export const TAX_RATES: TaxRate[] = [
     rate: 5,
     label: 'Standard (5%)',
     exampleCategories: ['most goods and services'],
+    effectiveFrom: '2018-01-01',
+    source: 'https://tax.gov.ae/en/taxes/vat.aspx',
+  },
+  {
+    id: 'AE-zero-0',
+    country: 'AE',
+    taxType: 'VAT',
+    scheme: 'zero',
+    rate: 0,
+    label: 'Zero-rated',
+    exampleCategories: [
+      'exports outside the GCC',
+      'international transport',
+      'certain healthcare services',
+      'certain education services',
+      'first supply of residential buildings (within 3 years of completion)',
+      'investment-grade precious metals',
+    ],
+    notes: 'Zero-rated (0%) supplies still allow the taxable person to recover input VAT. Distinct from exempt supplies.',
+    effectiveFrom: '2018-01-01',
+    source: 'https://tax.gov.ae/en/taxes/vat.aspx',
+  },
+  {
+    id: 'AE-exempt-0',
+    country: 'AE',
+    taxType: 'VAT',
+    scheme: 'exempt',
+    rate: 0,
+    label: 'Exempt',
+    exampleCategories: [
+      'certain financial services (margin-based)',
+      'residential buildings (supplies other than the zero-rated first supply)',
+      'bare land',
+      'local passenger transport',
+    ],
+    notes: 'Exempt supplies carry no VAT and input VAT is generally not recoverable. Fee-based financial services are standard-rated; margin-based financial services are exempt.',
     effectiveFrom: '2018-01-01',
     source: 'https://tax.gov.ae/en/taxes/vat.aspx',
   },

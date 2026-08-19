@@ -15,8 +15,8 @@ export const listTaxRatesSchema = {
     .describe('Filter to one jurisdiction. Omit to return every supported country.'),
   taxType: z.enum(['GST', 'IGST', 'CGST-SGST', 'VAT', 'Sales-Tax', 'HST', 'PST', 'QST', 'TDS', 'TCS']).optional()
     .describe('Filter by statutory tax type (GST, VAT, Sales-Tax, HST, PST, QST, etc.).'),
-  scheme: z.enum(['standard', 'reduced', 'zero', 'exempt', 'composition', 'cess', 'state-summary']).optional()
-    .describe('Filter by slab category — standard, reduced, zero, exempt, composition, cess.'),
+  scheme: z.enum(['standard', 'reduced', 'zero', 'exempt', 'input-taxed', 'composition', 'cess', 'state-summary']).optional()
+    .describe('Filter by slab category — standard, reduced, zero, exempt, input-taxed, composition, cess.'),
 };
 
 export interface ListTaxRatesArgs {

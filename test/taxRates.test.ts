@@ -200,6 +200,61 @@ test('lookup_tax_rate by explicit id still returns a superseded slab (historical
   assert.equal(r.match!.effectiveTo, '2025-09-21');
 });
 
+// ── Small-market single-slab gap fill (SG / NZ / AE / AU) ──────────────
+// Fills zero-rated / exempt / input-taxed / historical rows so the small
+// markets match the India/UK pattern instead of carrying only a bare standard
+// slab. Each row is statute-verified against its revenue authority source.
+
+test('SG-standard-8 is the superseded 2023 interim slab, dated 2023-01-01 → 2023-12-31', () => {
+  const row = byId('SG-standard-8');
+  assert.equal(row.country, 'SG');
+  assert.equal(row.rate, 8);
+  assert.equal(row.effectiveFrom, '2023-01-01');
+  assert.equal(row.effectiveTo, '2023-12-31');
+});
+
+test('SG-standard-9 note references the superseded 8% row', () => {
+  const row = byId('SG-standard-9');
+  assert.ok(row.notes && row.notes.includes('SG-standard-8'));
+});
+
+test('SG has zero-rated and exempt GST rows', () => {
+  assert.equal(byId('SG-zero-0').scheme, 'zero');
+  assert.equal(byId('SG-exempt-0').scheme, 'exempt');
+});
+
+test('NZ has zero-rated and exempt GST rows', () => {
+  assert.equal(byId('NZ-zero-0').scheme, 'zero');
+  assert.equal(byId('NZ-exempt-0').scheme, 'exempt');
+});
+
+test('AE has zero-rated and exempt VAT rows', () => {
+  assert.equal(byId('AE-zero-0').taxType, 'VAT');
+  assert.equal(byId('AE-zero-0').scheme, 'zero');
+  assert.equal(byId('AE-exempt-0').scheme, 'exempt');
+});
+
+test('AU-input-taxed-0 exists as a distinct input-taxed GST category', () => {
+  const row = byId('AU-input-taxed-0');
+  assert.equal(row.country, 'AU');
+  assert.equal(row.taxType, 'GST');
+  assert.equal(row.scheme, 'input-taxed');
+  assert.equal(row.rate, 0);
+});
+
+test('list_tax_rates scheme=input-taxed returns only the AU input-taxed slab', () => {
+  const r = listTaxRates({ scheme: 'input-taxed' });
+  assert.equal(r.count, 1);
+  assert.equal(r.rates[0]!.id, 'AU-input-taxed-0');
+});
+
+test('the superseded SG 8% row never wins a current fuzzy lookup', () => {
+  const r = lookupTaxRate({ country: 'SG', category: 'most goods and services' });
+  assert.ok(r.match);
+  assert.equal(r.match!.effectiveTo, undefined);
+  assert.equal(r.match!.id, 'SG-standard-9');
+});
+
 // ── General invariant: "superseded" labels must be dated ───────────────
 // Any row we call superseded MUST carry the date it stopped being current,
 // or downstream consumers would quote a dead rate as live.
