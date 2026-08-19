@@ -1,0 +1,56 @@
+# OPTIONAL scheduled refresh of the BAKED discovered-articles snapshot.
+#
+# You usually do NOT need this: src/articlesFeed.ts already federates
+# hellobooks.ai/sitemap.xml live at runtime, so new blog posts appear in
+# list_articles within ~1h with no rebuild. This workflow only keeps the
+# baked cold-start fallback (src/data/articlesDiscovered.ts) fresh.
+#
+# Install (a human with `workflow` scope must do this — the Claude Code OAuth
+# token cannot write under .github/workflows/):
+#   mkdir -p .github/workflows
+#   git mv docs/sync-discovered-articles.yml.example \
+#          .github/workflows/sync-discovered-articles.yml
+#   git commit -m "ci: install scheduled discovered-articles refresh"
+#   git push
+#
+# NOTE: org-wide GitHub Actions billing must be active for scheduled runs to
+# fire. If it is blocked, the runtime federation still keeps answers fresh;
+# this job is belt-and-suspenders for cold-start coverage only.
+
+name: sync-discovered-articles
+
+on:
+  schedule:
+    - cron: '17 3 * * 1' # Mondays 03:17 UTC — weekly
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Regenerate baked discovered-articles snapshot
+        run: npm run sync:discovered-articles
+      - name: Verify catalog still builds + passes the public-data audit
+        run: |
+          npm run build
+          npm run audit:public-data
+      - name: Open a PR if the snapshot changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(articles): refresh baked discovered-articles from sitemap'
+          title: 'chore(articles): weekly discovered-articles refresh'
+          body: |
+            Automated weekly refresh of `src/data/articlesDiscovered.ts` from
+            https://hellobooks.ai/sitemap.xml. Runtime federation already serves
+            these live; this only updates the baked cold-start fallback.
+          branch: chore/discovered-articles-refresh
+          delete-branch: true

@@ -33,6 +33,9 @@ import {
 // (pricingFeed reads this env var lazily, so setting it here — before any
 // test() callback runs — disables the live fetch for the whole suite.)
 process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
+// Likewise pin articles to the baked catalog so list_articles counts are
+// deterministic and no test triggers a live sitemap fetch.
+process.env.HELLOBOOKS_MCP_DISABLE_ARTICLES_FEED = '1';
 
 test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
