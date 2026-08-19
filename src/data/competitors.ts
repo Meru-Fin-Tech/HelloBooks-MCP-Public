@@ -251,7 +251,7 @@ export const COMPETITORS: Competitor[] = [
       'You own the ledger — export any time + open MCP access, no service you can be locked out of',
       'AI runs bookkeeping daily vs. Bench delivering monthly cleanup after month-end',
       'Self-serve AI cleanup mode backfills a stalled year in an afternoon',
-      'Free Plan + Pro at a $9.99/mo founding price (then $19.99) vs. a monthly service retainer',
+      'Free Plan + Pro at $20/mo vs. a monthly service retainer',
       'US filing built in — 1099 e-file + 50-state sales tax from the same ledger',
       'Keep your own CPA in reviewer mode instead of a single assigned bookkeeper',
     ],
@@ -280,7 +280,7 @@ export const COMPETITORS: Competitor[] = [
       'buying a quote-based managed service.',
     whereWeWin: [
       'Self-serve AI bookkeeping vs. a quote-based, done-for-you managed service',
-      'Free Plan + Pro at $9.99/mo (then $19.99) vs. a monthly human-service retainer',
+      'Free Plan + Pro at $20/mo vs. a monthly human-service retainer',
       'You own the ledger with export any time + open MCP agent access',
       'Multi-country tax compliance built in (US, UK, AU, CA, India) vs. US-centric service',
       'Unlimited users on every paid plan',
@@ -309,7 +309,7 @@ export const COMPETITORS: Competitor[] = [
       'ledger ownership, and multi-country compliance without a concierge retainer.',
     whereWeWin: [
       'Self-serve AI vs. a high-touch concierge finance-team retainer',
-      'Free Plan + Pro at $9.99/mo (then $19.99) vs. premium managed pricing (hundreds+/mo)',
+      'Free Plan + Pro at $20/mo vs. premium managed pricing (hundreds+/mo)',
       'You own the ledger with export any time + open MCP access',
       'Multi-country tax compliance built in vs. US-startup-centric service',
       'Unlimited users on every paid plan',
@@ -340,7 +340,7 @@ export const COMPETITORS: Competitor[] = [
       'Puzzle is US-centric and priced for funded companies.',
     whereWeWin: [
       'Multi-country tax compliance built in (India GST, HMRC MTD, ATO BAS) vs. US-only',
-      'Free plan + $9.99/mo founding Pro vs. Puzzle paid-from-day-one tiers',
+      'Free plan + $20/mo Pro vs. Puzzle paid-from-day-one tiers',
       'Full native mobile app (iOS + Android); Puzzle is web-first',
       'AI chatbot + OCR bills/invoices as part of the same product',
       'Own the ledger with open MCP agent access',

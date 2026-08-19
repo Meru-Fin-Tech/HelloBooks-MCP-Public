@@ -56,17 +56,31 @@ test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   }
 });
 
-test('list_plans Business tier carries Doc 19 v3 prices in all 8 regions', () => {
+test('list_plans Business tier carries Doc 19 v4 prices in all 8 regions', () => {
   const r = listPlans({ plan: 'business' });
   assert.equal(r.plans.length, 1);
   const biz = r.plans[0];
   assert.equal(biz.monthlyAiCredits, 50_000);
+  // v4 (Web-Fire #672): 2× everywhere except India, which is unchanged.
   const expected: Record<string, number> = {
-    US: 39.99, IN: 1999, CA: 51.99, GB: 31.99,
-    AU: 59.99, AE: 147, SG: 51.99, NZ: 63.99,
+    US: 80, IN: 1999, CA: 104, GB: 64,
+    AU: 120, AE: 294, SG: 104, NZ: 128,
   };
   for (const p of biz.prices) {
     assert.equal(p.monthly, expected[p.country], `${p.country}: Business monthly drift vs Web-Fire pricingConfig.ts`);
+  }
+});
+
+test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
+  for (const plan of ['pro', 'business'] as const) {
+    const r = listPlans({ plan });
+    for (const p of r.plans[0].prices) {
+      if (p.country === 'IN') {
+        assert.ok(p.anchorMonthly > 0, 'IN keeps its anchor by founder decision 2026-07-29');
+      } else {
+        assert.equal(p.anchorMonthly, 0, `${p.country}: ${plan} must not advertise a permanent "was" price`);
+      }
+    }
   }
 });
 
@@ -226,7 +240,7 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   assert.equal(us?.symbol, '$');
   // a region absent from the feed falls back to the baked price
   const ca = pro.prices.find((pr) => pr.country === 'CA');
-  assert.equal(ca?.monthly, 12.99);
+  assert.equal(ca?.monthly, 26);
   // features come from the feed
   assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
   // perClient is vestigial post-Web-Fire #514 — the federation no longer
