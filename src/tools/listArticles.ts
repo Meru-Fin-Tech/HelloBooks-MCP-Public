@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ARTICLES } from '../data/articles.js';
 import type { Article, CountryRelevance } from '../data/articles.js';
+import { getArticles, getArticlesMeta } from '../articlesFeed.js';
 
 const COUNTRY_FILTER = ['IN', 'AU', 'US', 'CA', 'GB', 'AE', 'SG', 'NZ', 'global'] as const;
 
@@ -53,6 +53,7 @@ function matchesCountry(article: Article, country: CountryRelevance): boolean {
 
 export function listArticles(args: ListArticlesArgs) {
   const limit = args.limit ?? 20;
+  const ARTICLES = getArticles();
   let results: Article[] = ARTICLES;
 
   if (args.country) {
@@ -83,10 +84,11 @@ export function listArticles(args: ListArticlesArgs) {
     totalMatches: results.length,
     catalogSize: ARTICLES.length,
     source: 'https://hellobooks.ai/blog',
+    _meta: getArticlesMeta(),
     note:
-      'Catalog is a curated subset of published content on hellobooks.ai ' +
-      '(compare pages + flagship blog posts). hellobooks.ai/blog hosts ' +
-      'additional articles not surfaced through this tool — link callers ' +
-      'there if no result is a strong match.',
+      'Curated compare pages + flagship posts, plus every blog post discovered ' +
+      "live from hellobooks.ai/sitemap.xml (see _meta.dataSource). New posts " +
+      'appear automatically within ~1h of publication. Link callers to ' +
+      'hellobooks.ai/blog if no result is a strong match.',
   };
 }

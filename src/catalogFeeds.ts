@@ -50,7 +50,7 @@ import {
   CAPABILITY_KB_META,
 } from './data/capabilities.js';
 import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from './data/paymentMethods.js';
-import { ARTICLES } from './data/articles.js';
+import { getArticles } from './articlesFeed.js';
 import { VIDEOS, YOUTUBE_CHANNEL } from './data/videos.js';
 
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
@@ -208,10 +208,13 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     description:
       'Published articles on hellobooks.ai — head-to-head compare pages and curated flagship blog posts.',
     marketingUrl: `${MARKETING_BASE_URL}/blog`,
-    build: () => ({
-      count: ARTICLES.length,
-      data: { articles: ARTICLES },
-    }),
+    build: () => {
+      const articles = getArticles();
+      return {
+        count: articles.length,
+        data: { articles },
+      };
+    },
   },
   {
     slug: 'videos',

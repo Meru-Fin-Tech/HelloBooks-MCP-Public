@@ -137,11 +137,23 @@ interface RegionConfig {
 // CPA SKU converted to free Partner Program (the retired $59.99/mo +
 // $4.99/client + 10% commission flat SKU is gone). Business sits at ~4× Pro
 // to mirror Partner Points math (Pro client = 1 pt / Business client = 4 pts).
+//
+// v4 (Web-Fire #672, 2026-07-30): every region EXCEPT India repriced to 2× —
+// the old strikethrough anchor becomes the real price — and the permanent
+// anchor is removed (anchor: 0 = don't show a "was" price). Annual is now
+// 10× monthly (2 months free), replacing the old ~17%-off pattern.
+// US Pro $9.99 → $20, US Business $39.99 → $80.
+//
+// INDIA IS DELIBERATELY UNCHANGED (₹499 Pro / ₹1,999 Business, anchors intact)
+// per founder decision 2026-07-29. Do not "tidy" the IN row into line with the
+// others — an India reprice must be its own change.
+//
+// Credit packs are NOT part of the v4 reprice and are unchanged.
 const REGIONS: RegionConfig[] = [
   { country: 'US', currency: 'USD', symbol: '$',
-    pro:      { monthly:  9.99, annual:  99,    anchor:  19.99 },
-    business: { monthly: 39.99, annual: 399,    anchor:  79.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    20, annual:   200,  anchor: 0 },
+    business: { monthly:    80, annual:   800,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 4.99, power: 12.99, mega: 29.99, ultra: 69.99 } },
   { country: 'IN', currency: 'INR', symbol: '₹',
     pro:      { monthly:   499, annual:  4999,  anchor:   999 },
@@ -149,34 +161,34 @@ const REGIONS: RegionConfig[] = [
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 249, power: 699, mega: 1999, ultra: 4999 } },
   { country: 'CA', currency: 'CAD', symbol: 'C$',
-    pro:      { monthly: 12.99, annual: 129.99, anchor:  25.99 },
-    business: { monthly: 51.99, annual: 519.99, anchor: 103.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    26, annual:   260,  anchor: 0 },
+    business: { monthly:   104, annual:  1040,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
   { country: 'GB', currency: 'GBP', symbol: '£',
-    pro:      { monthly:  7.99, annual:  79.99, anchor:  15.99 },
-    business: { monthly: 31.99, annual: 319.99, anchor:  63.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    16, annual:   160,  anchor: 0 },
+    business: { monthly:    64, annual:   640,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 3.99, power: 10.49, mega: 23.99, ultra: 55.99 } },
   { country: 'AU', currency: 'AUD', symbol: 'A$',
-    pro:      { monthly: 14.99, annual: 149.99, anchor:  29.99 },
-    business: { monthly: 59.99, annual: 599.99, anchor: 119.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    30, annual:   300,  anchor: 0 },
+    business: { monthly:   120, annual:  1200,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 7.49, power: 19.49, mega: 44.99, ultra: 104.99 } },
   { country: 'AE', currency: 'AED', symbol: 'AED ',
-    pro:      { monthly:  37,   annual:  367,   anchor:   73 },
-    business: { monthly: 147,   annual: 1467,   anchor:  293 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    74, annual:   740,  anchor: 0 },
+    business: { monthly:   294, annual:  2940,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 18, power: 48, mega: 110, ultra: 257 } },
   { country: 'SG', currency: 'SGD', symbol: 'S$',
-    pro:      { monthly: 12.99, annual: 129.99, anchor:  25.99 },
-    business: { monthly: 51.99, annual: 519.99, anchor: 103.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    26, annual:   260,  anchor: 0 },
+    business: { monthly:   104, annual:  1040,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
   { country: 'NZ', currency: 'NZD', symbol: 'NZ$',
-    pro:      { monthly: 15.99, annual: 159.99, anchor:  31.99 },
-    business: { monthly: 63.99, annual: 639.99, anchor: 127.99 },
-    cpa:      { monthly:  0,    annual:   0,    perClient: 0 },
+    pro:      { monthly:    32, annual:   320,  anchor: 0 },
+    business: { monthly:   128, annual:  1280,  anchor: 0 },
+    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 7.99, power: 20.99, mega: 47.99, ultra: 111.99 } },
 ];
 
