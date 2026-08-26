@@ -8,3 +8,5 @@ coverage/
 *.tsbuildinfo
 .vscode/
 .idea/
+.verify_dist/
+drift-report.md
