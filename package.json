@@ -28,7 +28,8 @@
     "lint": "tsc --noEmit",
     "audit:public-data": "node --import tsx scripts/audit-public-data.ts",
     "check:deadline-drift": "node --import tsx scripts/check-deadline-drift.ts",
-    "sync:discovered-articles": "node --import tsx scripts/sync-discovered-articles.ts"
+    "sync:discovered-articles": "node --import tsx scripts/sync-discovered-articles.ts",
+    "report:ga4": "node --import tsx scripts/ga4-report.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.18.1",

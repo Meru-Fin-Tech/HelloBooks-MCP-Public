@@ -10,6 +10,12 @@ how often errors — **without a database and without collecting customer data**
 - Sink: [`src/analytics.ts`](../src/analytics.ts) (`track()` → GA4 Measurement Protocol)
 - Wiring: [`src/http.ts`](../src/http.ts) (`app.use('/mcp', mcpAnalytics, …)`)
 
+> **Reading the data back:** this document covers how events are *written*. For
+> the optional, read-only **GA4 Data API** helper (CLI + protected endpoint) that
+> queries these counts back out, see
+> [`MCP_ANALYTICS_REPORTING.md`](./MCP_ANALYTICS_REPORTING.md). It is disabled by
+> default, adds no dependencies, and leaves this write path untouched.
+
 This sits alongside the pre-existing per-tool telemetry emitted from
 [`src/server.ts`](../src/server.ts) (`mcp_tool_called` / `mcp_tool_errored`).
 The middleware adds an **HTTP-transport** view; the server factory keeps its

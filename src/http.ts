@@ -55,6 +55,7 @@ import {
   renderSharePage,
   isValidSlug,
 } from './lib/shareUrl/index.js';
+import { createReportingRouter } from './reporting/endpoint.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -323,6 +324,20 @@ app.get('/r/:slug', (req, res) => {
 
 function renderShareError(title: string, message: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — HelloBooks AI Agent</title><meta name="robots" content="noindex"><style>body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 24px;color:#0f172a;line-height:1.6}h1{font-size:24px;margin-bottom:8px}p{color:#64748b}a{color:#2563eb;text-decoration:none;font-weight:500}</style></head><body><h1>${title}</h1><p>${message}</p><p><a href="https://hellobooks.ai/mcp">Learn about HelloBooks AI Agent &rarr;</a></p></body></html>`;
+}
+
+// ---------------------------------------------------------------------------
+// Protected internal reporting surface (optional, GA4 Data API reader).
+// ---------------------------------------------------------------------------
+//
+// Disabled by default: createReportingRouter() returns null unless BOTH the
+// Data API service-account credentials AND GA4_REPORTING_TOKEN are configured.
+// When enabled it serves read-only MCP usage reports behind a bearer token.
+// See src/reporting/endpoint.ts and docs/MCP_ANALYTICS_REPORTING.md.
+const reportingRouter = createReportingRouter();
+if (reportingRouter) {
+  app.use('/internal/analytics', ipLimiter, reportingRouter);
+  process.stdout.write('GA4 reporting endpoint enabled at /internal/analytics\n');
 }
 
 // Analytics first in the /mcp chain so even rate-limited (429) responses are
