@@ -531,8 +531,12 @@ test('list_competitors country filter narrows to India for Tally + Zoho', () => 
   const ids = new Set(r.competitors.map((c) => c.id));
   assert.ok(ids.has('tally'));
   assert.ok(ids.has('zoho-books'));
-  // QuickBooks is also India-evaluated (alsoIn includes IN)
-  assert.ok(ids.has('quickbooks'));
+  // QuickBooks must NOT appear: Intuit closed new India sign-ups in July 2022
+  // and withdrew product access entirely on 1 July 2023, so no Indian buyer is
+  // choosing between us and QuickBooks. Listing it here sent our agent surface
+  // to argue against an absent rival instead of Zoho and Tally, who are the
+  // real India incumbents.
+  assert.ok(!ids.has('quickbooks'));
 });
 
 test('list_competitors tier=primary excludes secondary entries', () => {

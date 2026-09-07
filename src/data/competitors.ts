@@ -16,6 +16,14 @@
  * bot's evaluation read like brochure copy, which loses buyer trust faster
  * than admitting trade-offs.
  *
+ * The same bar applies to `whereWeWin`, and that is the half which has actually
+ * slipped. Every bullet must name something a buyer could verify inside a free
+ * trial TODAY — not something on the roadmap, and not something built but
+ * shipping behind an unset feature flag. A claim a prospect can falsify in ten
+ * minutes costs more trust than the feature would ever have won. Before adding a
+ * compliance bullet, check the owning entry in the backend features.yaml reads
+ * `stable`; before adding an AI bullet, check the flag is on in production.
+ *
  * Public-only data: no customer references, no internal hostnames, no auth.
  */
 
@@ -51,7 +59,7 @@ export const COMPETITORS: Competitor[] = [
     id: 'quickbooks',
     name: 'QuickBooks Online',
     primaryCountry: 'US',
-    alsoIn: ['CA', 'GB', 'AU', 'IN'],
+    alsoIn: ['CA', 'GB', 'AU'],
     tier: 'primary',
     segment: 'Global incumbent — small-business accounting',
     positioningSummary:
@@ -59,15 +67,18 @@ export const COMPETITORS: Competitor[] = [
       'and Canada, with a deep accountant ecosystem and a mature payroll + tax-filing ' +
       'add-on stack. HelloBooks is AI-first where QuickBooks bolted AI on later; we ' +
       'compete primarily on automation depth, unlimited users, and a guided one-time ' +
-      'QuickBooks migration for buyers who want to move without losing their existing ledger.',
+      'QuickBooks migration for buyers who want to move without losing their existing ledger. ' +
+      'QuickBooks is NOT a competitor in India: Intuit closed new sign-ups in July 2022 and ' +
+      'withdrew product access entirely on 1 July 2023, so an Indian buyer comparing us to ' +
+      'QuickBooks is almost certainly evaluating Zoho Books or Tally instead.',
     whereWeWin: [
       'AI auto-categorization with pattern learning vs. QuickBooks rule-based categorisation',
-      'AI accounting agent monitors books and surfaces anomalies 24/7',
+      'Inventory and POS bundled in the ledger rather than sold as separate SKUs',
       'AI-powered bills + invoice OCR ingests payables without manual entry',
       'Unlimited users on every paid plan vs. QuickBooks per-seat ladder ($38 → $75 → $115 → $275/mo)',
       'Multi-currency with live FX on all paid plans vs. QuickBooks Plus-only ($115/mo)',
       'Guided one-time QuickBooks migration (company-file import) — run QuickBooks in parallel during cut-over',
-      'India GST e-invoice + Form 24Q TDS, ATO BAS + STP2, HMRC MTD shipping as built-ins',
+      'India e-invoicing (IRN) and e-way bill ship today, with TDS/TCS ledgers built in',
     ],
     whereTheyWin: [
       '750+ third-party app integrations vs. our growing marketplace',
@@ -95,7 +106,7 @@ export const COMPETITORS: Competitor[] = [
       'plans where Xero reserves them for its top tiers.',
     whereWeWin: [
       'True AI categorization that learns patterns vs. Xero hand-tuned bank rules',
-      'AI accounting agent with autonomous bookkeeping suggestions — Xero has no equivalent',
+      'India statutory depth (GST, e-invoicing, TDS/TCS) that Xero does not cover',
       "No artificial invoice / bill caps — Xero's entry plan (Ignite) limits invoices/bills per month",
       'Multi-currency included on all paid plans; Xero reserves it for its Comprehensive / Ultimate tiers',
       'AI-powered payables vs. manual bill entry in Xero',
@@ -130,7 +141,7 @@ export const COMPETITORS: Competitor[] = [
       'No client limit — FreshBooks Lite caps you at 5 clients ($23/mo)',
       'No per-user fees — FreshBooks adds $11/mo per extra team member',
       'Guided QuickBooks migration; FreshBooks has none',
-      'Global tax compliance — GST, HMRC MTD, IRP e-invoice — broader than FreshBooks',
+      'India statutory compliance — GST, e-invoicing, e-way bill — broader than FreshBooks',
     ],
     whereTheyWin: [
       'Polished invoicing UX, including the client-facing payment view',
@@ -335,11 +346,11 @@ export const COMPETITORS: Competitor[] = [
       'Puzzle is AI-native general-ledger software aimed at US startups and their ' +
       'accountants, positioned as a modern, accrual-first replacement for QuickBooks. ' +
       'It is the closest pure-software match to HelloBooks on the "AI-first ledger" ' +
-      'pitch. HelloBooks competes on multi-country statutory compliance (India GST, ' +
-      'HMRC MTD, ATO BAS), a Free tier, and a built-in mobile app + AI chatbot — where ' +
+      'pitch. HelloBooks competes on India statutory compliance (GST, e-invoicing, ' +
+      'e-way bill), a Free tier, and a built-in mobile app + AI chatbot — where ' +
       'Puzzle is US-centric and priced for funded companies.',
     whereWeWin: [
-      'Multi-country tax compliance built in (India GST, HMRC MTD, ATO BAS) vs. US-only',
+      'India statutory compliance built in (GST, e-invoicing, e-way bill) vs. US-only',
       'Free plan + $20/mo Pro vs. Puzzle paid-from-day-one tiers',
       'Full native mobile app (iOS + Android); Puzzle is web-first',
       'AI chatbot + OCR bills/invoices as part of the same product',
@@ -397,7 +408,7 @@ export const COMPETITORS: Competitor[] = [
       'a monthly service — while acknowledging Finaloop’s e-commerce reconciliation depth.',
     whereWeWin: [
       'Own the ledger with export + MCP access vs. a monthly service you can be locked out of',
-      'Multi-country compliance (India GST, UK MTD, AU BAS) vs. US e-commerce focus',
+      'India statutory compliance (GST, e-invoicing, e-way bill) vs. US e-commerce focus',
       'Free plan + self-serve Pro pricing vs. revenue-scaled service retainer',
       'General-purpose across industries, not e-commerce only',
     ],
