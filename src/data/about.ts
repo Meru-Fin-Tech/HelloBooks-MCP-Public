@@ -81,6 +81,12 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-09-09', title: 'Complete sitemap and LLM catalog discovery', category: 'fix',
+    description: 'Sitemap and llms.txt now link every registered public catalog feed, including free-tier thresholds, the Partner Program, and practice management. Freshness guidance distinguishes runtime pricing and blog refreshes from release-based catalog updates.' },
+  { date: '2026-09-07', title: 'Competitor catalog accuracy corrections', category: 'fix',
+    description: 'Public MCP PR #79 corrected unsupported competitor claims and removed QuickBooks from India competitor positioning.' },
+  { date: '2026-08-19', title: 'Automatic blog discovery from the marketing sitemap', category: 'improvement',
+    description: 'Public MCP PR #71 added on-demand background federation of blog articles from hellobooks.ai/sitemap.xml, with a one-hour cache and bundled fallback. Newly published blog posts no longer require a catalog redeploy.' },
   { date: '2026-07-30', title: 'Pricing v4 — every region except India repriced to 2×; permanent anchor removed', category: 'improvement',
     description: 'Mirroring Web-Fire PR #672: all non-India regions move to 2× — the old strikethrough anchor becomes the real price — and the permanent anchor is dropped (list_plans now returns anchorMonthly: 0 outside India). US Pro $9.99 → $20/mo ($200/yr), US Business $39.99 → $80/mo ($800/yr); CA C$26/C$104, GB £16/£64, AU A$30/A$120, AE AED 74/AED 294, SG S$26/S$104, NZ NZ$32/NZ$128. Annual is now 10× monthly (2 months free) instead of the old ~17%-off pattern. INDIA IS UNCHANGED by founder decision — ₹499 Pro / ₹1,999 Business with anchors intact. AI credit packs, credit allowances, and the Partner Program are unaffected.' },
   { date: '2026-07-10', title: 'Catalog accuracy refresh — Free tier is 2,500 credits/month', category: 'fix',

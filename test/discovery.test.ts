@@ -14,6 +14,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { CATALOG_FEEDS } from '../src/catalogFeeds.js';
+import { CHANGELOG } from '../src/data/about.js';
 
 import {
   TOOL_CATALOG,
@@ -175,6 +177,42 @@ test('generateRobotsTxt allows every major AI crawler and points to sitemap', ()
     assert.match(txt, new RegExp(`User-agent: ${bot}`), `robots.txt must allow ${bot}`);
   }
   assert.match(txt, /Sitemap: https:\/\/agents\.hellobooks\.ai\/sitemap\.xml/);
+});
+
+test('sitemap and llms.txt link every registered feed exactly once on each host', () => {
+  const originalBaseUrl = process.env.HELLOBOOKS_MCP_BASE_URL;
+  try {
+    for (const baseUrl of ['https://agents.hellobooks.ai', 'https://staging.example.com']) {
+      process.env.HELLOBOOKS_MCP_BASE_URL = `${baseUrl}/`;
+      const xml = generateSitemap(CATALOG_FEEDS);
+      const text = generateLlmsTxt(CATALOG_FEEDS);
+      const locations = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g), (match) => match[1]);
+      assert.equal(locations.length, 10 + CATALOG_FEEDS.length);
+      assert.equal(new Set(locations).size, locations.length);
+      for (const feed of CATALOG_FEEDS) {
+        const url = `${baseUrl}/catalog/${feed.slug}.json`;
+        assert.ok(locations.includes(url), `sitemap must include ${feed.slug}`);
+        assert.equal(text.split(`](${url})`).length - 1, 1, `llms.txt must link ${feed.slug} once`);
+      }
+    }
+  } finally {
+    if (originalBaseUrl === undefined) delete process.env.HELLOBOOKS_MCP_BASE_URL;
+    else process.env.HELLOBOOKS_MCP_BASE_URL = originalBaseUrl;
+  }
+});
+
+test('llms.txt explains runtime article refresh and fallback', () => {
+  const text = generateLlmsTxt(CATALOG_FEEDS);
+  assert.match(text, /Blog articles refresh from hellobooks\.ai\/sitemap\.xml/);
+  assert.match(text, /bundled fallback/);
+});
+
+test('discovery freshness includes the latest merged catalog correction', () => {
+  assert.ok(CHANGELOG[0].date >= '2026-09-07');
+  const lastModified = `${CHANGELOG[0].date}T00:00:00.000Z`;
+  assert.equal(generateCatalogJson().dateModified, lastModified);
+  assert.ok(generateSitemap(CATALOG_FEEDS).includes(`<lastmod>${lastModified}</lastmod>`));
+  assert.ok(generateLandingHtml().includes(`Catalog updated ${CHANGELOG[0].date}`));
 });
 
 test('generateRssFeed is valid RSS 2.0 with at least one <item>', () => {
