@@ -37,18 +37,24 @@ process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
 // deterministic and no test triggers a live sitemap fetch.
 process.env.HELLOBOOKS_MCP_DISABLE_ARTICLES_FEED = '1';
 
-test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
+test('list_plans returns all 8 tiers when unfiltered (incl. add-ons)', () => {
   const r = listPlans({});
   const names = r.plans.map((p) => p.plan).sort((a, b) => a.localeCompare(b));
-  // Web-Fire #514 (2026-06-12): Business is back as a 4th tier; CPA is now
-  // the free Partner Program. Add-ons unchanged.
+  // Five-rung ladder (founder decision 2026-09-02, Web-Fire v6): Free /
+  // Starter / Pro / Business / Scale, plus the free Partner Program and the
+  // two add-on modules.
   assert.deepEqual(names, [
-    'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'warehouse-addon',
+    'business', 'cpa', 'free', 'manufacturing-addon', 'pro', 'scale',
+    'starter', 'warehouse-addon',
   ]);
-  // Core plans have prices for 8 countries; add-ons are USD-only
   for (const p of r.plans) {
     if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
       assert.equal(p.prices.length, 1, `${p.plan} should be USD-only`);
+      assert.equal(p.prices[0].currency, 'USD');
+    } else if (p.plan === 'starter' || p.plan === 'scale') {
+      // US-only on the marketing site today — priced in exactly one market.
+      assert.equal(p.prices.length, 1, `${p.plan} should be US-only`);
+      assert.equal(p.prices[0].country, 'US');
       assert.equal(p.prices[0].currency, 'USD');
     } else {
       assert.equal(p.prices.length, 8);
@@ -56,19 +62,56 @@ test('list_plans returns all 6 tiers when unfiltered (incl. add-ons)', () => {
   }
 });
 
-test('list_plans Business tier carries Doc 19 v4 prices in all 8 regions', () => {
-  const r = listPlans({ plan: 'business' });
-  assert.equal(r.plans.length, 1);
-  const biz = r.plans[0];
-  assert.equal(biz.monthlyAiCredits, 50_000);
-  // v4 (Web-Fire #672): 2× everywhere except India, which is unchanged.
-  const expected: Record<string, number> = {
-    US: 80, IN: 1999, CA: 104, GB: 64,
-    AU: 120, AE: 294, SG: 104, NZ: 128,
-  };
-  for (const p of biz.prices) {
-    assert.equal(p.monthly, expected[p.country], `${p.country}: Business monthly drift vs Web-Fire pricingConfig.ts`);
+test('list_plans Starter and Scale carry the US five-rung ladder prices', () => {
+  const starter = listPlans({ plan: 'starter' }).plans[0];
+  assert.equal(starter.name, 'Starter');
+  assert.equal(starter.monthlyAiCredits, 7_500);
+  assert.equal(starter.prices[0].monthly, 14.99);
+  assert.equal(starter.prices[0].annual, 149);
+
+  const scale = listPlans({ plan: 'scale' }).plans[0];
+  assert.equal(scale.name, 'Scale');
+  assert.equal(scale.monthlyAiCredits, 150_000);
+  assert.equal(scale.prices[0].monthly, 199);
+  assert.equal(scale.prices[0].annual, 1990);
+});
+
+test('list_plans never prices Starter or Scale outside the US', () => {
+  // Regression guard: a US-only tier must return NO price for another market
+  // rather than a US dollar figure labelled with that country's code.
+  for (const country of ['IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ'] as const) {
+    for (const plan of ['starter', 'scale'] as const) {
+      const r = listPlans({ country, plan });
+      assert.equal(r.plans[0].prices.length, 0,
+        `${plan} must not be priced in ${country} — it is not sold there`);
+    }
   }
+});
+
+test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 regions', () => {
+  // Baked fallback must match the marketing site's source of truth. When these
+  // drift, a feed outage quotes a price we do not charge — US Pro sat at $20
+  // against a real $39.99 (half) until 2026-09-23.
+  const expected: Record<string, { pro: number; business: number }> = {
+    US: { pro: 39.99, business: 79.99 },
+    IN: { pro: 499, business: 1999 },
+    CA: { pro: 22.99, business: 91.99 },
+    GB: { pro: 14.99, business: 59.99 },
+    AU: { pro: 30, business: 120 },
+    AE: { pro: 65, business: 260 },
+    SG: { pro: 26, business: 104 },
+    NZ: { pro: 32, business: 128 },
+  };
+  for (const plan of ['pro', 'business'] as const) {
+    const r = listPlans({ plan });
+    assert.equal(r.plans.length, 1);
+    assert.equal(r.plans[0].prices.length, 8);
+    for (const p of r.plans[0].prices) {
+      assert.equal(p.monthly, expected[p.country][plan],
+        `${p.country}: ${plan} monthly drift vs Web-Fire pricingConfig.ts`);
+    }
+  }
+  assert.equal(listPlans({ plan: 'business' }).plans[0].monthlyAiCredits, 50_000);
 });
 
 test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
@@ -100,8 +143,10 @@ test('list_plans cpa plan id resolves to the free Partner Program', () => {
 test('list_plans country filter narrows to that country only', () => {
   const r = listPlans({ country: 'AU' });
   for (const p of r.plans) {
-    // Add-ons are USD-only so AU filter zeroes them out
-    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
+    // Add-ons are USD-only, and Starter/Scale are US-only, so an AU filter
+    // zeroes all of them out.
+    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon'
+        || p.plan === 'starter' || p.plan === 'scale') {
       assert.equal(p.prices.length, 0);
       continue;
     }
@@ -240,7 +285,7 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   assert.equal(us?.symbol, '$');
   // a region absent from the feed falls back to the baked price
   const ca = pro.prices.find((pr) => pr.country === 'CA');
-  assert.equal(ca?.monthly, 26);
+  assert.equal(ca?.monthly, 22.99);
   // features come from the feed
   assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
   // perClient is vestigial post-Web-Fire #514 — the federation no longer
@@ -248,6 +293,42 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   // perClientPrice (the field is kept optional on PlanPrice for back-compat).
   const cpaUs = plans.find((p) => p.plan === 'cpa')?.prices.find((pr) => pr.country === 'US');
   assert.equal(cpaUs?.perClient, undefined);
+});
+
+test('feedToPlans never spreads a US-only tier across other markets', () => {
+  // Regression guard for the baked.prices[0] fallback. Starter is in the feed
+  // at top level and in the US region only — exactly the live feed's shape.
+  // The other seven countries have no feed tier AND no baked price, so they
+  // must be OMITTED. The old `bakedPrice ?? baked.prices[0]` returned the US
+  // entry for them, publishing $14.99 as the price in India, Canada and the
+  // UK in USD.
+  const starterTier = {
+    id: 'starter',
+    currency: 'USD',
+    monthlyPrice: 14.99,
+    annualPrice: 149,
+    anchorMonthlyPrice: 0,
+    features: ['Feed-sourced Starter feature'],
+    limits: { perClientPrice: 0, monthlyAiCredits: 7500 },
+  };
+  const feed = {
+    ...FEED_FIXTURE,
+    tiers: [...FEED_FIXTURE.tiers, starterTier],
+    regions: [{
+      ...FEED_FIXTURE.regions[0],
+      tiers: [...FEED_FIXTURE.regions[0].tiers, starterTier],
+    }],
+  };
+
+  const starter = feedToPlans(feed).find((p) => p.plan === 'starter');
+  assert.ok(starter);
+  assert.equal(starter.prices.length, 1, 'Starter must be priced in the US only');
+  assert.equal(starter.prices[0].country, 'US');
+  assert.equal(starter.prices[0].monthly, 14.99);
+  for (const country of ['IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']) {
+    assert.equal(starter.prices.find((pr) => pr.country === country), undefined,
+      `${country} must not carry a Starter price`);
+  }
 });
 
 test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {

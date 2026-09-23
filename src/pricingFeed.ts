@@ -109,25 +109,36 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
     const feedTier = feed.tiers.find((t) => t.id === baked.plan);
     if (!feedTier) return baked; // e.g. warehouse-addon / manufacturing-addon
 
-    const prices: PlanPrice[] = COUNTRIES.map((country) => {
+    const prices: PlanPrice[] = [];
+    for (const country of COUNTRIES) {
       const region = feed.regions.find((r) => r.region === country);
       const tier = region?.tiers.find((t) => t.id === baked.plan);
       const bakedPrice = baked.prices.find((p) => p.country === country);
-      if (!tier) return bakedPrice ?? baked.prices[0];
+      if (!tier) {
+        // No feed entry for this tier in this region. Keep the baked price if
+        // there is one; otherwise the tier is simply NOT SOLD here (Starter
+        // and Scale are US-only) and the country is omitted.
+        //
+        // This must NOT fall back to baked.prices[0]: for a US-only tier that
+        // published the US dollar amount under another country's code, in a
+        // currency that country does not bill in. An empty price list is the
+        // honest answer and matches what pricesFor() bakes.
+        if (bakedPrice) prices.push(bakedPrice);
+        continue;
+      }
 
-      const price: PlanPrice = {
+      // `perClient` is vestigial after Web-Fire #514 — the retired
+      // "$59.99/mo + $4.99/client" CPA SKU is gone and the field is no
+      // longer populated. Kept optional in PlanPrice for back-compat.
+      prices.push({
         country,
         currency: tier.currency as CurrencyCode,
         symbol: symbolFor(tier.currency),
         monthly: tier.monthlyPrice,
         annual: tier.annualPrice,
         anchorMonthly: tier.anchorMonthlyPrice,
-      };
-      // `perClient` is vestigial after Web-Fire #514 — the retired
-      // "$59.99/mo + $4.99/client" CPA SKU is gone and the field is no
-      // longer populated. Kept optional in PlanPrice for back-compat.
-      return price;
-    });
+      });
+    }
 
     return {
       ...baked,
