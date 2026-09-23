@@ -259,9 +259,9 @@ function sendJson(res: Response, body: unknown): void {
 }
 
 app.get('/', (_req, res) => sendText(res, generateLandingHtml(), 'text/html; charset=utf-8'));
-app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(), 'text/plain; charset=utf-8'));
+app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(CATALOG_FEEDS), 'text/plain; charset=utf-8'));
 app.get('/robots.txt', (_req, res) => sendText(res, generateRobotsTxt(), 'text/plain; charset=utf-8'));
-app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(), 'application/xml; charset=utf-8'));
+app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(CATALOG_FEEDS), 'application/xml; charset=utf-8'));
 app.get('/feed.xml', (_req, res) => sendText(res, generateRssFeed(), 'application/rss+xml; charset=utf-8'));
 app.get('/openapi.json', (_req, res) => sendJson(res, generateOpenApi()));
 app.get('/catalog.json', (_req, res) => sendJson(res, generateCatalogJson()));

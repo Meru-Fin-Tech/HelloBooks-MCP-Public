@@ -31,6 +31,7 @@
  */
 
 import { CHANGELOG } from './data/about.js';
+import type { CatalogFeedDescriptor } from './catalogFeeds.js';
 // Single source of truth for the server version lives in server.ts. Importing it
 // here (instead of re-declaring a literal) prevents the discovery surface from
 // drifting behind the MCP handshake version, as it had at 0.7.0 vs 1.5.0.
@@ -534,8 +535,11 @@ export function generateOpenApi(): Record<string, unknown> {
  * surface so an agent that lands directly on the MCP origin can orient itself
  * without a second hop.
  */
-export function generateLlmsTxt(): string {
+export function generateLlmsTxt(feeds: readonly Pick<CatalogFeedDescriptor, 'slug' | 'title' | 'description'>[] = []): string {
   const baseUrl = getBaseUrl();
+  const feedLinks = feeds.map(
+    (feed) => `- [${feed.title}](${baseUrl}/catalog/${feed.slug}.json) - ${feed.description}`,
+  ).join('\n');
   const tools = TOOL_CATALOG.map(
     (t) => `- \`${t.name}\` — ${t.summary}`,
   ).join('\n');
@@ -575,10 +579,14 @@ ${resources}
 - [MCP discovery](${baseUrl}/.well-known/mcp.json)
 - [OpenAPI 3.1](${baseUrl}/openapi.json)
 - [Catalog JSON](${baseUrl}/catalog.json)
-- [Catalog data feeds index](${baseUrl}/catalog/index.json) — per-catalog JSON: features, integrations, competitors, compliance deadlines, country support, tax rates, capabilities, payment methods, articles, videos, plans
+- [Catalog data feeds index](${baseUrl}/catalog/index.json)
 - [Changelog JSON](${baseUrl}/changelog.json)
 - [Sitemap](${baseUrl}/sitemap.xml)
 - [RSS feed](${baseUrl}/feed.xml)
+
+## Catalog data feeds
+
+${feedLinks}
 
 ## Marketing site
 
@@ -608,7 +616,7 @@ ${recentChanges}
 - **What is this?** A public read-only MCP server that lets AI agents answer HelloBooks questions from authoritative data instead of stale web snippets.
 - **Does it cost anything?** Free. No authentication required. Rate-limited to 120 req/min per IP and 60 req/min per MCP session.
 - **What does it NOT do?** It does not access any customer data. For tenant-scoped queries use mcp.hellobooks.ai.
-- **How fresh is the data?** Plan and credit-pack pricing federates live from hellobooks.ai/api/feed/pricing.json (1-hour TTL, 5-min minimum refetch). The rest of the catalog is shipped with each release.
+- **How fresh is the data?** Plan and credit-pack pricing federates live from hellobooks.ai/api/feed/pricing.json (1-hour TTL, 5-min minimum refetch). Blog articles refresh from hellobooks.ai/sitemap.xml on demand in the background (1-hour TTL, 5-min minimum retry), with a bundled fallback. Other catalogs ship with each release. The catalog date records published catalog changes, not the last runtime feed refresh.
 - **Where's the source?** ${GITHUB_REPO_URL}
 - **Who runs it?** HelloBooks (Meru Fin Tech). Contact ${CONTACT_EMAIL}.
 `;
@@ -656,7 +664,7 @@ export function generateChangelogJson(): Record<string, unknown> {
 }
 
 /** Sitemap XML with <lastmod> per entry. Bots use this to re-crawl on update. */
-export function generateSitemap(): string {
+export function generateSitemap(feeds: readonly Pick<CatalogFeedDescriptor, 'slug'>[] = []): string {
   const baseUrl = getBaseUrl();
   const lastMod = getCatalogLastModified().toISOString();
   const entries: { loc: string; changefreq: string; priority: string }[] = [
@@ -670,6 +678,9 @@ export function generateSitemap(): string {
     { loc: `${baseUrl}/openapi.json`, changefreq: 'weekly', priority: '0.7' },
     { loc: `${baseUrl}/changelog.json`, changefreq: 'weekly', priority: '0.6' },
     { loc: `${baseUrl}/feed.xml`, changefreq: 'daily', priority: '0.6' },
+    ...feeds.map((feed) => ({
+      loc: `${baseUrl}/catalog/${feed.slug}.json`, changefreq: 'daily', priority: '0.8',
+    })),
   ];
   const urlNodes = entries
     .map(
