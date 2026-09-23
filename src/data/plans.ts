@@ -11,7 +11,9 @@
 
 export type CountryCode = 'IN' | 'US' | 'CA' | 'GB' | 'AU' | 'AE' | 'SG' | 'NZ';
 export type CurrencyCode = 'INR' | 'USD' | 'CAD' | 'GBP' | 'AUD' | 'AED' | 'SGD' | 'NZD';
-export type PlanType = 'free' | 'pro' | 'business' | 'cpa' | 'warehouse-addon' | 'manufacturing-addon';
+export type PlanType =
+  | 'free' | 'starter' | 'pro' | 'business' | 'scale' | 'cpa'
+  | 'warehouse-addon' | 'manufacturing-addon';
 
 export interface PlanPrice {
   country: CountryCode;
@@ -48,6 +50,34 @@ const FREE_FEATURES = [
   'P&L, Balance Sheet, Cash Flow',
   'Full mobile app (iOS & Android)',
   '"Powered by HelloBooks" badge on invoices',
+];
+
+// Starter — the rung between Free and Pro (Web-Fire five-rung ladder, founder
+// decision 2026-09-02). Limits are the live ledger's (Users 5, BankConnections
+// 3, Entities 1); it does NOT carry multi-currency, multi-entity or API access,
+// all of which stay Pro/Business.
+const STARTER_FEATURES = [
+  'Everything in Free, plus:',
+  'AI auto-categorization (95%+ accuracy)',
+  'Up to 5 users',
+  '3 bank connections',
+  'Unlimited invoices, bills & quotes',
+  'AP/AR aging reports',
+  'P&L, Balance Sheet, Cash Flow',
+  'Export to Excel',
+  'Full mobile app (iOS & Android)',
+];
+
+// Scale — the top rung, for groups running manufacturing / warehouse depth.
+const SCALE_FEATURES = [
+  'Everything in Business, plus:',
+  'Manufacturing: BOM, work orders, MRP & job work',
+  'Warehouse depth: bins, waves, cross-dock & cycle counts',
+  'Lot, batch & serial traceability with FEFO picking',
+  'Multi-country statutory filing & consolidation',
+  'Higher API rate limits',
+  'Custom development — see below',
+  'Named implementation lead',
 ];
 
 const PRO_FEATURES = [
@@ -120,8 +150,17 @@ interface RegionConfig {
   country: CountryCode;
   currency: CurrencyCode;
   symbol: string;
+  /**
+   * Starter and Scale are US-only on the marketing site today. `undefined`
+   * means "not sold in this region" — Web-Fire's buildPlans() expresses the
+   * same thing as `available: Boolean(cfg.starter)`. Do NOT invent a local
+   * price to fill the gap; that is a pricing decision, not a data fix.
+   */
+  starter?: { monthly: number; annual: number };
   pro: { monthly: number; annual: number; anchor: number };
   business: { monthly: number; annual: number; anchor: number };
+  /** US-only today — see `starter` above. */
+  scale?: { monthly: number; annual: number };
   /**
    * Partner Program is free to join globally; the cpa fields are zeroed but
    * retained so the federation contract (feed publishes a `cpa` tier) stays
@@ -151,8 +190,10 @@ interface RegionConfig {
 // Credit packs are NOT part of the v4 reprice and are unchanged.
 const REGIONS: RegionConfig[] = [
   { country: 'US', currency: 'USD', symbol: '$',
-    pro:      { monthly:    20, annual:   200,  anchor: 0 },
-    business: { monthly:    80, annual:   800,  anchor: 0 },
+    starter:  { monthly: 14.99, annual:   149 },
+    pro:      { monthly: 39.99, annual:   399,  anchor: 0 },
+    business: { monthly: 79.99, annual:   799,  anchor: 0 },
+    scale:    { monthly:   199, annual:  1990 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 4.99, power: 12.99, mega: 29.99, ultra: 69.99 } },
   { country: 'IN', currency: 'INR', symbol: '₹',
@@ -161,13 +202,13 @@ const REGIONS: RegionConfig[] = [
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 249, power: 699, mega: 1999, ultra: 4999 } },
   { country: 'CA', currency: 'CAD', symbol: 'C$',
-    pro:      { monthly:    26, annual:   260,  anchor: 0 },
-    business: { monthly:   104, annual:  1040,  anchor: 0 },
+    pro:      { monthly: 22.99, annual:   229,  anchor: 0 },
+    business: { monthly: 91.99, annual:   919,  anchor: 0 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
   { country: 'GB', currency: 'GBP', symbol: '£',
-    pro:      { monthly:    16, annual:   160,  anchor: 0 },
-    business: { monthly:    64, annual:   640,  anchor: 0 },
+    pro:      { monthly: 14.99, annual:   149,  anchor: 0 },
+    business: { monthly: 59.99, annual:   599,  anchor: 0 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 3.99, power: 10.49, mega: 23.99, ultra: 55.99 } },
   { country: 'AU', currency: 'AUD', symbol: 'A$',
@@ -176,8 +217,8 @@ const REGIONS: RegionConfig[] = [
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 7.49, power: 19.49, mega: 44.99, ultra: 104.99 } },
   { country: 'AE', currency: 'AED', symbol: 'AED ',
-    pro:      { monthly:    74, annual:   740,  anchor: 0 },
-    business: { monthly:   294, annual:  2940,  anchor: 0 },
+    pro:      { monthly:    65, annual:   650,  anchor: 0 },
+    business: { monthly:   260, annual:  2600,  anchor: 0 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 18, power: 48, mega: 110, ultra: 257 } },
   { country: 'SG', currency: 'SGD', symbol: 'S$',
@@ -192,20 +233,31 @@ const REGIONS: RegionConfig[] = [
     packs: { boost: 7.99, power: 20.99, mega: 47.99, ultra: 111.99 } },
 ];
 
-type RegionalPaidPlan = 'pro' | 'business' | 'cpa';
+type RegionalPaidPlan = 'starter' | 'pro' | 'business' | 'scale' | 'cpa';
 
+/**
+ * Prices for one regional tier, across the regions that actually sell it.
+ *
+ * Regions with no block for `plan` (Starter and Scale outside the US) are
+ * OMITTED rather than priced, so an agent asking for Starter in India gets an
+ * empty price list — the honest answer — instead of a US dollar figure
+ * labelled 'IN'.
+ */
 function pricesFor(plan: RegionalPaidPlan): PlanPrice[] {
-  return REGIONS.map((r) => {
+  const out: PlanPrice[] = [];
+  for (const r of REGIONS) {
     const tier = r[plan];
-    return {
+    if (!tier) continue; // tier not sold in this region
+    out.push({
       country: r.country,
       currency: r.currency,
       symbol: r.symbol,
       monthly: tier.monthly,
       annual: tier.annual,
       anchorMonthly: 'anchor' in tier ? tier.anchor : 0,
-    };
-  });
+    });
+  }
+  return out;
 }
 
 function freePrices(): PlanPrice[] {
@@ -242,6 +294,16 @@ export const PLANS: Plan[] = [
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
   {
+    plan: 'starter',
+    name: 'Starter',
+    tagline: 'A first paid step — more users and bank feeds',
+    monthlyAiCredits: 7500,
+    features: STARTER_FEATURES,
+    // US-only today: pricesFor() returns a single US entry. See RegionConfig.
+    prices: pricesFor('starter'),
+    publicSignupUrl: 'https://hellobooks.ai/pricing',
+  },
+  {
     plan: 'pro',
     name: 'Pro',
     tagline: 'AI-powered automation for growing businesses',
@@ -257,6 +319,16 @@ export const PLANS: Plan[] = [
     monthlyAiCredits: 50000,
     features: BUSINESS_FEATURES,
     prices: pricesFor('business'),
+    publicSignupUrl: 'https://hellobooks.ai/pricing',
+  },
+  {
+    plan: 'scale',
+    name: 'Scale',
+    tagline: 'For groups that outgrow standard accounting software',
+    monthlyAiCredits: 150000,
+    features: SCALE_FEATURES,
+    // US-only today: pricesFor() returns a single US entry. See RegionConfig.
+    prices: pricesFor('scale'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
   {

@@ -81,6 +81,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-09-23', title: 'Five-rung plan ladder — Starter and Scale added; baked prices resynced to the website', category: 'fix',
+    description: 'list_plans now returns all five rungs. Starter ($14.99/mo, $149/yr, 7,500 credits) and Scale ($199/mo, $1,990/yr, 150,000 credits) were missing entirely since the founder’s 2026-09-02 five-rung decision, because the plan catalog had no entry for them and the live pricing federation can only overlay prices onto tiers that already exist — so no redeploy could surface them. Both are sold in the US only today and return an empty price list for other markets rather than a US figure in the wrong currency. The baked fallback prices were also stale in four regions and are now resynced to Web-Fire pricingConfig.ts on main: US Pro $20 → $39.99 and Business $80 → $79.99; CA Pro C$26 → C$22.99 and Business C$104 → C$91.99; GB Pro £16 → £14.99 and Business £64 → £59.99; AE Pro AED 74 → AED 65 and Business AED 294 → AED 260. India, Australia, Singapore and New Zealand already matched and are unchanged.' },
   { date: '2026-09-09', title: 'Complete sitemap and LLM catalog discovery', category: 'fix',
     description: 'Sitemap and llms.txt now link every registered public catalog feed, including free-tier thresholds, the Partner Program, and practice management. Freshness guidance distinguishes runtime pricing and blog refreshes from release-based catalog updates.' },
   { date: '2026-09-07', title: 'Competitor catalog accuracy corrections', category: 'fix',
