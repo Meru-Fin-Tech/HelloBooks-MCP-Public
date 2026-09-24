@@ -29,8 +29,9 @@
  * constant (`COMPARE_PUBLISHED_AT`).
  */
 import { DISCOVERED_ARTICLES } from './articlesDiscovered.js';
+import type { SupportedCountryCode } from './supportedCountries.js';
 
-export type CountryRelevance = 'IN' | 'AU' | 'US' | 'CA' | 'GB' | 'AE' | 'SG' | 'NZ' | 'global';
+export type CountryRelevance = SupportedCountryCode | 'global';
 
 export interface Article {
   id: string;            // slug — stable, used as primary key
@@ -82,6 +83,26 @@ function blogArticle(
     url: `${SITE_ROOT}/blog/${slug}`,
     publishedAt,
     kind: 'blog',
+  };
+}
+
+function guideArticle(
+  path: string,
+  title: string,
+  excerpt: string,
+  tags: string[],
+  publishedAt: string,
+  countryRelevance: CountryRelevance,
+): Article {
+  return {
+    id: path.replace(/^\//, '').replaceAll('/', '-'),
+    title,
+    excerpt,
+    tags,
+    countryRelevance,
+    url: `${SITE_ROOT}${path}`,
+    publishedAt,
+    kind: 'guide',
   };
 }
 
@@ -214,6 +235,27 @@ export const CURATED_ARTICLES: Article[] = [
     'ZipBooks vs HelloBooks for US service businesses: free tier comparison, invoicing UX, and accounting depth as you grow.',
     ['compare', 'zipbooks', 'us', 'free'],
     'US',
+  ),
+
+  // ---------------------------------------------------------------------------
+  // Country guide pages surfaced for agents when no live country-specific blog
+  // post exists yet. These point only to public, indexable pages.
+  // ---------------------------------------------------------------------------
+  guideArticle(
+    '/mu',
+    'Accounting software for Mauritius businesses',
+    'Mauritius guide for HelloBooks: MUR base ledger, multi-currency accounting, 15% VAT tracking, BRN and VAT registration invoice fields, and planned MRA e-services filing.',
+    ['mauritius', 'mu', 'mur', 'vat', 'mra', 'brn', 'multi currency'],
+    '2026-09-24',
+    'MU',
+  ),
+  guideArticle(
+    '/mu/pricing',
+    'HelloBooks Mauritius pricing',
+    'Mauritius pricing guide: books run in Mauritian rupees while subscriptions use the USD/default pricing ladder for Free, Starter, Pro, Business, Scale, and Partner Program.',
+    ['mauritius', 'mu', 'pricing', 'mur', 'usd', 'plans'],
+    '2026-09-24',
+    'MU',
   ),
 
   // ---------------------------------------------------------------------------

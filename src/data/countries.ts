@@ -6,7 +6,13 @@
  * and /us pricing pages.
  */
 
-import type { CountryCode } from './plans.js';
+import {
+  SUPPORTED_COUNTRIES,
+  countryMarketingUrl,
+  type CountryTier,
+  type SupportedCountryEntry,
+  type SupportedCountryCode,
+} from './supportedCountries.js';
 
 export interface CountryFeature {
   key: string;
@@ -24,15 +30,23 @@ export interface ComplianceFramework {
 }
 
 export interface CountrySupport {
-  country: CountryCode;
+  country: SupportedCountryCode;
   countryName: string;
   defaultCurrency: string;
+  supportTier?: CountryTier;
+  flag?: string;
   features: CountryFeature[];
   compliance: ComplianceFramework[];
   marketingUrl: string;
+  pricingUrl?: string;
+  coverageNote?: string;
 }
 
-export const COUNTRY_SUPPORT: CountrySupport[] = [
+type DetailedCountrySupport = Omit<CountrySupport,
+  'supportTier' | 'flag' | 'pricingUrl' | 'coverageNote'
+> & Partial<Pick<CountrySupport, 'supportTier' | 'flag' | 'pricingUrl' | 'coverageNote'>>;
+
+const DETAILED_COUNTRY_SUPPORT: DetailedCountrySupport[] = [
   {
     country: 'AU',
     countryName: 'Australia',
@@ -201,4 +215,92 @@ export const COUNTRY_SUPPORT: CountrySupport[] = [
         status: 'live' },
     ],
   },
+  {
+    country: 'MU',
+    countryName: 'Mauritius',
+    defaultCurrency: 'MUR',
+    marketingUrl: 'https://hellobooks.ai/mu',
+    features: [
+      { key: 'mauritius-vat-15', label: 'Mauritius VAT computation at 15%',
+        description: 'Track input and output VAT at the Mauritius 15% rate for MRA return preparation.' },
+      { key: 'mur-base-ledger', label: 'MUR base ledger with multi-currency',
+        description: 'Record Mauritian rupee books while handling foreign-currency transactions and exchange-rate conversion.' },
+      { key: 'mauritius-invoice-fields', label: 'Mauritius compliance invoice fields',
+        description: 'Include MRA Business Registration Number (BRN), VAT registration number, and Mauritius VAT Act invoice fields.' },
+      { key: 'mauritius-ai-categorization', label: 'Mauritius AI categorization',
+        description: 'Categorize transactions with Mauritius accounting vocabulary and local rate-card context.' },
+    ],
+    compliance: [
+      { key: 'mra-vat-tracking', label: 'Mauritius VAT tracking', authority: 'Mauritius Revenue Authority',
+        version: '15% VAT', status: 'live' },
+      { key: 'mra-e-services', label: 'MRA e-services VAT return filing', authority: 'Mauritius Revenue Authority',
+        status: 'coming-soon' },
+      { key: 'mauritius-payroll-statutory', label: 'NPF / NSF / PAYE payroll returns', authority: 'Mauritius Revenue Authority / Mauritius statutory payroll',
+        status: 'coming-soon' },
+    ],
+    coverageNote:
+      'Mauritius support covers MUR books, VAT computation, invoice fields, and AI categorization. Direct MRA e-services filing and statutory payroll returns are planned, not advertised as live filing.',
+  },
 ];
+
+const DETAILED_BY_COUNTRY = new Map<SupportedCountryCode, DetailedCountrySupport>(
+  DETAILED_COUNTRY_SUPPORT.map((country) => [country.country, country]),
+);
+
+function pricingUrlFor(country: SupportedCountryEntry): string {
+  const hubPath = 'hubPath' in country ? country.hubPath : undefined;
+  return hubPath ? `https://hellobooks.ai${hubPath}/pricing` : 'https://hellobooks.ai/pricing';
+}
+
+function genericFeatures(country: SupportedCountryEntry): CountryFeature[] {
+  const tierLabel = country.tier === 'full'
+    ? 'tax-intelligence pack'
+    : 'localized vocabulary and rate-card pack';
+  return [
+    {
+      key: `${country.iso.toLowerCase()}-local-currency-books`,
+      label: `${country.currency} books and reports`,
+      description: `Keep the business ledger, reports, invoices, and customer balances in ${country.currency} for ${country.name}.`,
+    },
+    {
+      key: `${country.iso.toLowerCase()}-ai-categorization`,
+      label: `${country.name} AI categorization`,
+      description: `Use the ${country.name} ${tierLabel} for accounting vocabulary, tax terms, and categorization context.`,
+    },
+  ];
+}
+
+function genericCoverageNote(country: SupportedCountryEntry): string {
+  if (country.tier === 'full') {
+    return `${country.name} is listed on the website as a full tax-intelligence country. This MCP row exposes the public country hub and generic support summary; detailed filing frameworks are only listed when separately curated in this catalog.`;
+  }
+  return `${country.name} is listed on the website for localized vocabulary and rate-card support. This does not claim local statutory e-filing is live.`;
+}
+
+function buildCountrySupport(country: SupportedCountryEntry): CountrySupport {
+  const detail = DETAILED_BY_COUNTRY.get(country.iso);
+  if (detail) {
+    return {
+      ...detail,
+      supportTier: country.tier,
+      flag: country.flag,
+      pricingUrl: detail.pricingUrl ?? pricingUrlFor(country),
+      coverageNote: detail.coverageNote ?? genericCoverageNote(country),
+    };
+  }
+
+  return {
+    country: country.iso,
+    countryName: country.name,
+    defaultCurrency: country.currency,
+    supportTier: country.tier,
+    flag: country.flag,
+    features: genericFeatures(country),
+    compliance: [],
+    marketingUrl: countryMarketingUrl(country),
+    pricingUrl: pricingUrlFor(country),
+    coverageNote: genericCoverageNote(country),
+  };
+}
+
+export const COUNTRY_SUPPORT: CountrySupport[] = SUPPORTED_COUNTRIES.map(buildCountrySupport);

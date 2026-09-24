@@ -21,6 +21,7 @@ import { practiceManagementInfo } from '../src/tools/practiceManagementInfo.js';
 import { MUNIMJI_CAPABILITIES } from '../src/data/capabilities.js';
 import { FEATURES } from '../src/data/features.js';
 import { ARTICLES } from '../src/data/articles.js';
+import { SUPPORTED_COUNTRIES } from '../src/data/supportedCountries.js';
 import {
   feedToPlans,
   feedToCreditPacks,
@@ -156,6 +157,22 @@ test('list_plans country filter narrows to that country only', () => {
   }
 });
 
+test('list_plans country=MU returns USD/default fallback with Mauritius metadata', () => {
+  const r = listPlans({ country: 'MU', plan: 'pro' });
+  assert.equal(r.plans.length, 1);
+  assert.equal(r.requestedCountry?.iso, 'MU');
+  assert.equal(r.requestedCountry?.currency, 'MUR');
+  assert.equal(r.pricingFallback?.pricingCountry, 'US');
+  assert.equal(r.pricingFallback?.billingCurrency, 'USD');
+  assert.equal(r.plans[0].prices.length, 1);
+  const price = r.plans[0].prices[0];
+  assert.equal(price.country, 'MU');
+  assert.equal(price.pricingCountry, 'US');
+  assert.equal(price.currency, 'USD');
+  assert.equal(price.monthly, 39.99);
+  assert.match(price.billingNote ?? '', /MUR/);
+});
+
 test('list_plans surfaces warehouse + manufacturing add-on pricing in USD', () => {
   const wh = listPlans({ plan: 'warehouse-addon' });
   assert.equal(wh.plans.length, 1);
@@ -210,6 +227,20 @@ test('list_credit_packs country filter narrows prices to that market', () => {
   // US Boost is the canonical $4.99 list price
   const usBoost = listCreditPacks({ country: 'US', id: 'boost' });
   assert.equal(usBoost.creditPacks[0].prices[0].price, 4.99);
+});
+
+test('list_credit_packs country=MU returns USD/default fallback with Mauritius metadata', () => {
+  const r = listCreditPacks({ country: 'MU', id: 'boost' });
+  assert.equal(r.creditPacks.length, 1);
+  assert.equal(r.requestedCountry?.iso, 'MU');
+  assert.equal(r.pricingFallback?.pricingCountry, 'US');
+  assert.equal(r.creditPacks[0].prices.length, 1);
+  const price = r.creditPacks[0].prices[0];
+  assert.equal(price.country, 'MU');
+  assert.equal(price.pricingCountry, 'US');
+  assert.equal(price.currency, 'USD');
+  assert.equal(price.price, 4.99);
+  assert.match(price.billingNote ?? '', /MUR/);
 });
 
 // --- pricing federation ------------------------------------------------------
@@ -426,7 +457,10 @@ test('list_integrations status filter works', () => {
 
 test('country_support returns full matrix when unfiltered', () => {
   const r = countrySupport({});
-  assert.equal(r.count, 8);
+  assert.equal(r.count, SUPPORTED_COUNTRIES.length);
+  assert.ok(r.count > 180);
+  assert.ok(r.countries.some((country) => country.country === 'MU'));
+  assert.ok(r.countries.some((country) => country.country === 'CI'));
 });
 
 test('country_support single country returns only that one', () => {
@@ -436,6 +470,25 @@ test('country_support single country returns only that one', () => {
   // GST e-invoicing must be a feature
   const keys = new Set(r.countries[0].features.map((f) => f.key));
   assert.ok(keys.has('gst-einvoice'));
+});
+
+test('country_support Mauritius returns local profile without live filing overclaim', () => {
+  const r = countrySupport({ country: 'MU' });
+  assert.equal(r.count, 1);
+  const mu = r.countries[0];
+  assert.equal(mu.country, 'MU');
+  assert.equal(mu.countryName, 'Mauritius');
+  assert.equal(mu.defaultCurrency, 'MUR');
+  assert.equal(mu.marketingUrl, 'https://hellobooks.ai/mu');
+  assert.equal(mu.pricingUrl, 'https://hellobooks.ai/mu/pricing');
+  assert.match(mu.coverageNote ?? '', /planned, not advertised as live filing/i);
+  const featureText = mu.features.map((f) => `${f.label} ${f.description}`).join(' ');
+  assert.match(featureText, /15%/);
+  assert.match(featureText, /BRN/);
+  assert.ok(
+    mu.compliance.some((framework) => framework.key === 'mra-e-services' && framework.status === 'coming-soon'),
+    'MRA e-services must be coming-soon, not live',
+  );
 });
 
 test('compliance_capabilities returns frameworks for AU', () => {
@@ -958,6 +1011,18 @@ test('list_articles country=US returns only US + global', () => {
   }
 });
 
+test('list_articles country=MU returns Mauritius guides + global articles', () => {
+  const r = listArticles({ country: 'MU', query: 'Mauritius', limit: 10 });
+  assert.ok(r.totalMatches >= 2);
+  const ids = new Set(r.articles.map((a) => a.id));
+  assert.ok(ids.has('mu'));
+  assert.ok(ids.has('mu-pricing'));
+  for (const a of r.articles) {
+    const c = a.countryRelevance ?? 'global';
+    assert.ok(c === 'MU' || c === 'global', `${a.id}: country ${c} should not match MU filter`);
+  }
+});
+
 test('list_articles country=global returns only global articles', () => {
   const r = listArticles({ country: 'global', limit: 100 });
   for (const a of r.articles) {
@@ -1034,6 +1099,19 @@ test('feature_search surfaces articles in results', () => {
   const r = featureSearch({ query: 'quickbooks alternative' });
   assert.ok(r.totalMatches > 0, 'expected article hits for QuickBooks alternative query');
   assert.ok(r.results.some((h) => h.source === 'article'));
+});
+
+test('feature_search surfaces Mauritius country support and guide entries', () => {
+  const r = featureSearch({ query: 'Mauritius VAT pricing', limit: 20 });
+  assert.ok(r.totalMatches > 0);
+  assert.ok(
+    r.results.some((h) => h.source === 'country-feature' && h.id.startsWith('MU:')),
+    'expected a Mauritius country-feature hit',
+  );
+  assert.ok(
+    r.results.some((h) => h.source === 'article' && h.id === 'mu-pricing'),
+    'expected the Mauritius pricing guide article hit',
+  );
 });
 
 // ---------------------------------------------------------------------------

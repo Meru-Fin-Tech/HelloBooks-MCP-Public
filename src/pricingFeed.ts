@@ -24,13 +24,14 @@
 import { z } from 'zod';
 import { PLANS as BAKED_PLANS, CREDIT_PACKS as BAKED_PACKS } from './data/plans.js';
 import type { Plan, PlanPrice, CreditPack, PackPrice, CountryCode, CurrencyCode } from './data/plans.js';
+import { PRICED_COUNTRY_CODES } from './data/supportedCountries.js';
 
 const DEFAULT_FEED_URL = 'https://hellobooks.ai/api/feed/pricing.json';
 const FETCH_TIMEOUT_MS = 4000;
 const TTL_MS = 60 * 60 * 1000;            // serve a successful fetch for 1 hour
 const MIN_REFETCH_GAP_MS = 5 * 60 * 1000; // attempt a refresh at most every 5 min
 
-const COUNTRIES: CountryCode[] = ['US', 'IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ'];
+const COUNTRIES: CountryCode[] = [...PRICED_COUNTRY_CODES];
 
 // The feed carries an ISO currency code; the MCP catalog also carries a symbol.
 const CURRENCY_SYMBOL: Record<string, string> = {
