@@ -64,3 +64,5 @@ repair first to populate the agents directory from current firms.
 ## Browser verification
 
 Start the built MCP server and the repaired website feed (ports 4188 and 4189 by default), then run `node scripts/verify-directory.mjs` with Playwright and its three browsers installed. Set `MCP_ORIGIN`, `ACCOUNTANTS_FEED_URL`, `FEED_HEAD` and `EVIDENCE_DIR` for another environment. `PLAYWRIGHT_MODULE` can point to an existing installed Playwright module. The check uses the real feed and MCP transport and writes screenshots plus `browser.json`. It fails when any engine or journey fails.
+
+The feed must explicitly declare `complete: true`, `dataSource: live` and an exact `firmCount`. Older feeds without that metadata return an unavailable result; deploy website PR956 first. A missing slug in stale data returns HTTP503 and MCP `found: null`, since current absence cannot be established. Public provenance always identifies the public website feed, regardless of private fetch configuration.

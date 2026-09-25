@@ -28,7 +28,7 @@ export type Accountant = z.infer<typeof accountantSchema>;
 const feedSchema = z.object({
   firms: z.array(accountantSchema), updatedAt: text,
   taxonomies: z.record(z.unknown()).optional(),
-  _meta: z.object({ complete: z.boolean().optional(), firmCount: z.number().optional() }).optional(),
+  _meta: z.object({ complete: z.literal(true), dataSource: z.literal('live'), firmCount: z.number().int().nonnegative() }),
 });
 export interface DirectorySnapshot {
   firms: Accountant[];
@@ -62,20 +62,19 @@ export function createDirectoryLoader(options: {
         });
         if (!response.ok) throw new Error('directory-source-unavailable');
         const data = feedSchema.parse(await response.json());
-        if (data._meta?.complete === false ||
-            (data._meta?.firmCount !== undefined && data._meta.firmCount !== data.firms.length) ||
+        if (data._meta.firmCount !== data.firms.length ||
             new Set(data.firms.map(f => f.slug)).size !== data.firms.length) {
           throw new Error('directory-source-incomplete');
         }
         snapshot = {
-          firms: data.firms, taxonomies: data.taxonomies ?? {}, source: url,
+          firms: data.firms, taxonomies: data.taxonomies ?? {}, source: ACCOUNTANT_SOURCE,
           status: 'live', fetchedAt: new Date(now()).toISOString(), updatedAt: data.updatedAt ?? null,
         };
         expires = now() + ttl;
       } catch {
         snapshot = snapshot?.fetchedAt
           ? { ...snapshot, status: 'stale', error: 'The directory source is temporarily unavailable. These are the last fetched profiles.' }
-          : { firms: [], taxonomies: {}, source: url, status: 'unavailable', fetchedAt: null, updatedAt: null,
+          : { firms: [], taxonomies: {}, source: ACCOUNTANT_SOURCE, status: 'unavailable', fetchedAt: null, updatedAt: null,
               error: 'The directory source is temporarily unavailable. Try again shortly or open the source directory.' };
         expires = now() + 30_000;
       }
@@ -125,9 +124,12 @@ export function queryAccountants(snapshot: DirectorySnapshot, args: AccountantQu
 export async function listAccountants(args: AccountantQuery = {}) {
   return queryAccountants(await loadDirectory(), args);
 }
-export async function getAccountant(args: { slug: string }) {
-  const snapshot = await loadDirectory();
-  const firm = snapshot.firms.find(f => f.slug === args.slug) ?? null;
-  return { firm, found: Boolean(firm), status: snapshot.status, source: snapshot.source,
+export function queryAccountant(snapshot: DirectorySnapshot, slug: string) {
+  const firm = snapshot.firms.find(f => f.slug === slug) ?? null;
+  return { firm, found: firm ? true : snapshot.status === 'live' ? false : null, status: snapshot.status, source: snapshot.source,
     fetchedAt: snapshot.fetchedAt, ...(snapshot.error ? { error: snapshot.error } : {}) };
+}
+
+export async function getAccountant(args: { slug: string }) {
+  return queryAccountant(await loadDirectory(), args.slug);
 }

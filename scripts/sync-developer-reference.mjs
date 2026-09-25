@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url';
 const args = process.argv.slice(2);
 const arg = name => args[args.indexOf(name) + 1];
 for (const name of ['--spec', '--portal-catalog', '--source-commit']) {
-  if (!args.includes(name)) throw new Error(`Required: ${name}`);
+  if (!args.includes(name) || !arg(name) || arg(name).startsWith('--')) throw new Error(`Required value: ${name}`);
 }
+if (!/^[a-f0-9]{40}$/i.test(arg('--source-commit'))) throw new Error('Source commit must be a full Git SHA');
 const raw = fs.readFileSync(arg('--spec'), 'utf8');
 const spec = JSON.parse(raw);
 const portal = JSON.parse(fs.readFileSync(arg('--portal-catalog'), 'utf8'));

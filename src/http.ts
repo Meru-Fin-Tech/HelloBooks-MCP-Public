@@ -324,10 +324,10 @@ for (const route of ['/api/accountants/:slug.json', '/accountants/:slug']) {
     const slug = z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(200).parse(req.params.slug);
     const result = await getAccountant({ slug });
     res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
-    res.status(result.status === 'unavailable' ? 503 : result.found ? 200 : 404);
+    res.status(result.found ? 200 : result.status === 'live' ? 404 : 503);
     if (route.startsWith('/api/')) res.json(result);
     else res.type('html').send(result.firm ? renderAccountant(result.firm, result.error)
-      : renderPage('Accountant profile', `<h1>${result.status === 'unavailable' ? 'Directory temporarily unavailable' : 'Profile not found'}</h1><p><a href="/accountants">Browse the directory</a></p>`));
+      : renderPage('Accountant profile', `<h1>${result.status !== 'live' ? 'Directory temporarily unavailable' : 'Profile not found'}</h1><p><a href="/accountants">Browse the directory</a></p>`));
   }));
 }
 
