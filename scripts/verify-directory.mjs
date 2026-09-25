@@ -10,6 +10,7 @@ const report={at:new Date().toISOString(),head:execFileSync('git',['rev-parse','
 const sourceResponse=await fetch(process.env.ACCOUNTANTS_FEED_URL || 'http://127.0.0.1:4189/api/feed/accountants.json');
 assert.equal(sourceResponse.status,200);const source=await sourceResponse.json();assert.equal(source._meta.complete,true);assert.equal(source._meta.dataSource,'live');
 report.source={count:source.firms.length,meta:source._meta};
+assert.ok(source.firms.length > 0, 'Profile/search journeys need at least one published test firm. Empty-source behavior is covered by unit tests; this journey cannot be verified without fixture data.');
 const list=await (await fetch(`${origin}/api/accountants.json?pageSize=2`)).json();assert.equal(list.total,source.firms.length);assert.equal(list.status,'live');
 const seen=[];let page=1;
 while(page!==null){const result=await(await fetch(`${origin}/api/accountants.json?pageSize=2&page=${page}`)).json();seen.push(...result.firms);page=result.nextPage;}
@@ -31,7 +32,7 @@ for(const engine of [chromium,firefox,webkit]){
  await page.goto(origin+'/apis');assert.equal(await page.getByLabel('API type').locator('option').count(),4);await page.getByLabel('Search APIs',{exact:true}).fill('Create invoice');await page.getByLabel('API type').selectOption('accounting');await page.getByRole('button',{name:'Search APIs'}).click();
  const invoice=page.locator('article').filter({has:page.getByRole('heading',{name:'Create invoice record(s)',exact:true})});assert.equal(await invoice.count(),1);await invoice.getByRole('link',{name:'Parameters & examples'}).click();assert.ok(await page.getByRole('heading',{name:'Request example'}).isVisible());assert.ok((await page.locator('body').innerText()).includes('sales:write'));const docs=page.getByRole('link',{name:'Documentation',exact:true});assert.equal(await docs.getAttribute('href'),'https://developer.hellobooks.ai/docs/reference-sales?resource=invoice&op=2');
  for(const width of [390,320]){await page.setViewportSize({width,height:960});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth));}
- await page.goto(origin+'/accountants?pageSize=2');await page.getByRole('navigation',{name:'Directory pages'}).getByRole('link',{name:'Next'}).click();assert.ok(page.url().includes('page=2'));assert.equal(await page.locator('.grid article').count(),2);
+ if (source.firms.length > 2) { await page.goto(origin+'/accountants?pageSize=2');await page.getByRole('navigation',{name:'Directory pages'}).getByRole('link',{name:'Next'}).click();assert.ok(page.url().includes('page=2'));assert.equal(await page.locator('.grid article').count(),Math.min(2,source.firms.length-2)); }
  report.browsers[engine.name()]='pass';await context.close();
  }catch(e){report.browsers[engine.name()]='fail';report.checks.push({browser:engine.name(),error:e.stack});}
  finally{await browser?.close();await fs.writeFile(`${out}/browser.json`,JSON.stringify(report,null,2));}

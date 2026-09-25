@@ -20,12 +20,12 @@ for (const domain of portal.domains) {
     resource.operations.forEach((operation, index) => {
       const official = spec.paths[operation.path]?.[operation.method.toLowerCase()];
       if (!official || official.summary !== operation.summary) throw new Error(`Portal/spec mismatch: ${operation.method} ${operation.path}`);
-      docs[`${operation.method} ${operation.path}`] = `https://developer.hellobooks.ai/docs/reference-${encodeURIComponent(domain.key)}?resource=${encodeURIComponent(resource.seg)}&op=${index}`;
+      docs[`${operation.method.toUpperCase()} ${operation.path}`] = `https://developer.hellobooks.ai/docs/reference-${encodeURIComponent(domain.key)}?resource=${encodeURIComponent(resource.seg)}&op=${index}`;
     });
   }
 }
 // Resolve only declared server defaults; keep the published contracts verbatim.
-spec.servers = spec.servers.map(server => ({ ...server,
+spec.servers = (spec.servers ?? []).map(server => ({ ...server,
   url: server.url.replace(/\{([^}]+)\}/g, (match, name) => server.variables?.[name]?.default ?? match),
 }));
 const operations = Object.values(spec.paths).reduce((n, item) => n + Object.keys(item).filter(key => methods.has(key)).length, 0);

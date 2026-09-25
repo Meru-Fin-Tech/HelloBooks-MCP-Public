@@ -74,6 +74,15 @@ async function mcpEntries(): Promise<ApiEntry[]> {
   return toolsPromise;
 }
 
+export function mergeParameters(pathParameters: unknown[] = [], operationParameters: unknown[] = []): unknown[] {
+  const parameters = new Map<string, unknown>();
+  for (const value of [...pathParameters, ...operationParameters]) {
+    const parameter = value as Record<string, unknown>;
+    parameters.set(String(parameter.$ref ?? `${parameter.in}:${parameter.name}`), value);
+  }
+  return [...parameters.values()];
+}
+
 function accountingEntries(): ApiEntry[] {
   const spec = reference as unknown as { paths: Record<string, Record<string, unknown>>; security?: unknown };
   const entries: ApiEntry[] = [];
@@ -91,7 +100,7 @@ function accountingEntries(): ApiEntry[] {
         id, kind: 'accounting', name: String(op.summary ?? op.operationId ?? path),
         description: String(op.description ?? op.summary ?? ''), method: method.toUpperCase(),
         path: `/public/v1${path}`, documentation, authentication: 'OAuth 2.0; company authorization and operation scopes required',
-        details: { ...op, parameters: [...(item.parameters as unknown[] ?? []), ...(op.parameters as unknown[] ?? [])],
+        details: { ...op, parameters: mergeParameters(item.parameters as unknown[], op.parameters as unknown[]),
           security: op.security ?? spec.security, referenceUrl: `${getBaseUrl()}/api/developer-reference.json`,
           scopeRule: 'OpenAPI security array entries are alternatives (OR); scopes inside one security requirement are cumulative (AND).',
           environment: 'Use the developer portal for sandbox setup and production access. API metadata does not prove a deployed operation is available.' },
@@ -110,13 +119,13 @@ function referencedComponents(details: Json): Json {
       if (key === '$ref' && typeof child === 'string' && child.startsWith('#/components/') && !seen.has(child)) {
         seen.add(child);
         const [, , category, name] = child.split('/').map(part => part.replaceAll('~1', '/').replaceAll('~0', '~'));
-        const target = (reference.components as unknown as Record<string, Record<string, unknown>>)[category]?.[name];
+        const target = ((reference.components ?? {}) as unknown as Record<string, Record<string, unknown>>)[category]?.[name];
         if (target) { (components[category] ??= {})[name] = target; visit(target); }
       } else visit(child);
     }
   };
   visit(details);
-  components.securitySchemes = reference.components.securitySchemes;
+  if (reference.components?.securitySchemes) components.securitySchemes = reference.components.securitySchemes;
   return components;
 }
 
@@ -138,9 +147,9 @@ export async function getApiEntries(): Promise<ApiEntry[]> {
 export async function listApiCatalog(args: ApiQuery = {}) {
   const all = await getApiEntries();
   const terms = (args.query ?? '').toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const entries = all.filter(entry => (!args.kind || args.kind === entry.kind) && (!args.id || args.id === entry.id) &&
+  const entries = all.filter(entry => args.id ? args.id === entry.id : (!args.kind || args.kind === entry.kind) && (!args.id || args.id === entry.id) &&
     terms.every(term => `${entry.name} ${entry.path} ${entry.description} ${JSON.stringify(entry.details.security ?? '')}`.toLowerCase().includes(term)));
-  const page = args.page ?? 1, pageSize = args.pageSize ?? 50;
+  const page = args.id ? 1 : args.page ?? 1, pageSize = args.id ? 1 : args.pageSize ?? 50;
   const totalPages = Math.ceil(entries.length / pageSize);
   return {
     entries: entries.slice((page - 1) * pageSize, page * pageSize).map(entry => args.id

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getApiEntries, listApiCatalog, developerReference } from '../src/apiCatalog.js';
+import { getApiEntries, listApiCatalog, developerReference, mergeParameters } from '../src/apiCatalog.js';
 import { TOOL_CATALOG, generateOpenApi } from '../src/discovery.js';
 import { CATALOG_FEEDS } from '../src/catalogFeeds.js';
 process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
@@ -40,4 +40,16 @@ test('OpenAPI contains new directory and API catalog routes plus every existing 
   const paths = generateOpenApi(CATALOG_FEEDS).paths as Record<string, unknown>;
   for (const path of ['/api/accountants.json', '/api/accountants/{slug}.json', '/api/catalog.json', '/api/developer-reference.json', '/catalog/index.json']) assert.ok(paths[path]);
   for (const feed of CATALOG_FEEDS) assert.ok(paths[`/catalog/${feed.slug}.json`]);
+});
+
+test('direct ID lookup returns its contract regardless of list filters or page', async () => {
+  const entry = (await getApiEntries())[0];
+  const result = await listApiCatalog({ id: entry.id, page: 2, kind: 'accounting', query: 'unrelated' });
+  assert.equal(result.entries[0].id, entry.id); assert.equal(result.page, 1); assert.equal(result.total, 1);
+});
+test('operation parameters override matching path parameters', () => {
+  const inherited = { in: 'query', name: 'pageSize', schema: { type: 'integer', maximum: 100 } };
+  const override = { in: 'query', name: 'pageSize', schema: { type: 'integer', maximum: 50 } };
+  const path = { in: 'path', name: 'pageSize', required: true };
+  assert.deepEqual(mergeParameters([inherited,path], [override]), [override,path]);
 });
