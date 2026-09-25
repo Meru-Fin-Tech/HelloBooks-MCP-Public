@@ -26,9 +26,9 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 
 | Tool | Description |
 | --- | --- |
-| `list_plans` | All HelloBooks plans (Free, Pro, Business, CPA) + Warehouse / Manufacturing add-ons. Optional `country` and `plan` filters. |
+| `list_plans` | All HelloBooks plans (Free, Starter, Pro, Business, Scale, Partner Program) + Warehouse / Manufacturing add-ons. Optional `country` and `plan` filters; non-priced supported countries return USD/default fallback pricing with metadata. |
 | `list_integrations` | Banks, payments, payroll, time tracking, shipping, tax-compliance, accounting sync, ecommerce, CRM, storage (Drive/OneDrive), freelance (Upwork). Optional `category`, `country`, `status` filters. |
-| `country_support` | Per-country feature availability (BAS, STP, GST e-invoice, MTD, 1099, etc.). |
+| `country_support` | Country support matrix for all 187 public country hubs, with detailed compliance rows where separately curated. |
 | `compliance_capabilities` | For a given country, the supported compliance frameworks with version + cert info. |
 | `list_competitors` | Competitor positioning (QuickBooks, Xero, FreshBooks, Wave, Zoho Books, Tally) with where HelloBooks wins, where the competitor wins, and pricing notes. Optional `country`, `tier`, and `id` filters. |
 | `compliance_deadlines` | When statutory returns and payroll filings are due, per country. Covers IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super Guarantee), GB (VAT MTD, RTI, Self Assessment), US (1099-NEC/MISC, W-2, Form 941/940), CA (T4, GST/HST). Optional `country`, `frequency`, and `form` filters. Dates rotate annually — every response carries a disclaimer with per-deadline `source` URLs. |
@@ -36,7 +36,7 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `feature_search` | Free-text search across the marketing feature catalog, plan features, integrations, country features, compliance frameworks, competitor positioning, statutory deadlines, local payment methods, and published articles. Queries like `vs Xero`, `QuickBooks alternative`, `when is GSTR-3B due`, `UPI invoice cap`, `do you have a blog on 1099`, or `agentic accounting` surface the matching entry at the top. |
 | `list_features` | Full 96-feature marketing catalog. Filter by `category`, `tier`, `status`, `marketedOnly`, or substring `query`. |
 | `list_feature_categories` | The 13 feature categories on the marketing site with per-category counts by status (live/beta/planned). |
-| `list_articles` | Published content on hellobooks.ai — head-to-head compare pages and curated flagship blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
+| `list_articles` | Published content on hellobooks.ai — head-to-head compare pages, country guides, curated flagship posts, and sitemap-discovered blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
 | `list_tax_rates` | Statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant), UK VAT (20/5/zero/exempt), AU GST (10/GST-free), US state-administered summary, CA GST + HST (ON, Atlantic), SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/…), or `scheme` (standard/reduced/zero/exempt/composition/cess). Every entry carries an effective-from date and a `source` URL — confirm before quoting. |
 | `lookup_tax_rate` | Pick a single statutory rate by exact `id` (e.g. `IN-standard-18`) or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports"). Returns the matched rate, score, and source URL. |
 

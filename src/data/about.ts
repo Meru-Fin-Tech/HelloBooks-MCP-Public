@@ -5,7 +5,7 @@
 
 export const ABOUT_MARKDOWN = `# HelloBooks
 
-HelloBooks is an AI-native, agentic accounting platform that automates bookkeeping for small businesses, accountants, and CPA firms across 8 countries (AU, IN, UK, US, CA, AE, SG, NZ).
+HelloBooks is an AI-native, agentic accounting platform that automates bookkeeping for small businesses, accountants, and CPA firms across 187 public country hubs. The 8 priced/fully curated markets (AU, IN, UK, US, CA, AE, SG, NZ) keep detailed pricing and compliance rows; the wider catalog exposes local currency, vocabulary, rate-card, and country-hub support.
 
 ## What it does
 
@@ -32,7 +32,7 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 Free plan has an annual invoice turnover cap per entity (IN ₹40 lakh / US \$100K / GB £90K / AU A\$75K / CA C\$30K / NZ NZ\$60K / SG S\$1M / AE AED 375K). Above the cap the entity must move to Pro or Business. Bank-feed total and cash receipts do not count toward the cap. Call \`free_tier_eligibility\` to check a specific business.
 
-Prices localized to 8 currencies. See \`list_plans\`, \`list_credit_packs\`, and \`free_tier_eligibility\` tools.
+Prices are localized for 8 priced regions. Other supported country hubs return the USD/default list price with fallback metadata while books and reports use the local country currency. See \`list_plans\`, \`list_credit_packs\`, and \`free_tier_eligibility\` tools.
 
 ## Where this MCP fits
 

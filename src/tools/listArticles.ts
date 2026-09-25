@@ -1,8 +1,12 @@
 import { z } from 'zod';
 import type { Article, CountryRelevance } from '../data/articles.js';
 import { getArticles, getArticlesMeta } from '../articlesFeed.js';
+import { SUPPORTED_COUNTRY_CODES } from '../data/supportedCountries.js';
 
-const COUNTRY_FILTER = ['IN', 'AU', 'US', 'CA', 'GB', 'AE', 'SG', 'NZ', 'global'] as const;
+const COUNTRY_FILTER = [...SUPPORTED_COUNTRY_CODES, 'global'] as [
+  CountryRelevance,
+  ...CountryRelevance[],
+];
 
 export const listArticlesSchema = {
   country: z.enum(COUNTRY_FILTER).optional()
@@ -86,7 +90,7 @@ export function listArticles(args: ListArticlesArgs) {
     source: 'https://hellobooks.ai/blog',
     _meta: getArticlesMeta(),
     note:
-      'Curated compare pages + flagship posts, plus every blog post discovered ' +
+      'Curated compare pages, country guides, and flagship posts, plus every blog post discovered ' +
       "live from hellobooks.ai/sitemap.xml (see _meta.dataSource). New posts " +
       'appear automatically within ~1h of publication. Link callers to ' +
       'hellobooks.ai/blog if no result is a strong match.',

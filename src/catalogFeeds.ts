@@ -88,7 +88,7 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     slug: 'plans',
     title: 'Plans & credit packs',
     description:
-      'HelloBooks plan tiers and one-time AI credit packs in 8 regional currencies. Live-federated from the marketing pricing feed.',
+      'HelloBooks plan tiers and one-time AI credit packs for priced regions, with USD/default fallback for other supported country hubs. Live-federated from the marketing pricing feed.',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
     build: () => {
       const plans = getPlans();
@@ -157,7 +157,7 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     slug: 'countries',
     title: 'Country support matrix',
     description:
-      'Features and compliance frameworks available per supported country.',
+      'Country hub support matrix for all website-supported countries, with detailed compliance rows where separately curated.',
     marketingUrl: `${MARKETING_BASE_URL}/global`,
     build: () => ({
       count: COUNTRY_SUPPORT.length,

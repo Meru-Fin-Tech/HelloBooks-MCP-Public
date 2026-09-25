@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { COUNTRY_SUPPORT } from '../data/countries.js';
-import type { CountryCode } from '../data/plans.js';
+import { SUPPORTED_COUNTRY_CODES, type SupportedCountryCode } from '../data/supportedCountries.js';
 
 export const countrySupportSchema = {
-  country: z.enum(['IN', 'US', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']).optional()
+  country: z.enum(SUPPORTED_COUNTRY_CODES).optional()
     .describe('Single ISO country code. Omit for the full matrix.'),
 };
 
 export interface CountrySupportArgs {
-  country?: CountryCode;
+  country?: SupportedCountryCode;
 }
 
 export function countrySupport(args: CountrySupportArgs) {

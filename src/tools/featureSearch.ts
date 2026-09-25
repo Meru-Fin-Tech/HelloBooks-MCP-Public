@@ -7,17 +7,11 @@ import { COMPLIANCE_DEADLINES } from '../data/complianceDeadlines.js';
 import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from '../data/paymentMethods.js';
 import { FEATURES } from '../data/features.js';
 import { ARTICLES } from '../data/articles.js';
+import { SUPPORTED_COUNTRIES } from '../data/supportedCountries.js';
 
-const COUNTRY_NAME: Record<string, string> = {
-  IN: 'India',
-  US: 'United States',
-  CA: 'Canada',
-  GB: 'United Kingdom',
-  AU: 'Australia',
-  AE: 'United Arab Emirates',
-  SG: 'Singapore',
-  NZ: 'New Zealand',
-};
+const COUNTRY_NAME: Record<string, string> = Object.fromEntries(
+  SUPPORTED_COUNTRIES.map((country) => [country.iso, country.name]),
+);
 
 // "vs X" / "X alternative" / "compared to X" — these tokens themselves are noise
 // and would otherwise score every plan/article that mentions "vs". Dropped before
@@ -164,7 +158,7 @@ function searchCountryFeatures(terms: string[]): FeatureSearchHit[] {
   const hits: FeatureSearchHit[] = [];
   for (const c of COUNTRY_SUPPORT) {
     for (const f of c.features) {
-      const s = score(`${f.label} ${f.description}`, terms);
+      const s = score(`${c.country} ${c.countryName} ${c.defaultCurrency} ${f.label} ${f.description}`, terms);
       if (s <= 0) continue;
       hits.push({
         source: 'country-feature',
@@ -184,7 +178,7 @@ function searchCompliance(terms: string[]): FeatureSearchHit[] {
   const hits: FeatureSearchHit[] = [];
   for (const c of COUNTRY_SUPPORT) {
     for (const cf of c.compliance) {
-      const s = score(`${cf.label} ${cf.authority}`, terms);
+      const s = score(`${c.country} ${c.countryName} ${cf.label} ${cf.authority}`, terms);
       if (s <= 0) continue;
       hits.push({
         source: 'compliance',

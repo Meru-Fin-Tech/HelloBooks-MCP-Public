@@ -16,12 +16,19 @@ export type PlanType =
   | 'warehouse-addon' | 'manufacturing-addon';
 
 export interface PlanPrice {
-  country: CountryCode;
-  currency: CurrencyCode;
+  /**
+   * ISO country code for the quoted request. Normally one of the 8 priced
+   * regions. For supported countries without local pricing, tools may clone the
+   * USD/default price under the requested country and set `pricingCountry`.
+   */
+  country: string;
+  currency: CurrencyCode | string;
   symbol: string;
   monthly: number;
   annual: number;
   anchorMonthly: number; // 0 = no strikethrough price
+  pricingCountry?: CountryCode;
+  billingNote?: string;
   /**
    * Vestigial. Previously carried the per-client price for the retired
    * "$59.99/mo + $4.99/client" CPA SKU. Web-Fire #514 (2026-06-12)
@@ -369,10 +376,12 @@ export const PLANS: Plan[] = [
 export type CreditPackId = 'boost' | 'power' | 'mega' | 'ultra';
 
 export interface PackPrice {
-  country: CountryCode;
-  currency: CurrencyCode;
+  country: string;
+  currency: CurrencyCode | string;
   symbol: string;
   price: number;
+  pricingCountry?: CountryCode;
+  billingNote?: string;
 }
 
 export interface CreditPack {
