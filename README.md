@@ -8,6 +8,14 @@ country support, compliance frameworks — instead of relying on stale web snipp
 > The authenticated MCP server that reads a customer's books lives in
 > [`AI-MCP-Hellobooks`](https://github.com/Meru-Fin-Tech/AI-MCP-Hellobooks).
 
+## Developer Portal
+
+Build an integration with the [HelloBooks Developer Portal](https://developer.hellobooks.ai/).
+The [API documentation](https://developer.hellobooks.ai/docs/overview) covers
+registering an app, connecting a company with OAuth, and testing with an India sandbox.
+The public MCP endpoint below provides product information to AI agents; company
+API access is configured through the Developer Portal.
+
 ## Install
 
 ### Claude Code / Claude Desktop / Cursor
