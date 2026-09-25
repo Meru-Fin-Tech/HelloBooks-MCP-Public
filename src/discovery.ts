@@ -39,6 +39,8 @@ import { SERVER_VERSION } from './server.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
+const DEVELOPER_PORTAL_URL = 'https://developer.hellobooks.ai/';
+const DEVELOPER_DOCS_URL = 'https://developer.hellobooks.ai/docs/overview';
 const GITHUB_REPO_URL = 'https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public';
 const SERVER_NAME = 'hellobooks-public';
 const CONTACT_EMAIL = 'hello@hellobooks.ai';
@@ -331,6 +333,20 @@ ${jsonLd}
     h1 { font-size: 1.9rem; margin: 0 0 .25rem; }
     h2 { margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: .25rem; }
     .lead { color: #555; margin-top: 0; }
+    a { overflow-wrap: anywhere; }
+    a:focus-visible { outline: 3px solid #1d4bc4; outline-offset: 3px; }
+    .site-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 1rem; margin-bottom: 2rem; }
+    .brand { font-weight: 700; color: #1a1a1a; text-decoration: none; }
+    .site-header nav, .portal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .site-header nav a, .portal-actions a { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 48px; padding: .5rem .75rem; border-radius: 6px; font-weight: 600; text-decoration: none; }
+    .site-header nav a { color: #1d4bc4; }
+    .site-header nav a:hover { background: #eff6fb; }
+    .site-header nav .portal-link, .portal-actions .portal-link { background: #1d4bc4; color: #fff; }
+    .site-header nav .portal-link:hover, .portal-actions .portal-link:hover { background: #153a9e; }
+    .developer-portal { padding: 1.25rem; margin: 1.5rem 0; border: 1px solid #c7d8fb; border-radius: 10px; background: #f4f8fb; }
+    .developer-portal h2 { margin-top: 0; border: 0; }
+    .portal-actions a { color: #1d4bc4; }
+    .tools-table { max-width: 100%; overflow-x: auto; }
     code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f4f4f5; padding: 1px 5px; border-radius: 3px; }
     pre { background: #f4f4f5; padding: .75rem 1rem; border-radius: 6px; overflow-x: auto; font-size: 13px; }
     table { width: 100%; border-collapse: collapse; margin-top: .75rem; }
@@ -343,21 +359,42 @@ ${jsonLd}
   </style>
 </head>
 <body>
+  <header class="site-header">
+    <a class="brand" href="${baseUrl}/">HelloBooks Agents</a>
+    <nav aria-label="Main navigation">
+      <a href="#quick-start">Public MCP</a>
+      <a class="portal-link" href="${DEVELOPER_PORTAL_URL}">Developer Portal</a>
+      <a href="${DEVELOPER_DOCS_URL}">API Docs</a>
+    </nav>
+  </header>
+  <main>
   <h1>HelloBooks Public MCP</h1>
   <p class="lead">Read-only Model Context Protocol server for AI agents. Exposes <strong>${TOOL_CATALOG.length} tools</strong> and <strong>${RESOURCE_CATALOG.length} resources</strong> so Claude, ChatGPT, Cursor, Perplexity and other agents can ground HelloBooks answers in authoritative product data instead of stale web snippets.</p>
 
-  <h2>Quick start</h2>
+  <section class="developer-portal" aria-labelledby="developer-portal-title">
+    <h2 id="developer-portal-title">Build with HelloBooks</h2>
+    <p>Building an integration for a company&rsquo;s books? The HelloBooks Developer Portal brings together app registration, OAuth guidance, API documentation and an India sandbox for testing.</p>
+    <p>Use the public MCP below for product information. Use the Developer Portal to set up your app&rsquo;s access to company data.</p>
+    <div class="portal-actions">
+      <a class="portal-link" href="${DEVELOPER_PORTAL_URL}">Open Developer Portal</a>
+      <a href="${DEVELOPER_DOCS_URL}">Read API Docs</a>
+    </div>
+  </section>
+
+  <h2 id="quick-start">Quick start</h2>
   <p>Add the server to any MCP-compatible client over Streamable HTTP:</p>
   <pre><code>claude mcp add --transport http hellobooks ${baseUrl}/mcp</code></pre>
   <p>Or for Cursor / Windsurf / Cline, point your MCP config at <code>${baseUrl}/mcp</code>.</p>
 
-  <h2>Tools</h2>
+  <h2 id="tools-title">Tools</h2>
+  <div class="tools-table" role="region" aria-labelledby="tools-title" tabindex="0">
   <table>
     <thead><tr><th>Name</th><th>Title</th><th>What it returns</th></tr></thead>
     <tbody>
 ${toolRows}
     </tbody>
   </table>
+  </div>
 
   <h2>Discovery endpoints</h2>
   <div class="pills">
@@ -377,6 +414,7 @@ ${toolRows}
   <p>Open source on GitHub: <a href="${GITHUB_REPO_URL}">${GITHUB_REPO_URL}</a></p>
   <p>Marketing site: <a href="${MARKETING_BASE_URL}/mcp">${MARKETING_BASE_URL}/mcp</a></p>
   <p>For tenant-scoped data (a specific customer&rsquo;s books, transactions, invoices), this public server is the wrong endpoint &mdash; use the authenticated HelloBooks MCP at <code>mcp.hellobooks.ai</code> instead.</p>
+  </main>
 
   <footer>
     <p>HelloBooks &middot; ${CONTACT_EMAIL} &middot; v${SERVER_VERSION} &middot; Catalog updated ${lastMod.toISOString().slice(0, 10)}</p>
@@ -563,6 +601,12 @@ claude mcp add --transport http hellobooks ${baseUrl}/mcp
 \`\`\`
 
 For Cursor, Windsurf, Cline, or any MCP-aware client: configure a remote MCP server pointing at \`${baseUrl}/mcp\` with transport \`streamable-http\`.
+
+## Developer Portal
+
+Build integrations with the [HelloBooks Developer Portal](${DEVELOPER_PORTAL_URL}).
+The [API documentation](${DEVELOPER_DOCS_URL}) covers app registration, OAuth company connections, and testing with an India sandbox.
+This public MCP provides product information; company API access is configured through the Developer Portal.
 
 ## Tools (${TOOL_CATALOG.length})
 
