@@ -162,14 +162,14 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_plans',
-    'List HelloBooks pricing plans with monthly + annual prices in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Covers four core tiers — Free / Pro / Business / Partner Program (the `cpa` plan id) — plus two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets (AI auto-categorization, unlimited users, multi-entity, 3-way matching, API access, etc.), and the public signup URL. Filter by `plan` (one of free / pro / business / cpa) or `country` (ISO code). Pricing follows Doc 19 v3 (Web-Fire #514, 2026-06-12): Business re-introduced as a 4th tier sized ~4× Pro to match Partner Points; the retired "$59.99/mo + $4.99/client" CPA SKU is gone and the `cpa` plan id now resolves to the free Partner Program (call `partner_program_info` for the status ladder + points math). HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
+    'List HelloBooks pricing plans with monthly + annual prices. The 8 priced regions return local currency prices (USD, INR, CAD, GBP, AUD, AED, SGD, NZD); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata while local books use the country currency. Covers the five-rung ladder — Free / Starter / Pro / Business / Scale — plus the free Partner Program (`cpa` plan id) and two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets, public signup URL, and live-feed/static-fallback provenance. Filter by `plan` (free / starter / pro / business / scale / cpa) or any supported `country` ISO code. HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
     listPlansSchema,
     async (args, extra) => runTool('list_plans', args, extra, () => listPlans(args)),
   );
 
   server.tool(
     'list_credit_packs',
-    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits) priced in 8 regional currencies (USD, INR, CAD, GBP, AUD, AED, SGD, NZD). Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or `country` (ISO code).',
+    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return local currency prices; other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
     listCreditPacksSchema,
     async (args, extra) =>
       runTool('list_credit_packs', args, extra, () => listCreditPacks(args)),
@@ -177,7 +177,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'free_tier_eligibility',
-    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 supported countries (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$500K / AE AED 187.5K). Free is unlimited features and unlimited AI credits subject to the monthly allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or Business. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
+    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 priced markets (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$1M / AE AED 375K). Free includes the standard monthly AI-credit allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or Business. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
     freeTierEligibilitySchema,
     async (args, extra) =>
       runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),

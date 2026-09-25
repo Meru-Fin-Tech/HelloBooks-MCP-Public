@@ -169,7 +169,7 @@ export const COMPETITORS: Competitor[] = [
       'HelloBooks Free includes AI chatbot, OCR, smart categorization, AR/AP aging — Wave Free has none of these',
       'Bank connection via Plaid on Free plan; Wave Free has no bank feeds',
       'Full mobile app on Free; Wave mobile is invoicing-only',
-      'Supported in 8 countries; Wave is US + Canada only',
+      '187 public country hubs with 8 priced markets; Wave is US + Canada only',
       '2 included users on Free plan; Wave Free is 1 user',
     ],
     whereTheyWin: [

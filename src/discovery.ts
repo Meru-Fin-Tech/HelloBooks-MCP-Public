@@ -89,7 +89,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_plans',
     title: 'List HelloBooks pricing plans',
     summary:
-      'HelloBooks plan tiers (Free, Pro, Business, and the free Partner Program + Warehouse and Manufacturing add-ons) with monthly + annual prices in 8 regional currencies. Live-federated from hellobooks.ai/api/feed/pricing.json.',
+      'HelloBooks plan tiers (Free, Starter, Pro, Business, Scale, the free Partner Program, plus Warehouse and Manufacturing add-ons) with local prices for 8 priced regions and USD/default fallback pricing for other supported country hubs. Live-federated from hellobooks.ai/api/feed/pricing.json.',
     category: 'pricing',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
