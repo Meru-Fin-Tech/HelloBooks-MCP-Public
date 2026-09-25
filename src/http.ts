@@ -56,6 +56,11 @@ import {
   isValidSlug,
 } from './lib/shareUrl/index.js';
 import { createReportingRouter } from './reporting/endpoint.js';
+import { z } from 'zod';
+import { listAccountants, listAccountantsSchema, getAccountant } from './accountants.js';
+import { listApiCatalog, apiCatalogSchema, developerReference } from './apiCatalog.js';
+import { renderApiCatalog } from './apiCatalog.js';
+import { renderAccountants, renderAccountant, renderPage } from './directoryPages.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -263,12 +268,68 @@ app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(CATALOG_FEEDS)
 app.get('/robots.txt', (_req, res) => sendText(res, generateRobotsTxt(), 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(CATALOG_FEEDS), 'application/xml; charset=utf-8'));
 app.get('/feed.xml', (_req, res) => sendText(res, generateRssFeed(), 'application/rss+xml; charset=utf-8'));
-app.get('/openapi.json', (_req, res) => sendJson(res, generateOpenApi()));
+app.get('/openapi.json', (_req, res) => sendJson(res, generateOpenApi(CATALOG_FEEDS)));
 app.get('/catalog.json', (_req, res) => sendJson(res, generateCatalogJson()));
 app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson()));
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+
+function parameters(req: Request): Record<string, unknown> {
+  const values: Record<string, unknown> = { ...req.query };
+  for (const key of Object.keys(values)) {
+    if (values[key] === '') delete values[key];
+  }
+  for (const key of ['page', 'pageSize']) {
+    if (typeof values[key] === 'string') values[key] = Number(values[key]);
+  }
+  if (values.acceptingClients === 'true') values.acceptingClients = true;
+  if (values.acceptingClients === 'false') values.acceptingClients = false;
+  return values;
+}
+function asyncRoute(handler: (req: Request, res: Response) => Promise<void>) {
+  return (req: Request, res: Response) => {
+    handler(req, res).catch(error => {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'invalid-parameters', issues: error.issues.map(i => ({ path: i.path, message: i.message })) });
+      } else {
+        res.status(503).json({ error: 'catalog-unavailable', message: 'Please retry shortly.' });
+      }
+    });
+  };
+}
+app.get('/api/developer-reference.json', (_req, res) => sendJson(res, developerReference));
+app.get('/api/catalog.json', asyncRoute(async (req, res) => {
+  const result = await listApiCatalog(z.object(apiCatalogSchema).parse(parameters(req)));
+  if (req.query.id && !result.entries.length) res.status(404);
+  sendJson(res, result);
+}));
+app.get('/apis', asyncRoute(async (req, res) => {
+  const result = await listApiCatalog(z.object(apiCatalogSchema).parse(parameters(req)));
+  if (req.query.id && !result.entries.length) res.status(404);
+  sendText(res, renderApiCatalog(result, new URL(req.originalUrl, 'http://localhost').searchParams), 'text/html; charset=utf-8');
+}));
+app.get('/api/accountants.json', asyncRoute(async (req, res) => {
+  const result = await listAccountants(z.object(listAccountantsSchema).parse(parameters(req)));
+  res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+  res.status(result.status === 'unavailable' ? 503 : 200).json(result);
+}));
+app.get('/accountants', asyncRoute(async (req, res) => {
+  const result = await listAccountants(z.object(listAccountantsSchema).parse(parameters(req)));
+  res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+  res.status(result.status === 'unavailable' ? 503 : 200).type('html').send(renderAccountants(result, new URL(req.originalUrl, 'http://localhost').searchParams));
+}));
+for (const route of ['/api/accountants/:slug.json', '/accountants/:slug']) {
+  app.get(route, asyncRoute(async (req, res) => {
+    const slug = z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(200).parse(req.params.slug);
+    const result = await getAccountant({ slug });
+    res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+    res.status(result.status === 'unavailable' ? 503 : result.found ? 200 : 404);
+    if (route.startsWith('/api/')) res.json(result);
+    else res.type('html').send(result.firm ? renderAccountant(result.firm, result.error)
+      : renderPage('Accountant profile', `<h1>${result.status === 'unavailable' ? 'Directory temporarily unavailable' : 'Profile not found'}</h1><p><a href="/accountants">Browse the directory</a></p>`));
+  }));
+}
 
 // ---------------------------------------------------------------------------
 // Per-catalog JSON feeds — the API-based source-of-truth surface.
