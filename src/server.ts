@@ -70,6 +70,8 @@ export { howMunimjiHelps } from './tools/howMunimjiHelps.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 import { track } from './analytics.js';
+import { listAccountants, listAccountantsSchema, getAccountant } from './accountants.js';
+import { listApiCatalog, apiCatalogSchema } from './apiCatalog.js';
 
 const SERVER_NAME = 'hellobooks-public';
 export const SERVER_VERSION = '1.5.0';
@@ -103,7 +105,7 @@ function sessionIdOf(extra: unknown): string {
  * (which is always re-thrown — telemetry never alters tool behaviour).
  * Telemetry is fire-and-forget; see src/analytics.ts.
  */
-function runTool(
+async function runTool(
   toolName: string,
   args: unknown,
   extra: unknown,
@@ -112,7 +114,7 @@ function runTool(
   const startedAt = Date.now();
   const clientId = sessionIdOf(extra);
   try {
-    const payload = produce();
+    const payload = await produce();
     track(
       'mcp_tool_called',
       {
@@ -159,6 +161,17 @@ export function createServer(): McpServer {
   // contained: it never throws, and tools serve the baked catalog until it
   // lands. See src/pricingFeed.ts.
   void refreshPricingFromFeed();
+
+  server.tool('list_accountants',
+    'Search every published HelloBooks accountant profile with all public details, contacts, services, credentials and availability. No availability filter is applied by default. Follow nextPage until null to retrieve all matches. Source status distinguishes live, stale and unavailable data.',
+    listAccountantsSchema, async (args, extra) => runTool('list_accountants', args, extra, () => listAccountants(args)));
+  server.tool('get_accountant',
+    'Get the full published profile of one accountant by the slug returned by list_accountants, including biography, public contact details, certifications, verification and firm Q&A when published.',
+    { slug: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(200) },
+    async (args, extra) => runTool('get_accountant', args, extra, () => getAccountant(args)));
+  server.tool('list_api_catalog',
+    'Discover every public HTTP API, registered MCP tool, and operation in the generated HelloBooks accounting API reference. Search/filter and follow nextPage for all results; pass id for full parameter/input-schema/response and authorization details. This returns documentation; authenticated accounting calls use company-scoped OAuth at the documented API host.',
+    apiCatalogSchema, async (args, extra) => runTool('list_api_catalog', args, extra, () => listApiCatalog(args)));
 
   server.tool(
     'list_plans',
