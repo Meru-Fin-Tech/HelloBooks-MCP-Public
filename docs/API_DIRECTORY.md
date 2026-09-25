@@ -60,3 +60,7 @@ MCP-tool coverage. Public product feeds are generated from the existing registry
 The companion website PR switches the marketing feed from its build snapshot to
 the live published-directory loader and follows every source page. Deploy that
 repair first to populate the agents directory from current firms.
+
+## Browser verification
+
+Start the built MCP server and the repaired website feed (ports 4188 and 4189 by default), then run `node scripts/verify-directory.mjs` with Playwright and its three browsers installed. Set `MCP_ORIGIN`, `ACCOUNTANTS_FEED_URL`, `FEED_HEAD` and `EVIDENCE_DIR` for another environment. `PLAYWRIGHT_MODULE` can point to an existing installed Playwright module. The check uses the real feed and MCP transport and writes screenshots plus `browser.json`. It fails when any engine or journey fails.
