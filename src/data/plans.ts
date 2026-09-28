@@ -43,18 +43,26 @@ export interface Plan {
   plan: PlanType;
   name: string;
   tagline: string;
-  monthlyAiCredits: number; // -1 = unlimited
+  // -1 = unlimited; null on Free, which publishes no number (HelloBooks
+  // decision 2026-09-28: "free AI credits included", top up or upgrade).
+  monthlyAiCredits: number | null;
+  /** Human wording for plans whose AI allowance has no published number. */
+  aiCreditsNote?: string;
   features: string[];
   prices: PlanPrice[];
   publicSignupUrl: string;
 }
 
+export const FREE_AI_CREDITS_NOTE =
+  'Free AI credits included to get started; top up with a credit pack or upgrade when they run out.';
+
 const FREE_FEATURES = [
-  '2,500 AI credits / month',
-  '2 users · 1 bank account',
+  '2 users · 1 live bank feed',
+  'Free AI credits to get started',
   'Unlimited invoices, bills & quotes',
-  'AP/AR aging reports',
-  'P&L, Balance Sheet, Cash Flow',
+  'Unlimited email payment reminders',
+  '10 WhatsApp sends (one-time allowance)',
+  'AP/AR aging · P&L · Balance Sheet · Cash Flow',
   'Full mobile app (iOS & Android)',
   '"Powered by HelloBooks" badge on invoices',
 ];
@@ -295,7 +303,8 @@ export const PLANS: Plan[] = [
     plan: 'free',
     name: 'Free',
     tagline: 'Everything you need to start',
-    monthlyAiCredits: 2500,
+    monthlyAiCredits: null,
+    aiCreditsNote: FREE_AI_CREDITS_NOTE,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',

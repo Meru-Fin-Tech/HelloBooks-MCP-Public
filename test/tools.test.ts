@@ -368,8 +368,10 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   assert.ok(warehouse, 'warehouse-addon must survive the transform');
   assert.equal(warehouse.prices[0].monthly, 9);
   // free is absent from the fixture feed.tiers -> baked free returned untouched
+  // (no published AI number since 2026-09-28, only the wording).
   const free = plans.find((p) => p.plan === 'free');
-  assert.equal(free?.monthlyAiCredits, 2500);
+  assert.equal(free?.monthlyAiCredits, null);
+  assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
@@ -1372,4 +1374,22 @@ test('free_tier_eligibility every country threshold matches Doc 80 canonical val
   for (const t of r.thresholds) {
     assert.equal(t.annualInvoiceTurnoverLimit, expected[t.country], `${t.country}: threshold drift vs Doc 80`);
   }
+});
+
+test('a feed publishing Free with monthlyAiCredits: null validates and keeps the wording', async () => {
+  const { parsePricingFeed, feedToPlans } = await import('../src/pricingFeed.js');
+  const freeTier = {
+    id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
+    features: ['Free AI credits to get started'],
+    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started; top up with a credit pack or upgrade when they run out.' },
+  };
+  const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
+  const parsed = parsePricingFeed(raw);
+  assert.ok(parsed.success, 'null monthlyAiCredits must not reject the whole feed');
+  const free = feedToPlans(parsed.data).find((p) => p.plan === 'free');
+  assert.equal(free?.monthlyAiCredits, null);
+  assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
+  assert.ok(!free?.features.some((f) => /2,?500/.test(f)), 'no Free AI number in features');
+  // Paid plans still carry their number.
+  assert.equal(feedToPlans(parsed.data).find((p) => p.plan === 'pro')?.monthlyAiCredits, 99999);
 });
