@@ -20,7 +20,7 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 ## Plans
 
-- **Free** — 2,500 AI credits/month, 1 bank account, 2 users.
+- **Free** — free AI credits included (top up with a credit pack or upgrade when they run out), 1 live bank feed, 2 users, unlimited invoices, bills & quotes.
 - **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync, API access.
 - **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, 3-way matching (PO/Bill/GRN), cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
 - **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
@@ -81,6 +81,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-09-28', title: 'Free plan AI is "free AI credits included", no number', category: 'fix',
+    description: 'Mirroring the hellobooks.ai decision of 2026-09-28: the Free plan publishes no AI credit number. list_plans returns monthlyAiCredits: null for Free plus an aiCreditsNote ("Free AI credits included to get started; top up with a credit pack or upgrade when they run out"). Paid plans keep their numbers. The feed parser now accepts null instead of rejecting the whole pricing feed. Supersedes the 2026-07-10 and 2026-06-08 Free figures below.' },
   { date: '2026-09-23', title: 'Five-rung plan ladder — Starter and Scale added; baked prices resynced to the website', category: 'fix',
     description: 'list_plans now returns all five rungs. Starter ($14.99/mo, $149/yr, 7,500 credits) and Scale ($199/mo, $1,990/yr, 150,000 credits) were missing entirely since the founder’s 2026-09-02 five-rung decision, because the plan catalog had no entry for them and the live pricing federation can only overlay prices onto tiers that already exist — so no redeploy could surface them. Both are sold in the US only today and return an empty price list for other markets rather than a US figure in the wrong currency. The baked fallback prices were also stale in four regions and are now resynced to Web-Fire pricingConfig.ts on main: US Pro $20 → $39.99 and Business $80 → $79.99; CA Pro C$26 → C$22.99 and Business C$104 → C$91.99; GB Pro £16 → £14.99 and Business £64 → £59.99; AE Pro AED 74 → AED 65 and Business AED 294 → AED 260. India, Australia, Singapore and New Zealand already matched and are unchanged.' },
   { date: '2026-09-09', title: 'Complete sitemap and LLM catalog discovery', category: 'fix',
@@ -91,7 +93,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     description: 'Public MCP PR #71 added on-demand background federation of blog articles from hellobooks.ai/sitemap.xml, with a one-hour cache and bundled fallback. Newly published blog posts no longer require a catalog redeploy.' },
   { date: '2026-07-30', title: 'Pricing v4 — every region except India repriced to 2×; permanent anchor removed', category: 'improvement',
     description: 'Mirroring Web-Fire PR #672: all non-India regions move to 2× — the old strikethrough anchor becomes the real price — and the permanent anchor is dropped (list_plans now returns anchorMonthly: 0 outside India). US Pro $9.99 → $20/mo ($200/yr), US Business $39.99 → $80/mo ($800/yr); CA C$26/C$104, GB £16/£64, AU A$30/A$120, AE AED 74/AED 294, SG S$26/S$104, NZ NZ$32/NZ$128. Annual is now 10× monthly (2 months free) instead of the old ~17%-off pattern. INDIA IS UNCHANGED by founder decision — ₹499 Pro / ₹1,999 Business with anchors intact. AI credit packs, credit allowances, and the Partner Program are unaffected.' },
-  { date: '2026-07-10', title: 'Catalog accuracy refresh — Free tier is 2,500 credits/month', category: 'fix',
+  { date: '2026-07-10', title: 'Catalog accuracy refresh — Free tier credit figure (superseded 2026-09-28: Free publishes no number)', category: 'fix',
     description: 'Free plan corrected to 2,500 AI credits/month (the catalog had mirrored an older 5,000 figure). Pro stays 15,000, Business 50,000, Partner Program unlimited. The same refresh fixed the feature count (96 → 152), marked US multi-state sales tax live, removed integrations that do not ship (Yodlee, FreshBooks), added the Nova Scotia HST 14% rate, and corrected the credit-pack figures on the discovery surface. All pricing mirrors Web-Fire pricingConfig.ts on main.' },
   { date: '2026-06-12', title: 'HelloCPA Practice Management info tool', category: 'feature',
     description: 'New practice_management_info MCP tool exposes the standalone HelloCPA Practice Management product on practice.hellobooks.ai — per-user pricing ($9.99/user/month US, free up to 2 users + 10 clients, 90-day trial). US shipped; 7 other markets roadmap. Distinct from the Partner Program. Same data at /catalog/practice-management.json.' },
@@ -105,7 +107,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     description: 'list_articles + the articles catalog feed grew from 41 hand-curated entries to 886 (curated flagship content + 845 bulk-imported from hellobooks.ai/sitemap.xml). AI agents asking "do you have a blog about X?" now hit ~95% of the marketing site instead of ~5%.' },
   { date: '2026-06-12', title: 'Public MCP credit federation', category: 'improvement',
     description: 'list_plans monthlyAiCredits and list_credit_packs credits now flow from the live hellobooks.ai/api/feed/pricing.json with baked fallback — so AI agents see canonical credit numbers without waiting on a redeploy.' },
-  { date: '2026-06-08', title: 'AI credit ×10 display scale', category: 'improvement',
+  { date: '2026-06-08', title: 'AI credit ×10 display scale (Free figure superseded 2026-09-28)', category: 'improvement',
     description: 'Doc 19 v2 display scale now consistent across product, marketing, and MCP: Free 5,000 / Pro 15,000 / CPA unlimited credits per month; packs Boost 5,000 / Power 15,000 / Mega 50,000 / Ultra 150,000. Per-credit prices ÷10 — total value unchanged. (Superseded: the Free allowance was later reduced to 2,500 credits/month — see the 2026-07-10 entry.)' },
   { date: '2026-06-07', title: 'JSON catalog feeds', category: 'feature',
     description: 'Every public MCP catalog is now reachable as plain HTTP JSON at agents.hellobooks.ai/catalog/<slug>.json (plans, features, integrations, competitors, compliance-deadlines, countries, tax-rates, capabilities, payment-methods, articles, videos) — for agents that prefer fetch over MCP transport.' },

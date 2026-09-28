@@ -65,7 +65,8 @@ const feedTierSchema = z.object({
   // than failing validation and freezing the snapshot. See feedToPlans below.
   limits: z.object({
     perClientPrice: z.number(),
-    monthlyAiCredits: z.number().optional(),
+    // null = no published number (Free, since 2026-09-28).
+    monthlyAiCredits: z.number().nullable().optional(),
   }).passthrough(),
 });
 
@@ -91,6 +92,11 @@ const feedSchema = z.object({
 }).passthrough();
 
 export type PricingFeed = z.infer<typeof feedSchema>;
+
+/** Validate a raw feed body (exported for tests). */
+export function parsePricingFeed(raw: unknown) {
+  return feedSchema.safeParse(raw);
+}
 
 // --- Transform: overlay feed prices/features onto the baked catalog ----------
 
@@ -145,7 +151,13 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
       ...baked,
       prices,
       features: feedTier.features.length > 0 ? feedTier.features : baked.features,
-      monthlyAiCredits: feedTier.limits.monthlyAiCredits ?? baked.monthlyAiCredits,
+      // undefined falls back to baked; null is a deliberate "no number".
+      monthlyAiCredits: feedTier.limits.monthlyAiCredits === undefined
+        ? baked.monthlyAiCredits
+        : feedTier.limits.monthlyAiCredits,
+      ...(feedTier.limits.monthlyAiCredits === null
+        ? { aiCreditsNote: typeof feedTier.limits.aiCreditsNote === 'string' ? feedTier.limits.aiCreditsNote : baked.aiCreditsNote }
+        : {}),
     };
   });
 }
