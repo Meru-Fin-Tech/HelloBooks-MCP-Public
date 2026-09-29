@@ -169,7 +169,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_credit_packs',
-    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return local currency prices; other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any plan, including Free. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
+    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return local currency prices; other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any paid plan; Free users cannot buy packs and should upgrade for more AI credits. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
     listCreditPacksSchema,
     async (args, extra) =>
       runTool('list_credit_packs', args, extra, () => listCreditPacks(args)),

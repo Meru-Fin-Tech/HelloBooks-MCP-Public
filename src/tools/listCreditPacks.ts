@@ -77,6 +77,6 @@ export function listCreditPacks(args: ListCreditPacksArgs) {
     pricingFallback,
     ...getPricingMeta(),
     source: 'https://hellobooks.ai/pricing',
-    note: 'Credit packs are one-time pay-as-you-go top-ups of AI credits, purchasable on top of any plan including Free. The 8 priced regions return local currency rows. Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`. `dataSource` is "live-feed" when fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
+    note: 'Credit packs are one-time pay-as-you-go top-ups of AI credits, purchasable on top of any paid plan (not Free — Free users upgrade for more AI credits). The 8 priced regions return local currency rows. Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`. `dataSource` is "live-feed" when fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
   };
 }

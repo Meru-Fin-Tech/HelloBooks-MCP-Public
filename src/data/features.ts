@@ -413,7 +413,7 @@ export const FEATURES: Feature[] = [
     competitorParity: ['None — HelloBooks USP'] },
   { key: 'ai-credits', label: 'AI Credits (Per-Tier Allocation)',
     category: 'ai-automation', tier: 'free', status: 'live', marketed: true,
-    shortDescription: 'Free AI credits included on Free (top up with a credit pack); 15,000 (Pro) / 50,000 (Business) AI credits per month for AI-powered actions.' },
+    shortDescription: 'Free AI credits included on Free (upgrade for more; credit packs are for paid plans); 15,000 (Pro) / 50,000 (Business) AI credits per month for AI-powered actions.' },
   { key: 'ai-calls', label: 'AI Calls (Outbound Voice Agent)',
     category: 'ai-automation', tier: 'pro', status: 'beta', marketed: false,
     shortDescription: 'Outbound AI voice agent for collections, reminders, and accounting interviews. ElevenLabs-powered.' },

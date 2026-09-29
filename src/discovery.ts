@@ -99,7 +99,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
-      'One-time pay-as-you-go AI credit top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). Stack on any plan, including Free. Live-federated pricing.',
+      'One-time pay-as-you-go AI credit top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). Stack on any paid plan; not available on Free (upgrade for more AI credits). Live-federated pricing.',
     category: 'pricing',
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
