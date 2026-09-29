@@ -51,6 +51,25 @@ function symbolFor(currency: string): string {
   return CURRENCY_SYMBOL[currency] ?? currency;
 }
 
+const PAID_PLAN_IDS = new Set(['starter', 'pro', 'business', 'scale']);
+
+function isPaidPlan(plan: string): boolean {
+  return PAID_PLAN_IDS.has(plan);
+}
+
+function normalizePlanFeatures(plan: string, feedFeatures: string[], bakedFeatures: string[]): string[] {
+  const source = feedFeatures.length > 0 ? feedFeatures : bakedFeatures;
+  if (!isPaidPlan(plan)) return source;
+
+  const normalized = source.map((feature) => feature
+    .replace(/^Multi-entity management$/i, 'Multi-entity management across subscribed entities')
+    .replace(/^Multi-country statutory filing & consolidation$/i, 'Multi-country statutory filing & consolidation across subscribed entities'));
+
+  return normalized.some((feature) => /one legal entity per paid subscription/i.test(feature))
+    ? normalized
+    : ['One legal entity per paid subscription', ...normalized];
+}
+
 // --- Feed schema — a malformed feed fails validation and triggers fallback ---
 
 const feedTierSchema = z.object({
@@ -144,13 +163,14 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
         monthly: tier.monthlyPrice,
         annual: tier.annualPrice,
         anchorMonthly: tier.anchorMonthlyPrice,
+        ...(isPaidPlan(baked.plan) ? { billingUnit: 'per_entity' as const } : {}),
       });
     }
 
     return {
       ...baked,
       prices,
-      features: feedTier.features.length > 0 ? feedTier.features : baked.features,
+      features: normalizePlanFeatures(baked.plan, feedTier.features, baked.features),
       // undefined falls back to baked; null is a deliberate "no number".
       monthlyAiCredits: feedTier.limits.monthlyAiCredits === undefined
         ? baked.monthlyAiCredits

@@ -27,6 +27,7 @@ export interface PlanPrice {
   monthly: number;
   annual: number;
   anchorMonthly: number; // 0 = no strikethrough price
+  billingUnit?: 'per_entity';
   pricingCountry?: CountryCode;
   billingNote?: string;
   /**
@@ -73,6 +74,7 @@ const FREE_FEATURES = [
 // all of which stay Pro/Business.
 const STARTER_FEATURES = [
   'Everything in Free, plus:',
+  'One legal entity per paid subscription',
   'AI auto-categorization (95%+ accuracy)',
   'Up to 5 users',
   '3 bank connections',
@@ -86,10 +88,11 @@ const STARTER_FEATURES = [
 // Scale — the top rung, for groups running manufacturing / warehouse depth.
 const SCALE_FEATURES = [
   'Everything in Business, plus:',
+  'One legal entity per paid subscription',
   'Manufacturing: BOM, work orders, MRP & job work',
   'Warehouse depth: bins, waves, cross-dock & cycle counts',
   'Lot, batch & serial traceability with FEFO picking',
-  'Multi-country statutory filing & consolidation',
+  'Multi-country statutory filing & consolidation across subscribed entities',
   'Higher API rate limits',
   'Custom development — see below',
   'Named implementation lead',
@@ -97,10 +100,11 @@ const SCALE_FEATURES = [
 
 const PRO_FEATURES = [
   '15,000 AI credits / month',
+  'One legal entity per paid subscription',
   'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
-  'Multi-entity management',
+  'Multi-entity management across subscribed entities',
   'API access',
   'AI Analysis & Comparative View on every report',
   'Recurring invoices, bills & approvals',
@@ -114,6 +118,7 @@ const PRO_FEATURES = [
 const BUSINESS_FEATURES = [
   'Everything in Pro, plus:',
   '50,000 AI credits to get started',
+  'One legal entity per paid subscription',
   'Advanced inventory: lot/batch + multi-warehouse allocations',
   'Cohort, retention & CFO analytics',
   'Audit log + advanced role-based access',
@@ -270,6 +275,7 @@ function pricesFor(plan: RegionalPaidPlan): PlanPrice[] {
       monthly: tier.monthly,
       annual: tier.annual,
       anchorMonthly: 'anchor' in tier ? tier.anchor : 0,
+      ...(plan === 'cpa' ? {} : { billingUnit: 'per_entity' as const }),
     });
   }
   return out;
@@ -294,7 +300,7 @@ function freePrices(): PlanPrice[] {
 function usdAddonPrice(monthly: number, annual: number): PlanPrice[] {
   return [{
     country: 'US', currency: 'USD', symbol: '$',
-    monthly, annual, anchorMonthly: 0,
+    monthly, annual, anchorMonthly: 0, billingUnit: 'per_entity',
   }];
 }
 
