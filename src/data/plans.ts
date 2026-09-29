@@ -44,7 +44,7 @@ export interface Plan {
   name: string;
   tagline: string;
   // -1 = unlimited; null on Free, which publishes no number (HelloBooks
-  // decision 2026-09-28: "free AI credits included", top up or upgrade).
+  // decision 2026-09-28: "free AI credits included"; upgrade for more — 2026-09-29: packs are paid-plan only).
   monthlyAiCredits: number | null;
   /** Human wording for plans whose AI allowance has no published number. */
   aiCreditsNote?: string;
@@ -54,7 +54,7 @@ export interface Plan {
 }
 
 export const FREE_AI_CREDITS_NOTE =
-  'Free AI credits included to get started; top up with a credit pack or upgrade when they run out.';
+  'Free AI credits included to get started; upgrade to get more — credit packs are for paid plans.';
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
@@ -378,7 +378,7 @@ export const PLANS: Plan[] = [
 
 // ---------------------------------------------------------------------------
 // Credit packs — one-time pay-as-you-go AI credit top-ups (Doc 19 v2).
-// Stack on any plan, including Free. Priced per region; mirrors PACKS_BY_REGION
+// Stack on any paid plan (not Free — Free users upgrade for more, 2026-09-29). Priced per region; mirrors PACKS_BY_REGION
 // in pricingConfig.ts and the addOns array in hellobooks.ai/api/feed/pricing.json.
 // ---------------------------------------------------------------------------
 

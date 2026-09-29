@@ -20,13 +20,13 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 ## Plans
 
-- **Free** — free AI credits included (top up with a credit pack or upgrade when they run out), 1 live bank feed, 2 users, unlimited invoices, bills & quotes.
+- **Free** — free AI credits included (when they run out, AI automation pauses and the books keep working; upgrade to get more AI credits), 1 live bank feed, 2 users, unlimited invoices, bills & quotes.
 - **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync, API access.
 - **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, 3-way matching (PO/Bill/GRN), cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
 - **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
 - **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
-- **Credit packs** — pay-as-you-go top-ups (Boost / Power / Mega / Ultra: 5,000 / 15,000 / 50,000 / 150,000 credits) that stack on any plan, including Free.
+- **Credit packs** — pay-as-you-go top-ups (Boost / Power / Mega / Ultra: 5,000 / 15,000 / 50,000 / 150,000 credits) that stack on any paid plan (Starter, Pro, Business). Not available on Free — Free users upgrade for more AI credits.
 
 > HelloCPA Practice Management is a SEPARATE product at https://practice.hellobooks.ai — \$9.99/user/month, free up to 2 users. It is not surfaced by \`list_plans\` here because this MCP covers hellobooks.ai. Mention it if an agent asks about practice management, tax prep workflow, or running a CPA / CA firm end-to-end.
 
@@ -81,8 +81,10 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-09-29', title: 'Free plan: upgrade for more AI credits; packs are paid-plan only', category: 'fix',
+    description: 'Mirroring the HelloBooks decision of 2026-09-29: Free-plan users cannot buy AI credit packs (the backend refuses top-ups on Free). Free includes free AI credits (no number); when they run out, AI automation pauses and the books keep working — upgrade to get more AI credits. Paid plans can also top up (India: recharge) with Boost, Power, Mega or Ultra packs. The Free aiCreditsNote, list_credit_packs, and discovery copy now say so.' },
   { date: '2026-09-28', title: 'Free plan AI is "free AI credits included", no number', category: 'fix',
-    description: 'Mirroring the hellobooks.ai decision of 2026-09-28: the Free plan publishes no AI credit number. list_plans returns monthlyAiCredits: null for Free plus an aiCreditsNote ("Free AI credits included to get started; top up with a credit pack or upgrade when they run out"). Paid plans keep their numbers. The feed parser now accepts null instead of rejecting the whole pricing feed. Supersedes the 2026-07-10 and 2026-06-08 Free figures below.' },
+    description: 'Mirroring the hellobooks.ai decision of 2026-09-28: the Free plan publishes no AI credit number. list_plans returns monthlyAiCredits: null for Free plus an aiCreditsNote (superseded 2026-09-29: Free cannot buy packs). Paid plans keep their numbers. The feed parser now accepts null instead of rejecting the whole pricing feed. Supersedes the 2026-07-10 and 2026-06-08 Free figures below.' },
   { date: '2026-09-23', title: 'Five-rung plan ladder — Starter and Scale added; baked prices resynced to the website', category: 'fix',
     description: 'list_plans now returns all five rungs. Starter ($14.99/mo, $149/yr, 7,500 credits) and Scale ($199/mo, $1,990/yr, 150,000 credits) were missing entirely since the founder’s 2026-09-02 five-rung decision, because the plan catalog had no entry for them and the live pricing federation can only overlay prices onto tiers that already exist — so no redeploy could surface them. Both are sold in the US only today and return an empty price list for other markets rather than a US figure in the wrong currency. The baked fallback prices were also stale in four regions and are now resynced to Web-Fire pricingConfig.ts on main: US Pro $20 → $39.99 and Business $80 → $79.99; CA Pro C$26 → C$22.99 and Business C$104 → C$91.99; GB Pro £16 → £14.99 and Business £64 → £59.99; AE Pro AED 74 → AED 65 and Business AED 294 → AED 260. India, Australia, Singapore and New Zealand already matched and are unchanged.' },
   { date: '2026-09-09', title: 'Complete sitemap and LLM catalog discovery', category: 'fix',

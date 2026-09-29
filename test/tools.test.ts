@@ -1381,7 +1381,7 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const freeTier = {
     id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
     features: ['Free AI credits to get started'],
-    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started; top up with a credit pack or upgrade when they run out.' },
+    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started; upgrade to get more — credit packs are for paid plans.' },
   };
   const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
   const parsed = parsePricingFeed(raw);
