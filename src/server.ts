@@ -162,7 +162,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_plans',
-    'List HelloBooks pricing plans with monthly + annual prices. The 8 priced regions return local currency prices (USD, INR, CAD, GBP, AUD, AED, SGD, NZD); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata while local books use the country currency. Covers the five-rung ladder — Free / Starter / Pro / Business / Scale — plus the free Partner Program (`cpa` plan id) and two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance, feature bullets, public signup URL, and live-feed/static-fallback provenance. Filter by `plan` (free / starter / pro / business / scale / cpa) or any supported `country` ISO code. HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
+    'List HelloBooks pricing plans with monthly + annual prices. The 8 priced regions return local currency prices (USD, INR, CAD, GBP, AUD, AED, SGD, NZD); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata while local books use the country currency. Covers the five-rung ladder — Free / Starter / Pro / Business / Scale — plus the free Partner Program (`cpa` plan id) and two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance (monthly on paid plans; Free gets one-time starting credits that never refill — see aiCreditsNote), feature bullets, public signup URL, and live-feed/static-fallback provenance. Filter by `plan` (free / starter / pro / business / scale / cpa) or any supported `country` ISO code. HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
     listPlansSchema,
     async (args, extra) => runTool('list_plans', args, extra, () => listPlans(args)),
   );
@@ -177,7 +177,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'free_tier_eligibility',
-    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 priced markets (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$1M / AE AED 375K). Free includes the standard monthly AI-credit allowance, but per-entity invoice turnover above the country cap forces an upgrade to Pro or Business. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total, cash receipts, and gross transaction volume are explicitly NOT used.',
+    'Return the HelloBooks Free-plan annual-invoice-turnover thresholds for the 8 priced markets (IN ₹40 lakh / US $100K / GB £90K / AU A$75K / CA C$30K / NZ NZ$60K / SG S$1M / AE AED 375K). Free includes one-time free AI credits with no published number, plus up to 200 transactions per year; per-entity invoice turnover above the country cap forces an upgrade to Pro or Business. Call with no args to get the full table, with `country` for one threshold, or with `country` AND `annualInvoiceRevenue` (in the country currency, NOT USD-equivalent) for a `freeEligible` verdict with headroom math. Bank-feed total and cash receipts are explicitly NOT used for the turnover cap.',
     freeTierEligibilitySchema,
     async (args, extra) =>
       runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),

@@ -2,7 +2,7 @@
  * Free-tier turnover gate (Doc 80).
  *
  * The HelloBooks Free plan is unlimited *features* and *AI credits* (subject
- * to the monthly credit allowance in plans.ts), but caps **annual invoice
+ * to the one-time starting AI-credit allowance in plans.ts, which never refills), but caps **annual invoice
  * turnover** per entity, per country. An entity that exceeds the country
  * threshold must move to a paid plan.
  *

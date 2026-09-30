@@ -44,23 +44,31 @@ export interface Plan {
   plan: PlanType;
   name: string;
   tagline: string;
-  // -1 = unlimited; null on Free, which publishes no number (HelloBooks
+  // Monthly allowance for PAID plans (-1 = unlimited). Free's credits are a
+  // one-time starting allowance that never refills (decision 2026-09-30), so
+  // Free is null, which publishes no number (HelloBooks
   // decision 2026-09-28: "free AI credits included"; upgrade for more — 2026-09-29: packs are paid-plan only).
   monthlyAiCredits: number | null;
   /** Human wording for plans whose AI allowance has no published number. */
   aiCreditsNote?: string;
+  /** Annual ledger transaction cap; absent means this catalog does not publish a cap. */
+  annualTransactionLimit?: number;
   features: string[];
   prices: PlanPrice[];
   publicSignupUrl: string;
 }
 
 export const FREE_AI_CREDITS_NOTE =
-  'Free AI credits included to get started; upgrade to get more — credit packs are for paid plans.';
+  'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year. Upgrade to Pro or Business for more transaction volume and more AI — credit packs are for paid plans.';
+
+export const FREE_ANNUAL_TRANSACTION_LIMIT = 200;
+export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
-  'Free AI credits to get started',
-  'Unlimited invoices, bills & quotes',
+  'Up to 200 transactions per year',
+  'Free AI credits to get started (one-time)',
+  'Invoices, bills & quotes included',
   'Unlimited email payment reminders',
   '10 WhatsApp sends (one-time allowance)',
   'AP/AR aging · P&L · Balance Sheet · Cash Flow',
@@ -76,9 +84,10 @@ const STARTER_FEATURES = [
   'Everything in Free, plus:',
   'One legal entity per paid subscription',
   'AI auto-categorization (95%+ accuracy)',
+  'Up to 200 transactions per year',
   'Up to 5 users',
   '3 bank connections',
-  'Unlimited invoices, bills & quotes',
+  'Invoices, bills & quotes included',
   'AP/AR aging reports',
   'P&L, Balance Sheet, Cash Flow',
   'Export to Excel',
@@ -311,6 +320,7 @@ export const PLANS: Plan[] = [
     tagline: 'Everything you need to start',
     monthlyAiCredits: null,
     aiCreditsNote: FREE_AI_CREDITS_NOTE,
+    annualTransactionLimit: FREE_ANNUAL_TRANSACTION_LIMIT,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
@@ -320,6 +330,7 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     tagline: 'A first paid step — more users and bank feeds',
     monthlyAiCredits: 7500,
+    annualTransactionLimit: STARTER_ANNUAL_TRANSACTION_LIMIT,
     features: STARTER_FEATURES,
     // US-only today: pricesFor() returns a single US entry. See RegionConfig.
     prices: pricesFor('starter'),

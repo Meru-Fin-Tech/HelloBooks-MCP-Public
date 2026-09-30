@@ -79,13 +79,16 @@ const feedTierSchema = z.object({
   annualPrice: z.number(),
   anchorMonthlyPrice: z.number(),
   features: z.array(z.string()),
-  // monthlyAiCredits is the per-month AI-credit allowance (-1 = unlimited);
+  // monthlyAiCredits is the per-month AI-credit allowance for paid plans
+  // (-1 = unlimited); Free is null (one-time starting credits, never refill);
   // optional so a feed that omits it falls back to the baked catalog rather
   // than failing validation and freezing the snapshot. See feedToPlans below.
   limits: z.object({
     perClientPrice: z.number(),
     // null = no published number (Free, since 2026-09-28).
     monthlyAiCredits: z.number().nullable().optional(),
+    // Annual ledger transaction cap. For Free/Starter this is separate from AI credits.
+    annualTransactionLimit: z.number().int().positive().optional(),
   }).passthrough(),
 });
 
@@ -175,6 +178,7 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
       monthlyAiCredits: feedTier.limits.monthlyAiCredits === undefined
         ? baked.monthlyAiCredits
         : feedTier.limits.monthlyAiCredits,
+      annualTransactionLimit: feedTier.limits.annualTransactionLimit ?? baked.annualTransactionLimit,
       ...(feedTier.limits.monthlyAiCredits === null
         ? { aiCreditsNote: typeof feedTier.limits.aiCreditsNote === 'string' ? feedTier.limits.aiCreditsNote : baked.aiCreditsNote }
         : {}),
