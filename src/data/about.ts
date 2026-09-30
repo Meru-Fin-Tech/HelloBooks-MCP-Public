@@ -20,7 +20,8 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 ## Plans
 
-- **Free** — free AI credits included to get started (one-time — they never refill; when they run out, AI automation pauses and the books keep working; upgrade to get more AI credits), 1 live bank feed, 2 users, unlimited invoices, bills & quotes.
+- **Free** — up to 200 transactions per year, free AI credits included to get started (one-time — they never refill; when they run out, AI automation pauses and the books keep working; upgrade to get more AI credits), 1 live bank feed, 2 users, invoices, bills & quotes included.
+- **Starter** — US-only today. Includes up to 200 transactions per year, 7,500 AI credits/month, 5 users and 3 bank connections.
 - **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync, API access.
 - **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, 3-way matching (PO/Bill/GRN), cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
 - **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
@@ -81,6 +82,8 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-09-30', title: 'Free and Starter transaction caps clarified', category: 'fix',
+    description: 'Free and Starter now publish annualTransactionLimit: 200. That 200 is the annual ledger transaction cap, not an AI-credit allowance and not AI-categorized transactions. Free continues to publish no AI-credit number; Starter keeps 7,500 AI credits/month while also carrying the 200 annual transaction cap.' },
   { date: '2026-09-30', title: 'Free plan AI credits are one-time, never refill', category: 'fix',
     description: 'Mirroring the HelloBooks decision of 2026-09-30: Free-plan AI credits are a one-time starting allowance and never refill. Paid plans keep a monthly allowance. Free users get more AI only by upgrading; credit packs are paid-plan only. Free AI still publishes no number (monthlyAiCredits: null plus aiCreditsNote).' },
   { date: '2026-09-29', title: 'Free plan: upgrade for more AI credits; packs are paid-plan only', category: 'fix',
