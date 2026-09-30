@@ -67,6 +67,8 @@ test('list_plans Starter and Scale carry the US five-rung ladder prices', () => 
   const starter = listPlans({ plan: 'starter' }).plans[0];
   assert.equal(starter.name, 'Starter');
   assert.equal(starter.monthlyAiCredits, 7_500);
+  assert.equal(starter.annualTransactionLimit, 200);
+  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
   assert.equal(starter.prices[0].monthly, 14.99);
   assert.equal(starter.prices[0].annual, 149);
 
@@ -113,6 +115,20 @@ test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 region
     }
   }
   assert.equal(listPlans({ plan: 'business' }).plans[0].monthlyAiCredits, 50_000);
+});
+
+test('list_plans publishes Free and Starter 200/year transaction caps separately from AI credits', () => {
+  const free = listPlans({ plan: 'free' }).plans[0];
+  assert.equal(free.monthlyAiCredits, null);
+  assert.equal(free.annualTransactionLimit, 200);
+  assert.match(free.aiCreditsNote ?? '', /200 transactions per year/i);
+  assert.ok(free.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.ok(!free.features.some((feature) => /200\s+AI/i.test(feature)));
+
+  const starter = listPlans({ plan: 'starter' }).plans[0];
+  assert.equal(starter.monthlyAiCredits, 7_500);
+  assert.equal(starter.annualTransactionLimit, 200);
+  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
 });
 
 test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
@@ -1382,8 +1398,8 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const { parsePricingFeed, feedToPlans } = await import('../src/pricingFeed.js');
   const freeTier = {
     id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
-    features: ['Free AI credits to get started'],
-    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started (one-time); upgrade to get more — credit packs are for paid plans.' },
+    features: ['Free AI credits to get started', 'Up to 200 transactions per year'],
+    limits: { perClientPrice: 0, monthlyAiCredits: null, annualTransactionLimit: 200, aiCreditsNote: 'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year.' },
   };
   const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
   const parsed = parsePricingFeed(raw);
@@ -1392,6 +1408,8 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
   assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
+  assert.equal(free?.annualTransactionLimit, 200);
+  assert.ok(free?.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
   assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
   assert.ok(!free?.features.some((f) => /2,?500/.test(f)), 'no Free AI number in features');
   // Paid plans still carry their number.
