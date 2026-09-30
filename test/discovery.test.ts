@@ -48,7 +48,7 @@ test('getBaseUrl honors HELLOBOOKS_MCP_BASE_URL env and strips trailing slash', 
   delete process.env.HELLOBOOKS_MCP_BASE_URL;
 });
 
-test('TOOL_CATALOG covers all 14 marketing-catalog MCP tools in the discovery surface', () => {
+test('TOOL_CATALOG covers every public MCP tool in the discovery surface', () => {
   const expected = [
     'list_plans',
     'list_credit_packs',
@@ -64,6 +64,12 @@ test('TOOL_CATALOG covers all 14 marketing-catalog MCP tools in the discovery su
     'list_articles',
     'list_videos',
     'how_munimji_helps',
+    'free_tier_eligibility', 'partner_program_info', 'practice_management_info',
+    'analyze_qbo_journal_cleanup', 'analyze_qbo_journal_anomalies',
+    'analyze_xero_journal_cleanup', 'analyze_xero_journal_anomalies',
+    'analyze_journal_variance', 'compare_books_to_hellobooks', 'estimate_migration_effort',
+    'analyze_trial_balance', 'analyze_profit_loss', 'analyze_balance_sheet',
+    'list_tax_rates', 'lookup_tax_rate', 'list_accountants', 'get_accountant', 'list_api_catalog',
   ];
   const actual = TOOL_CATALOG.map((t) => t.name);
   assert.deepEqual(actual.slice().sort(), expected.slice().sort());
@@ -187,7 +193,11 @@ test('sitemap and llms.txt link every registered feed exactly once on each host'
       const xml = generateSitemap(CATALOG_FEEDS);
       const text = generateLlmsTxt(CATALOG_FEEDS);
       const locations = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g), (match) => match[1]);
-      assert.equal(locations.length, 10 + CATALOG_FEEDS.length);
+      assert.equal(locations.length, 15 + CATALOG_FEEDS.length);
+      for (const path of ['/apis', '/accountants', '/api/catalog.json', '/api/accountants.json', '/api/developer-reference.json']) {
+        assert.ok(locations.includes(`${baseUrl}${path}`));
+        assert.ok(text.includes(`${baseUrl}${path}`));
+      }
       assert.equal(new Set(locations).size, locations.length);
       for (const feed of CATALOG_FEEDS) {
         const url = `${baseUrl}/catalog/${feed.slug}.json`;

@@ -36,6 +36,7 @@ import type { CatalogFeedDescriptor } from './catalogFeeds.js';
 // here (instead of re-declaring a literal) prevents the discovery surface from
 // drifting behind the MCP handshake version, as it had at 0.7.0 vs 1.5.0.
 import { SERVER_VERSION } from './server.js';
+import { PUBLIC_API_PATHS } from './apiCatalog.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
@@ -199,6 +200,26 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     category: 'features',
     marketingUrl: `${MARKETING_BASE_URL}/features`,
   },
+  ...[
+    ['free_tier_eligibility', 'Free tier eligibility', 'Check the country-specific free-plan eligibility thresholds.'],
+    ['partner_program_info', 'Partner program', 'Partner program tiers, benefits, points and discounts.'],
+    ['practice_management_info', 'Practice management', 'HelloCPA practice management capabilities and product guidance.'],
+    ['analyze_qbo_journal_cleanup', 'QuickBooks journal cleanup', 'Analyze an uploaded journal CSV for imbalance and duplicates.'],
+    ['analyze_qbo_journal_anomalies', 'QuickBooks journal anomalies', 'Analyze round-number journal anomalies in a supplied CSV.'],
+    ['analyze_xero_journal_cleanup', 'Xero journal cleanup', 'Analyze supplied Xero journal data for cleanup issues.'],
+    ['analyze_xero_journal_anomalies', 'Xero journal anomalies', 'Find anomalies in a supplied Xero journal CSV.'],
+    ['analyze_journal_variance', 'Journal variance', 'Compare supplied journal amounts across periods.'],
+    ['compare_books_to_hellobooks', 'Compare books', 'Map supplied accounting data to HelloBooks capabilities.'],
+    ['estimate_migration_effort', 'Migration effort', 'Estimate migration work from supplied accounting exports.'],
+    ['analyze_trial_balance', 'Trial balance analysis', 'Analyze a supplied trial balance CSV.'],
+    ['analyze_profit_loss', 'Profit and loss analysis', 'Analyze a supplied profit and loss CSV.'],
+    ['analyze_balance_sheet', 'Balance sheet analysis', 'Analyze a supplied balance sheet CSV.'],
+    ['list_tax_rates', 'Tax rate catalog', 'List published tax-rate reference data.'],
+    ['lookup_tax_rate', 'Tax rate lookup', 'Find a published tax-rate reference.'],
+    ['list_accountants', 'Accountant directory', 'Search all published accountants with full public details and pagination.'],
+    ['get_accountant', 'Full accountant profile', 'Retrieve every published field of a firm profile by slug.'],
+    ['list_api_catalog', 'All APIs', 'Search public endpoints, MCP tools and authenticated accounting API documentation.'],
+  ].map(([name, title, summary]) => ({ name, title, summary, category: 'content' as const, marketingUrl: MARKETING_BASE_URL })),
 ];
 
 const RESOURCE_CATALOG = [
@@ -362,6 +383,8 @@ ${jsonLd}
   <header class="site-header">
     <a class="brand" href="${baseUrl}/">HelloBooks Agents</a>
     <nav aria-label="Main navigation">
+      <a href="/apis">API catalog</a>
+      <a href="/accountants">Accountants</a>
       <a href="#quick-start">Public MCP</a>
       <a class="portal-link" href="${DEVELOPER_PORTAL_URL}">Developer Portal</a>
       <a href="${DEVELOPER_DOCS_URL}">API Docs</a>
@@ -379,6 +402,12 @@ ${jsonLd}
       <a class="portal-link" href="${DEVELOPER_PORTAL_URL}">Open Developer Portal</a>
       <a href="${DEVELOPER_DOCS_URL}">Read API Docs</a>
     </div>
+  </section>
+
+  <section class="developer-portal" aria-labelledby="directory-api-title">
+    <h2 id="directory-api-title">Explore APIs and find an accountant</h2>
+    <p>Browse every public endpoint, registered MCP tool, and documented accounting API. Find published accountant profiles with services, credentials, public contact details, and availability.</p>
+    <div class="portal-actions"><a class="portal-link" href="/apis">Browse all APIs</a><a href="/accountants">Find an accountant</a><a href="/api/catalog.json">API catalog JSON</a></div>
   </section>
 
   <h2 id="quick-start">Quick start</h2>
@@ -516,7 +545,7 @@ export function generateMcpDiscovery(): Record<string, unknown> {
  * (ChatGPT plugin store, several agent directories) get a valid spec; the
  * actual semantics are in the agent card.
  */
-export function generateOpenApi(): Record<string, unknown> {
+export function generateOpenApi(feeds: readonly Pick<CatalogFeedDescriptor, 'slug' | 'title' | 'description'>[] = []): Record<string, unknown> {
   const baseUrl = getBaseUrl();
   return {
     openapi: '3.1.0',
@@ -530,6 +559,20 @@ export function generateOpenApi(): Record<string, unknown> {
     },
     servers: [{ url: baseUrl }],
     paths: {
+      ...Object.fromEntries(PUBLIC_API_PATHS.map(([path, title, description]) => [path, { get: { summary: title, description, responses: { '200': { description: 'Public response' } } } }])),
+      ...Object.fromEntries(feeds.map(feed => [`/catalog/${feed.slug}.json`, { get: { summary: feed.title, description: feed.description, responses: { '200': { description: 'Catalog JSON' } } } }])),
+      '/api/catalog.json': { get: { summary: 'Complete API catalog', parameters: [
+        ...['query','kind','id'].map(name => ({ name, in: 'query', schema: { type: 'string' } })),
+        ...['page','pageSize'].map(name => ({ name, in: 'query', schema: { type: 'integer', minimum: 1, ...(name === 'pageSize' ? { maximum: 100 } : {}) } })),
+      ], responses: { '200': { description: 'Catalog entries, totals and nextPage; id includes full contract details' }, '400': { description: 'Invalid parameters' }, '404': { description: 'Unknown API id' } } } },
+      '/api/accountants.json': { get: { summary: 'All published accountant profiles', parameters: [
+        ...['query','country','city','specialty'].map(name => ({ name, in: 'query', schema: { type: 'string' } })),
+        { name: 'acceptingClients', in: 'query', schema: { type: 'boolean' }, description: 'Omit to include all published firms' },
+        ...['page','pageSize'].map(name => ({ name, in: 'query', schema: { type: 'integer', minimum: 1, ...(name === 'pageSize' ? { maximum: 100 } : {}) } })),
+      ], responses: { '200': { description: 'Full public profiles, totals, nextPage, source and freshness' }, '400': { description: 'Invalid parameters' }, '503': { description: 'Source unavailable and no cached profiles' } } } },
+      '/api/accountants/{slug}.json': { get: { summary: 'Full published accountant profile', parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Profile and source status' }, '404': { description: 'Profile not found' }, '503': { description: 'Source unavailable' } } } },
+      '/api/developer-reference.json': { get: { summary: 'Complete generated accounting OpenAPI reference', responses: { '200': { description: 'Accounting API definitions and authorization requirements' } } } },
+      '/catalog/index.json': { get: { summary: 'Every public catalog feed', responses: { '200': { description: 'Feed index' } } } },
       '/mcp': {
         post: {
           summary: 'MCP JSON-RPC envelope',
@@ -607,6 +650,16 @@ For Cursor, Windsurf, Cline, or any MCP-aware client: configure a remote MCP ser
 Build integrations with the [HelloBooks Developer Portal](${DEVELOPER_PORTAL_URL}).
 The [API documentation](${DEVELOPER_DOCS_URL}) covers app registration, OAuth company connections, and testing with an India sandbox.
 This public MCP provides product information; company API access is configured through the Developer Portal.
+
+## API catalog and accountant directory
+
+- [Browse all APIs](${baseUrl}/apis) — search public HTTP endpoints, all registered MCP tools, and every operation in the generated accounting API reference.
+- [API catalog JSON](${baseUrl}/api/catalog.json) — filter by query or kind; follow nextPage until null. Pass id for complete parameters, schemas and authorization requirements.
+- [Accounting OpenAPI](${baseUrl}/api/developer-reference.json) — complete generated reference; company OAuth authorization is required to call these APIs.
+- [Accountant directory](${baseUrl}/accountants) — browse every published firm, across all countries and availability states.
+- [Accountant JSON API](${baseUrl}/api/accountants.json) — full public profiles, filters, page/pageSize, totals, nextPage and freshness. Use /api/accountants/{slug}.json for one profile.
+
+MCP tools: list_api_catalog, list_accountants, get_accountant. Accountant data refreshes every five minutes; stale or unavailable sources are explicitly identified. The accounting reference is a versioned source snapshot, with its source commit and import timestamp in the catalog.
 
 ## Tools (${TOOL_CATALOG.length})
 
@@ -714,6 +767,11 @@ export function generateSitemap(feeds: readonly Pick<CatalogFeedDescriptor, 'slu
   const entries: { loc: string; changefreq: string; priority: string }[] = [
     { loc: `${baseUrl}/`, changefreq: 'daily', priority: '1.0' },
     { loc: `${baseUrl}/catalog.json`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/apis`, changefreq: 'weekly', priority: '0.9' },
+    { loc: `${baseUrl}/accountants`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/api/catalog.json`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/api/accountants.json`, changefreq: 'daily', priority: '0.8' },
+    { loc: `${baseUrl}/api/developer-reference.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/catalog/index.json`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/llms.txt`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/.well-known/agent.json`, changefreq: 'weekly', priority: '0.8' },

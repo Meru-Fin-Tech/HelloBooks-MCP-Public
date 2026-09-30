@@ -10,6 +10,19 @@ country support, compliance frameworks — instead of relying on stale web snipp
 
 ## Developer Portal
 
+Use [API catalog](https://agents.hellobooks.ai/apis) to search every public HTTP
+endpoint, registered MCP tool, and operation in the generated accounting API
+reference. Open an entry for its parameters, authorization requirements, request
+example and full published schema. Accounting calls use company-scoped OAuth at
+the documented API host.
+
+The [accountant directory](https://agents.hellobooks.ai/accountants) includes all
+published firms and full public profiles. Availability is a filter, so firms not
+accepting new clients are still accessible. The `list_accountants`,
+`get_accountant`, and `list_api_catalog` tools expose these surfaces over MCP.
+See [API and directory documentation](docs/API_DIRECTORY.md) for endpoints,
+pagination, freshness and reference maintenance.
+
 Build an integration with the [HelloBooks Developer Portal](https://developer.hellobooks.ai/).
 The [API documentation](https://developer.hellobooks.ai/docs/overview) covers
 registering an app, connecting a company with OAuth, and testing with an India sandbox.
