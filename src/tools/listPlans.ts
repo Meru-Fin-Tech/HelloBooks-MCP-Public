@@ -29,7 +29,7 @@ function fallbackPrice(price: PlanPrice, country: SupportedCountryCode, localCur
     ...price,
     country,
     pricingCountry: DEFAULT_PRICING_COUNTRY,
-    billingNote: `USD/default list price. Books and reports for ${country} use ${localCurrency}; subscription checkout bills this tier in ${price.currency}.`,
+    billingNote: `USD/default list price per entity. Books and reports for ${country} use ${localCurrency}; subscription checkout bills this tier per entity in ${price.currency}.`,
   };
 }
 
@@ -77,6 +77,6 @@ export function listPlans(args: ListPlansArgs) {
     pricingFallback,
     ...getPricingMeta(),
     source: 'https://hellobooks.ai/pricing',
-    note: 'Prices are list prices. The 8 priced regions return local currency rows. Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`; local books still use that country currency. Discounts and promotions may apply at checkout. `dataSource` is "live-feed" when prices were fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
+    note: 'Prices are list prices. All paid HelloBooks plan and add-on charges are per entity; each paid subscription covers one legal entity. Multi-entity management means managing/reporting across subscribed entities, not bundling extra legal entities into one subscription. The 8 priced regions return local currency rows. Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`; local books still use that country currency. Discounts and promotions may apply at checkout. `dataSource` is "live-feed" when prices were fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
   };
 }

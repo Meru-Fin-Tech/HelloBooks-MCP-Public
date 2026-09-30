@@ -117,6 +117,27 @@ test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 region
   assert.equal(listPlans({ plan: 'business' }).plans[0].monthlyAiCredits, 50_000);
 });
 
+test('list_plans marks paid plan and add-on prices as per entity', () => {
+  const paidPlans = ['starter', 'pro', 'business', 'scale'] as const;
+  for (const plan of paidPlans) {
+    const r = listPlans({ plan });
+    assert.match(r.note, /paid HelloBooks plan and add-on charges are per entity/i);
+    assert.match(r.note, /each paid subscription covers one legal entity/i);
+    assert.ok(
+      r.plans[0].features.some((feature) => /one legal entity per paid subscription/i.test(feature)),
+      `${plan} should tell agents that one paid subscription covers one legal entity`,
+    );
+    for (const price of r.plans[0].prices) {
+      assert.equal(price.billingUnit, 'per_entity', `${plan} ${price.country} should be per entity`);
+    }
+  }
+
+  for (const plan of ['warehouse-addon', 'manufacturing-addon'] as const) {
+    const r = listPlans({ plan });
+    assert.equal(r.plans[0].prices[0].billingUnit, 'per_entity');
+  }
+});
+
 test('list_plans publishes Free and Starter 200/year transaction caps separately from AI credits', () => {
   const free = listPlans({ plan: 'free' }).plans[0];
   assert.equal(free.monthlyAiCredits, null);
@@ -186,7 +207,9 @@ test('list_plans country=MU returns USD/default fallback with Mauritius metadata
   assert.equal(price.pricingCountry, 'US');
   assert.equal(price.currency, 'USD');
   assert.equal(price.monthly, 39.99);
+  assert.equal(price.billingUnit, 'per_entity');
   assert.match(price.billingNote ?? '', /MUR/);
+  assert.match(price.billingNote ?? '', /per entity/);
 });
 
 test('list_plans surfaces warehouse + manufacturing add-on pricing in USD', () => {
@@ -334,12 +357,49 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   const ca = pro.prices.find((pr) => pr.country === 'CA');
   assert.equal(ca?.monthly, 22.99);
   // features come from the feed
-  assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
+  assert.deepEqual(pro.features, ['One legal entity per paid subscription', 'Feed-sourced Pro feature']);
+  assert.equal(pro.prices.find((pr) => pr.country === 'US')?.billingUnit, 'per_entity');
   // perClient is vestigial post-Web-Fire #514 — the federation no longer
   // populates it on the cpa plan, even when the feed carries a non-zero
   // perClientPrice (the field is kept optional on PlanPrice for back-compat).
   const cpaUs = plans.find((p) => p.plan === 'cpa')?.prices.find((pr) => pr.country === 'US');
   assert.equal(cpaUs?.perClient, undefined);
+});
+
+test('feedToPlans normalizes live paid-plan features to per-entity wording', () => {
+  const feed = {
+    ...FEED_FIXTURE,
+    tiers: [
+      {
+        id: 'business',
+        currency: 'USD',
+        monthlyPrice: 79.99,
+        annualPrice: 799,
+        anchorMonthlyPrice: 0,
+        features: ['Everything in Pro, plus:', 'Multi-entity management'],
+        limits: { perClientPrice: 0, monthlyAiCredits: 50000 },
+      },
+    ],
+    regions: [{
+      ...FEED_FIXTURE.regions[0],
+      tiers: [{
+        id: 'business',
+        currency: 'USD',
+        monthlyPrice: 79.99,
+        annualPrice: 799,
+        anchorMonthlyPrice: 0,
+        features: ['Everything in Pro, plus:', 'Multi-entity management'],
+        limits: { perClientPrice: 0, monthlyAiCredits: 50000 },
+      }],
+    }],
+  };
+
+  const business = feedToPlans(feed).find((p) => p.plan === 'business');
+  assert.ok(business);
+  assert.ok(business.features.some((feature) => /one legal entity per paid subscription/i.test(feature)));
+  assert.ok(business.features.some((feature) => /multi-entity management across subscribed entities/i.test(feature)));
+  assert.ok(!business.features.some((feature) => /^Multi-entity management$/i.test(feature)));
+  assert.equal(business.prices[0].billingUnit, 'per_entity');
 });
 
 test('feedToPlans never spreads a US-only tier across other markets', () => {
