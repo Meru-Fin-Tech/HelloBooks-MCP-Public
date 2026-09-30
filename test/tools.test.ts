@@ -372,6 +372,8 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   const free = plans.find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
+  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
@@ -1381,7 +1383,7 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const freeTier = {
     id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
     features: ['Free AI credits to get started'],
-    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started; upgrade to get more — credit packs are for paid plans.' },
+    limits: { perClientPrice: 0, monthlyAiCredits: null, aiCreditsNote: 'Free AI credits included to get started (one-time); upgrade to get more — credit packs are for paid plans.' },
   };
   const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
   const parsed = parsePricingFeed(raw);
@@ -1389,6 +1391,8 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const free = feedToPlans(parsed.data).find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
+  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
   assert.ok(!free?.features.some((f) => /2,?500/.test(f)), 'no Free AI number in features');
   // Paid plans still carry their number.
   assert.equal(feedToPlans(parsed.data).find((p) => p.plan === 'pro')?.monthlyAiCredits, 99999);
