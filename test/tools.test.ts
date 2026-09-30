@@ -151,7 +151,6 @@ test('list_plans publishes Free and Starter 200/year transaction caps separately
   assert.equal(starter.annualTransactionLimit, 200);
   assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
 });
-});
 
 test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
   for (const plan of ['pro', 'business'] as const) {
