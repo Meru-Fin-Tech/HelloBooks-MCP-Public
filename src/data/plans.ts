@@ -43,7 +43,9 @@ export interface Plan {
   plan: PlanType;
   name: string;
   tagline: string;
-  // -1 = unlimited; null on Free, which publishes no number (HelloBooks
+  // Monthly allowance for PAID plans (-1 = unlimited). Free's credits are a
+  // one-time starting allowance that never refills (decision 2026-09-30), so
+  // Free is null, which publishes no number (HelloBooks
   // decision 2026-09-28: "free AI credits included"; upgrade for more — 2026-09-29: packs are paid-plan only).
   monthlyAiCredits: number | null;
   /** Human wording for plans whose AI allowance has no published number. */
@@ -54,11 +56,11 @@ export interface Plan {
 }
 
 export const FREE_AI_CREDITS_NOTE =
-  'Free AI credits included to get started; upgrade to get more — credit packs are for paid plans.';
+  'Free AI credits included to get started (one-time); upgrade to get more — credit packs are for paid plans.';
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
-  'Free AI credits to get started',
+  'Free AI credits to get started (one-time)',
   'Unlimited invoices, bills & quotes',
   'Unlimited email payment reminders',
   '10 WhatsApp sends (one-time allowance)',

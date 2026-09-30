@@ -60,7 +60,8 @@ const feedTierSchema = z.object({
   annualPrice: z.number(),
   anchorMonthlyPrice: z.number(),
   features: z.array(z.string()),
-  // monthlyAiCredits is the per-month AI-credit allowance (-1 = unlimited);
+  // monthlyAiCredits is the per-month AI-credit allowance for paid plans
+  // (-1 = unlimited); Free is null (one-time starting credits, never refill);
   // optional so a feed that omits it falls back to the baked catalog rather
   // than failing validation and freezing the snapshot. See feedToPlans below.
   limits: z.object({
