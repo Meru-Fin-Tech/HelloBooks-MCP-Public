@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import type { AddressInfo } from 'node:net';
 
-import { buildVoicePack, resolveVoiceCountry } from '../src/voiceKnowledge.js';
+import { buildAllVoicePacks, buildVoicePack, resolveVoiceCountry } from '../src/voiceKnowledge.js';
 import { createVoiceKnowledgeRouter } from '../src/voiceKnowledgeRouter.js';
 import { feedToPlans, type PricingFeed } from '../src/pricingFeed.js';
 import { SUPPORTED_COUNTRY_CODES } from '../src/data/supportedCountries.js';
@@ -144,9 +144,40 @@ async function withServer(fn: (base: string) => Promise<void>): Promise<void> {
   }
 }
 
-test('GET /kb/voice.json: 400 without a country, 200 with ETag + timestamps, 304 on revalidate', async () => {
+test('buildAllVoicePacks: one bundle with every supported country', () => {
+  const all = buildAllVoicePacks(new Date('2026-10-05T00:00:00Z'));
+  assert.deepEqual(all.countries, [...SUPPORTED_COUNTRY_CODES]);
+  assert.equal(all.packs.IN.onboardingSupport?.price, 5000);
+  assert.equal(all.packs.US.onboardingSupport?.price, 300);
+  assert.equal(all.packs.IN.version, buildVoicePack('IN').version);
+  assert.match(all.version, /^[0-9a-f]{16}$/);
+  assert.equal(all.version, buildAllVoicePacks(new Date('2026-10-06T00:00:00Z')).version);
+  for (const c of all.countries) assert.match(all.text, new RegExp(`HELLOBOOKS KNOWLEDGE — .* \\(${c}\\)`));
+});
+
+test('GET /kb/voice.json with no country (or country=all) returns every country', async () => {
   await withServer(async (base) => {
-    const bad = await fetch(`${base}/voice.json`);
+    for (const url of [`${base}/voice.json`, `${base}/voice.json?country=all`]) {
+      const res = await fetch(url);
+      assert.equal(res.status, 200, url);
+      const body = await res.json() as { countries: string[]; packs: Record<string, { country: string }>; version: string };
+      assert.deepEqual(body.countries, [...SUPPORTED_COUNTRY_CODES]);
+      assert.equal(body.packs.IN.country, 'IN');
+      assert.equal(res.headers.get('etag'), `"${body.version}"`);
+      const again = await fetch(url, { headers: { 'if-none-match': res.headers.get('etag')! } });
+      assert.equal(again.status, 304);
+    }
+    const txt = await fetch(`${base}/voice.txt`);
+    assert.equal(txt.status, 200);
+    const body = await txt.text();
+    assert.match(body, /India \(IN\)/);
+    assert.match(body, /United States \(US\)/);
+  });
+});
+
+test('GET /kb/voice.json: 400 for an unknown country, 200 with ETag + timestamps, 304 on revalidate', async () => {
+  await withServer(async (base) => {
+    const bad = await fetch(`${base}/voice.json?country=ZZ`);
     assert.equal(bad.status, 400);
 
     const ok = await fetch(`${base}/voice.json?country=in`);

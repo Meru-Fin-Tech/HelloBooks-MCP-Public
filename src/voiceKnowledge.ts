@@ -24,7 +24,7 @@ import { createHash } from 'node:crypto';
 import { getPricingMeta } from './pricingFeed.js';
 import { listPlans } from './tools/listPlans.js';
 import type { Plan, PlanPrice, PlanType } from './data/plans.js';
-import { getSupportedCountry, isSupportedCountryCode } from './data/supportedCountries.js';
+import { SUPPORTED_COUNTRY_CODES, getSupportedCountry, isSupportedCountryCode } from './data/supportedCountries.js';
 import { COMPLIANCE_DEADLINES } from './data/complianceDeadlines.js';
 import { COUNTRY_SUPPORT } from './data/countries.js';
 import { isBilledInUsd } from './data/billingParity.js';
@@ -319,4 +319,49 @@ export function buildVoicePack(country: string, now: Date = new Date()): VoicePa
   const version = createHash('sha256').update(JSON.stringify(stable)).digest('hex').slice(0, 16);
   const text = renderText(body, version);
   return { ...body, version, text, approxTokens: Math.ceil(text.length / 4) };
+}
+
+export const VOICE_PACK_BUNDLE_SCHEMA = 'hellobooks.voice-pack-bundle/v1';
+
+export interface VoicePackBundle {
+  schema: typeof VOICE_PACK_BUNDLE_SCHEMA;
+  /** Hash of every country's version — moves when any country's facts move. */
+  version: string;
+  generatedAt: string;
+  factsAsOf: string;
+  pricingSource: VoicePack['pricingSource'];
+  countries: string[];
+  packs: Record<string, VoicePack>;
+  /** Every country's text block, one after another. */
+  text: string;
+  approxTokens: number;
+}
+
+/**
+ * Every supported country in one response — for a caller that wants to sync
+ * the whole knowledge base at once. A live call should still put only the
+ * customer's own country pack in its prompt; the bundle is ~20x the tokens.
+ */
+export function buildAllVoicePacks(now: Date = new Date()): VoicePackBundle {
+  const packs: Record<string, VoicePack> = {};
+  for (const c of SUPPORTED_COUNTRY_CODES) packs[c] = buildVoicePack(c, now);
+  const countries = Object.keys(packs);
+  const version = createHash('sha256')
+    .update(countries.map((c) => `${c}:${packs[c].version}`).join('|'))
+    .digest('hex')
+    .slice(0, 16);
+  const first = packs[countries[0]];
+  const factsAsOf = countries.map((c) => packs[c].factsAsOf).sort().at(-1)!;
+  const text = countries.map((c) => packs[c].text).join('\n\n==========\n\n');
+  return {
+    schema: VOICE_PACK_BUNDLE_SCHEMA,
+    version,
+    generatedAt: now.toISOString(),
+    factsAsOf,
+    pricingSource: first.pricingSource,
+    countries,
+    packs,
+    text,
+    approxTokens: Math.ceil(text.length / 4),
+  };
 }

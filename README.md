@@ -55,7 +55,8 @@ Precompiled, per-country facts an AI caller loads **once per call** and keeps in
 | Endpoint | Returns |
 |---|---|
 | `GET /kb/voice.json?country=IN` | structured pack: plans + prices for that country, the currency actually charged, onboarding support offer, included support, GST / local compliance + due dates, guardrails, call goals, and `text` (the prompt-ready block) |
-| `GET /kb/voice.txt?country=IN` | just the prompt-ready text |
+| `GET /kb/voice.json` (no `country`, or `country=all`) | **every supported country in one response**: `{ version, generatedAt, factsAsOf, countries, packs: { IN: {...}, US: {...}, ... } }` — for syncing the whole knowledge base at once (~700 KB; revalidate with `If-None-Match`). Put only the customer's own country pack in a call prompt. |
+| `GET /kb/voice.txt?country=IN` | just the prompt-ready text (omit `country` for all countries) |
 | `POST /kb/refresh` | re-pull live pricing now (`Authorization: Bearer $HELLOBOOKS_KB_REFRESH_TOKEN`; 404 when the env var is unset) |
 
 Caching: `ETag` is the content hash (`version`), so send `If-None-Match` and re-download only on a 304 miss. Every response carries `X-KB-Facts-As-Of` (when pricing last changed) and `X-KB-Generated-At`. Prices come from the live hellobooks.ai pricing feed; the onboarding offer and call rules live in `src/data/onboardingSupport.ts` and `src/voiceKnowledge.ts` and change by commit.
