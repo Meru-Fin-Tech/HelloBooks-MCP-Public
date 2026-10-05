@@ -56,6 +56,7 @@ import {
   isValidSlug,
 } from './lib/shareUrl/index.js';
 import { createReportingRouter } from './reporting/endpoint.js';
+import { createVoiceKnowledgeRouter } from './voiceKnowledgeRouter.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -225,6 +226,7 @@ app.get('/info', (_req, res) => {
       llms_txt: '/llms.txt',
       catalog: '/catalog.json',
       catalog_feeds: '/catalog/index.json',
+      voice_knowledge_pack: '/kb/voice.json?country=IN',
       changelog: '/changelog.json',
       sitemap: '/sitemap.xml',
       robots: '/robots.txt',
@@ -290,6 +292,14 @@ for (const feed of CATALOG_FEEDS) {
     sendJson(res, body);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Voice knowledge pack — precompiled per-country facts for AI phone agents.
+// ---------------------------------------------------------------------------
+//
+// Fetched once per call (ETag-revalidated) by HelloCRM's AI caller, never
+// queried mid-call. See ./voiceKnowledge.ts and ./voiceKnowledgeRouter.ts.
+app.use('/kb', ipLimiter, createVoiceKnowledgeRouter());
 
 // ---------------------------------------------------------------------------
 // Share-URL surface — minted by analytical MCP tools, rendered here.

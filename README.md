@@ -48,6 +48,18 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_tax_rates` | Statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant), UK VAT (20/5/zero/exempt), AU GST (10/GST-free), US state-administered summary, CA GST + HST (ON, Atlantic), SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/…), or `scheme` (standard/reduced/zero/exempt/composition/cess). Every entry carries an effective-from date and a `source` URL — confirm before quoting. |
 | `lookup_tax_rate` | Pick a single statutory rate by exact `id` (e.g. `IN-standard-18`) or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports"). Returns the matched rate, score, and source URL. |
 
+## Voice knowledge pack (for AI phone agents)
+
+Precompiled, per-country facts an AI caller loads **once per call** and keeps in its system prompt — no retrieval mid-call. About 850–1,350 tokens per country.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /kb/voice.json?country=IN` | structured pack: plans + prices for that country, the currency actually charged, onboarding support offer, included support, GST / local compliance + due dates, guardrails, call goals, and `text` (the prompt-ready block) |
+| `GET /kb/voice.txt?country=IN` | just the prompt-ready text |
+| `POST /kb/refresh` | re-pull live pricing now (`Authorization: Bearer $HELLOBOOKS_KB_REFRESH_TOKEN`; 404 when the env var is unset) |
+
+Caching: `ETag` is the content hash (`version`), so send `If-None-Match` and re-download only on a 304 miss. Every response carries `X-KB-Facts-As-Of` (when pricing last changed) and `X-KB-Generated-At`. Prices come from the live hellobooks.ai pricing feed; the onboarding offer and call rules live in `src/data/onboardingSupport.ts` and `src/voiceKnowledge.ts` and change by commit.
+
 ## Resources
 
 | URI | Description |
