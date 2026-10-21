@@ -67,13 +67,14 @@ export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
   'Up to 200 transactions per year',
-  'Free AI credits to get started (one-time)',
+  'Free AI credits to get started',
   'Invoices, bills & quotes included',
   'Unlimited email payment reminders',
   '10 WhatsApp sends (one-time allowance)',
   'AP/AR aging · P&L · Balance Sheet · Cash Flow',
   'Full mobile app (iOS & Android)',
   '"Powered by HelloBooks" badge on invoices',
+  'Free customization — email us your requirements',
 ];
 
 // Starter — the rung between Free and Pro (Web-Fire five-rung ladder, founder
@@ -82,22 +83,22 @@ const FREE_FEATURES = [
 // all of which stay Pro/Business.
 const STARTER_FEATURES = [
   'Everything in Free, plus:',
-  'One legal entity per paid subscription',
   'AI auto-categorization (95%+ accuracy)',
   'Up to 200 transactions per year',
   'Up to 5 users',
   '3 bank connections',
   'Invoices, bills & quotes included',
+  'Recurring invoices',
   'AP/AR aging reports',
   'P&L, Balance Sheet, Cash Flow',
   'Export to Excel',
   'Full mobile app (iOS & Android)',
+  'Free customization — email us your requirements',
 ];
 
 // Scale — the top rung, for groups running manufacturing / warehouse depth.
 const SCALE_FEATURES = [
   'Everything in Business, plus:',
-  'One legal entity per paid subscription',
   'Manufacturing: BOM, work orders, MRP & job work',
   'Warehouse depth: bins, waves, cross-dock & cycle counts',
   'Lot, batch & serial traceability with FEFO picking',
@@ -105,36 +106,36 @@ const SCALE_FEATURES = [
   'Higher API rate limits',
   'Custom development — see below',
   'Named implementation lead',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 const PRO_FEATURES = [
-  '15,000 AI credits / month',
-  'One legal entity per paid subscription',
+  'Everything in Starter, plus:',
   'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
-  'Multi-entity management across subscribed entities',
-  'API access',
   'AI Analysis & Comparative View on every report',
   'Recurring invoices, bills & approvals',
-  'GST filing (GSTR-1, 3B, 9) + e-invoicing',
-  'Tally sync',
   'Multi-currency with auto FX',
   'Remove "Powered by" badge',
   'Priority email support',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 const BUSINESS_FEATURES = [
   'Everything in Pro, plus:',
-  '50,000 AI credits to get started',
-  'One legal entity per paid subscription',
   'Advanced inventory: lot/batch + multi-warehouse allocations',
   'Cohort, retention & CFO analytics',
   'Audit log + advanced role-based access',
   'Sandbox environment',
-  'Higher API rate limits',
-  'Priority phone support',
+  'Multi-entity management across subscribed entities',
+  'API access',
+  'Priority email support',
   'Dedicated success manager',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 // Partner Program — `cpa` plan id (kept for federation contract; see Web-Fire

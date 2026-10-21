@@ -356,8 +356,8 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   // a region absent from the feed falls back to the baked price
   const ca = pro.prices.find((pr) => pr.country === 'CA');
   assert.equal(ca?.monthly, 22.99);
-  // features come from the feed
-  assert.deepEqual(pro.features, ['One legal entity per paid subscription', 'Feed-sourced Pro feature']);
+  // features come from the feed (billingUnit=per_entity communicates the per-entity model)
+  assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
   assert.equal(pro.prices.find((pr) => pr.country === 'US')?.billingUnit, 'per_entity');
   // perClient is vestigial post-Web-Fire #514 — the federation no longer
   // populates it on the cpa plan, even when the feed carries a non-zero
@@ -396,7 +396,6 @@ test('feedToPlans normalizes live paid-plan features to per-entity wording', () 
 
   const business = feedToPlans(feed).find((p) => p.plan === 'business');
   assert.ok(business);
-  assert.ok(business.features.some((feature) => /one legal entity per paid subscription/i.test(feature)));
   assert.ok(business.features.some((feature) => /multi-entity management across subscribed entities/i.test(feature)));
   assert.ok(!business.features.some((feature) => /^Multi-entity management$/i.test(feature)));
   assert.equal(business.prices[0].billingUnit, 'per_entity');

@@ -72,7 +72,7 @@ import { RESOURCES, readResource } from './resources/index.js';
 import { track } from './analytics.js';
 
 const SERVER_NAME = 'hellobooks-public';
-export const SERVER_VERSION = '1.5.0';
+export const SERVER_VERSION = '1.6.0';
 
 function asJsonContent(payload: unknown) {
   return {

@@ -61,13 +61,9 @@ function normalizePlanFeatures(plan: string, feedFeatures: string[], bakedFeatur
   const source = feedFeatures.length > 0 ? feedFeatures : bakedFeatures;
   if (!isPaidPlan(plan)) return source;
 
-  const normalized = source.map((feature) => feature
+  return source.map((feature) => feature
     .replace(/^Multi-entity management$/i, 'Multi-entity management across subscribed entities')
     .replace(/^Multi-country statutory filing & consolidation$/i, 'Multi-country statutory filing & consolidation across subscribed entities'));
-
-  return normalized.some((feature) => /one legal entity per paid subscription/i.test(feature))
-    ? normalized
-    : ['One legal entity per paid subscription', ...normalized];
 }
 
 // --- Feed schema — a malformed feed fails validation and triggers fallback ---
