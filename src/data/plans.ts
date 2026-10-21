@@ -27,6 +27,7 @@ export interface PlanPrice {
   monthly: number;
   annual: number;
   anchorMonthly: number; // 0 = no strikethrough price
+  billingUnit?: 'per_entity';
   pricingCountry?: CountryCode;
   billingNote?: string;
   /**
@@ -66,13 +67,14 @@ export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
   'Up to 200 transactions per year',
-  'Free AI credits to get started (one-time)',
+  'Free AI credits to get started',
   'Invoices, bills & quotes included',
   'Unlimited email payment reminders',
   '10 WhatsApp sends (one-time allowance)',
   'AP/AR aging · P&L · Balance Sheet · Cash Flow',
   'Full mobile app (iOS & Android)',
   '"Powered by HelloBooks" badge on invoices',
+  'Free customization — email us your requirements',
 ];
 
 // Starter — the rung between Free and Pro (Web-Fire five-rung ladder, founder
@@ -86,10 +88,12 @@ const STARTER_FEATURES = [
   'Up to 5 users',
   '3 bank connections',
   'Invoices, bills & quotes included',
+  'Recurring invoices',
   'AP/AR aging reports',
   'P&L, Balance Sheet, Cash Flow',
   'Export to Excel',
   'Full mobile app (iOS & Android)',
+  'Free customization — email us your requirements',
 ];
 
 // Scale — the top rung, for groups running manufacturing / warehouse depth.
@@ -98,38 +102,40 @@ const SCALE_FEATURES = [
   'Manufacturing: BOM, work orders, MRP & job work',
   'Warehouse depth: bins, waves, cross-dock & cycle counts',
   'Lot, batch & serial traceability with FEFO picking',
-  'Multi-country statutory filing & consolidation',
+  'Multi-country statutory filing & consolidation across subscribed entities',
   'Higher API rate limits',
   'Custom development — see below',
   'Named implementation lead',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 const PRO_FEATURES = [
-  '15,000 AI credits / month',
+  'Everything in Starter, plus:',
   'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
-  'Multi-entity management',
-  'API access',
   'AI Analysis & Comparative View on every report',
   'Recurring invoices, bills & approvals',
-  'GST filing (GSTR-1, 3B, 9) + e-invoicing',
-  'Tally sync',
   'Multi-currency with auto FX',
   'Remove "Powered by" badge',
   'Priority email support',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 const BUSINESS_FEATURES = [
   'Everything in Pro, plus:',
-  '50,000 AI credits to get started',
   'Advanced inventory: lot/batch + multi-warehouse allocations',
   'Cohort, retention & CFO analytics',
   'Audit log + advanced role-based access',
   'Sandbox environment',
-  'Higher API rate limits',
-  'Priority phone support',
+  'Multi-entity management across subscribed entities',
+  'API access',
+  'Priority email support',
   'Dedicated success manager',
+  'Free onboarding support',
+  'Free customization — email us your requirements',
 ];
 
 // Partner Program — `cpa` plan id (kept for federation contract; see Web-Fire
@@ -279,6 +285,7 @@ function pricesFor(plan: RegionalPaidPlan): PlanPrice[] {
       monthly: tier.monthly,
       annual: tier.annual,
       anchorMonthly: 'anchor' in tier ? tier.anchor : 0,
+      ...(plan === 'cpa' ? {} : { billingUnit: 'per_entity' as const }),
     });
   }
   return out;
@@ -303,7 +310,7 @@ function freePrices(): PlanPrice[] {
 function usdAddonPrice(monthly: number, annual: number): PlanPrice[] {
   return [{
     country: 'US', currency: 'USD', symbol: '$',
-    monthly, annual, anchorMonthly: 0,
+    monthly, annual, anchorMonthly: 0, billingUnit: 'per_entity',
   }];
 }
 
