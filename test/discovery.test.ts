@@ -48,8 +48,10 @@ test('getBaseUrl honors HELLOBOOKS_MCP_BASE_URL env and strips trailing slash', 
   delete process.env.HELLOBOOKS_MCP_BASE_URL;
 });
 
-test('TOOL_CATALOG covers all 14 marketing-catalog MCP tools in the discovery surface', () => {
+test('TOOL_CATALOG covers all 16 marketing-catalog MCP tools in the discovery surface', () => {
   const expected = [
+    'search',
+    'fetch',
     'list_plans',
     'list_credit_packs',
     'list_integrations',
