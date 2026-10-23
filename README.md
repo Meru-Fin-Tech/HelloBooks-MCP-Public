@@ -30,10 +30,42 @@ Or, for local development:
 claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.js
 ```
 
+### Add by URL (Claude and ChatGPT connectors)
+
+One URL, no sign-in, for both products:
+
+```
+https://agents.hellobooks.ai/mcp
+```
+
+- **Claude** (claude.ai / Desktop) — Settings → Connectors → *Add custom connector*, paste the
+  URL, authentication **No sign in**. Streamable HTTP; the server must stay reachable from
+  Anthropic's IP ranges.
+- **ChatGPT** — Settings → Connectors, paste the URL, authentication **No authentication**.
+  Works in Developer Mode (all 31 tools) *and* in deep research / company knowledge, because
+  the server implements OpenAI's two-tool retrieval contract: `search` returns
+  `{ results: [{ id, title, url }] }` and `fetch` resolves one of those ids into
+  `{ id, title, text, url, metadata }`. Every document carries a non-empty `url`, so answers
+  come back cited.
+
+Verify a URL install without a client:
+
+```bash
+curl -s -X POST https://agents.hellobooks.ai/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}'
+```
+
+Note the `Accept` header: per the MCP spec the server answers `406` unless the client accepts
+**both** `application/json` and `text/event-stream`. Claude and ChatGPT both send both.
+
 ## Tools
 
 | Tool | Description |
 | --- | --- |
+| `search` | OpenAI connector contract. Free-text search across every public catalog; returns citable document ids as `{ results: [{ id, title, url }] }`. Ranking reuses `feature_search`. |
+| `fetch` | OpenAI connector contract. Resolves one document id from `search` (e.g. `plan:pro`, `deadline:IN:gstr-3b`, `competitor:xero`) into `{ id, title, text, url, metadata }`. |
 | `list_plans` | All HelloBooks plans (Free, Starter, Pro, Business, Scale, Partner Program) + Warehouse / Manufacturing add-ons. Optional `country` and `plan` filters; non-priced supported countries return USD/default fallback pricing with metadata. |
 | `list_integrations` | Banks, payments, payroll, time tracking, shipping, tax-compliance, accounting sync, ecommerce, CRM, storage (Drive/OneDrive), freelance (Upwork). Optional `category`, `country`, `status` filters. |
 | `country_support` | Country support matrix for all 187 public country hubs, with detailed compliance rows where separately curated. |
