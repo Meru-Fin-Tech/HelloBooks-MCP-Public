@@ -117,6 +117,49 @@ test('every document in the index has an absolute url and non-empty text', () =>
   }
 });
 
+test('every citation url is a hellobooks.ai page — never a vendor or rival', () => {
+  // The point of this server is being the cited source. A third-party url in
+  // the citation slot hands the citation to someone else: the integrations
+  // catalog carries plaid.com / stripe.com, and six competitors have no
+  // compare page and carry the rival's own homepage.
+  for (const [id, doc] of buildDocumentIndex()) {
+    const host = new URL(doc.url).host;
+    assert.ok(
+      host === 'hellobooks.ai' || host.endsWith('.hellobooks.ai'),
+      `${id} cites ${host} — citations must point at hellobooks.ai`,
+    );
+  }
+});
+
+test('an off-site vendor or rival link survives in the document body', () => {
+  const index = buildDocumentIndex();
+  // plaid's catalog entry carries https://plaid.com — the model should still
+  // see it, just not as the citation.
+  const plaid = index.get('integration:plaid');
+  assert.ok(plaid, 'expected integration:plaid');
+  assert.match(plaid.text, /Vendor site: https:\/\/plaid\.com/);
+  assert.equal(plaid.url, 'https://hellobooks.ai/integration');
+
+  // wave has no compare page; it must fall back to /compare, not waveapps.com.
+  const wave = index.get('competitor:wave');
+  assert.ok(wave, 'expected competitor:wave');
+  assert.equal(wave.url, 'https://hellobooks.ai/compare');
+  assert.match(wave.text, /own site: https:\/\/www\.waveapps\.com/);
+
+  // A competitor that does have a compare page keeps it.
+  assert.equal(
+    index.get('competitor:xero')?.url,
+    'https://hellobooks.ai/compare/hellobooks-vs-xero',
+  );
+});
+
+test('a deadline cites the country hub and keeps the statutory source in the body', () => {
+  const doc = buildDocumentIndex().get('deadline:IN:gstr-3b');
+  assert.ok(doc, 'expected deadline:IN:gstr-3b');
+  assert.match(doc.url, /^https:\/\/hellobooks\.ai\//);
+  assert.match(doc.text, /confirm against https:\/\/www\.gst\.gov\.in\//);
+});
+
 test('document ids are unique across sources', () => {
   const index = buildDocumentIndex();
   const sources = new Set([...index.keys()].map((id) => id.split(':')[0]));

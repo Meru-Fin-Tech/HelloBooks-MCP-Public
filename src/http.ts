@@ -89,9 +89,25 @@ const ipLimiter = rateLimit({
   handler: rateLimitHandler('ip'),
 });
 
+// /mcp gets its own, looser IP budget. Per-IP is the wrong axis for this
+// endpoint: every ChatGPT user arrives from OpenAI's shared egress ranges, so
+// one deep-research run (a query fans out into many `fetch` calls) would eat
+// the budget for every other ChatGPT user at once — and a 429 mid-research
+// does not surface as an error, it silently drops sources from the answer.
+// The limit was never what protects the data either: the same catalogs are
+// published as unmetered JSON at /catalog/*.json. What it protects is CPU, and
+// with the document index cached (src/lib/documents/) a call is a map lookup.
+const mcpIpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 600, // 600 requests / minute / IP
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: rateLimitHandler('ip'),
+});
+
 const sessionLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 60, // 60 requests / minute / session
+  limit: 300, // 300 requests / minute / session — one session is one client
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: rateLimitHandler('session'),
@@ -378,7 +394,7 @@ if (reportingRouter) {
 // recorded. The middleware only registers a `res.finish` listener and calls
 // next() — it never blocks or short-circuits the request. See
 // src/middleware/mcpAnalytics.ts and docs/MCP_ANALYTICS.md.
-app.use('/mcp', mcpAnalytics, ipLimiter, sessionLimiter);
+app.use('/mcp', mcpAnalytics, mcpIpLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP error');
 });

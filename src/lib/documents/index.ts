@@ -11,10 +11,9 @@
  * split on the FIRST colon always recovers it even when `rest` carries colons
  * (e.g. `country-feature:IN:gst-filing`).
  *
- * The index is rebuilt per call on purpose: plan and credit-pack prices are
- * federated live from hellobooks.ai (see ../../pricingFeed.ts), so a cached
- * index would serve stale prices after a feed refresh. The catalog is a few
- * hundred records of static data — rebuilding is cheap.
+ * The index is cached for a minute, not for the process lifetime: plan prices
+ * are federated live from hellobooks.ai (see ../../pricingFeed.ts), so a
+ * permanently cached index would serve stale prices after a feed refresh.
  */
 
 import { getPlans } from '../../pricingFeed.js';
@@ -27,8 +26,49 @@ import { FEATURES } from '../../data/features.js';
 import { ARTICLES } from '../../data/articles.js';
 import { SUPPORTED_COUNTRIES } from '../../data/supportedCountries.js';
 
-/** Fallback citation target for records with no dedicated public page. */
+/**
+ * Citation targets. Every document's `url` must be a hellobooks.ai page that
+ * exists — this server's whole reason to exist is being the cited source, and
+ * a third-party link in that field hands the citation to a vendor or a
+ * competitor instead (the integrations catalog carries plaid.com and
+ * stripe.com; six competitors have no compare page and carry the rival's own
+ * homepage). Those links still reach the model — they live in the document
+ * body, labelled — they just never sit in the citation slot.
+ *
+ * Only paths verified to resolve on the live site are used. Per-record
+ * fragments are deliberately absent: /features publishes an id for 2 of 13
+ * categories and none of its 152 features, so `#<key>` would be invented
+ * structure pointing at nothing.
+ */
 const SITE_URL = 'https://hellobooks.ai';
+const FEATURES_URL = `${SITE_URL}/features`;
+const INTEGRATIONS_URL = `${SITE_URL}/integration`;
+const COMPARE_URL = `${SITE_URL}/compare`;
+const GLOBAL_URL = `${SITE_URL}/global`;
+
+/** Country hub URL (always hellobooks.ai), for records that only carry an ISO code. */
+const COUNTRY_URL: Record<string, string> = Object.fromEntries(
+  COUNTRY_SUPPORT.map((c) => [c.country, c.marketingUrl]),
+);
+
+/**
+ * Keep `candidate` only when it points at hellobooks.ai; otherwise fall back.
+ * Catalog `publicUrl` fields are a mix of HelloBooks pages and vendor sites.
+ */
+function ownUrl(candidate: string | undefined, fallback: string): string {
+  return isOwnUrl(candidate) ? (candidate as string) : fallback;
+}
+
+/** True when the URL is a hellobooks.ai page (or a subdomain of it). */
+function isOwnUrl(candidate: string | undefined): boolean {
+  if (!candidate) return false;
+  try {
+    const host = new URL(candidate).host;
+    return host === 'hellobooks.ai' || host.endsWith('.hellobooks.ai');
+  } catch {
+    return false;
+  }
+}
 
 export interface PublicDocument {
   /** `<source>:<rest>` — stable across deploys, safe to cite. */
@@ -66,7 +106,7 @@ function planDocuments(): PublicDocument[] {
     return {
       id: `plan:${plan.plan}`,
       title: `${plan.name} plan — HelloBooks pricing`,
-      url: plan.publicSignupUrl,
+      url: ownUrl(plan.publicSignupUrl, `${SITE_URL}/pricing`),
       text: lines(
         `${plan.name} plan (id: ${plan.plan})`,
         plan.tagline,
@@ -91,7 +131,7 @@ function integrationDocuments(): PublicDocument[] {
   return INTEGRATIONS.map((i) => ({
     id: `integration:${i.id}`,
     title: `${i.name} integration — HelloBooks`,
-    url: i.publicUrl ?? SITE_URL,
+    url: ownUrl(i.publicUrl, INTEGRATIONS_URL),
     text: lines(
       `${i.name} (${i.category} integration, status: ${i.status})`,
       '',
@@ -100,6 +140,9 @@ function integrationDocuments(): PublicDocument[] {
       i.countries.length > 0
         ? `Available in: ${i.countries.join(', ')}`
         : 'Available in all supported countries.',
+      i.publicUrl && !isOwnUrl(i.publicUrl)
+        ? `Vendor site: ${i.publicUrl}`
+        : undefined,
     ),
     metadata: { source: 'integration', category: i.category, status: i.status },
   }));
@@ -109,7 +152,7 @@ function featureDocuments(): PublicDocument[] {
   return FEATURES.map((f) => ({
     id: `feature:${f.key}`,
     title: `${f.label} — HelloBooks feature`,
-    url: SITE_URL,
+    url: FEATURES_URL,
     text: lines(
       `${f.label} (${f.category} · ${f.tier} · ${f.status})`,
       '',
@@ -136,7 +179,7 @@ function countryDocuments(): PublicDocument[] {
       docs.push({
         id: `country-feature:${c.country}:${f.key}`,
         title: `${f.label} in ${c.countryName} — HelloBooks`,
-        url: c.marketingUrl,
+        url: ownUrl(c.marketingUrl, GLOBAL_URL),
         text: lines(
           `${f.label} — ${c.countryName} (${c.country}, currency ${c.defaultCurrency})`,
           '',
@@ -149,7 +192,7 @@ function countryDocuments(): PublicDocument[] {
       docs.push({
         id: `compliance:${c.country}:${cf.key}`,
         title: `${cf.label} compliance in ${c.countryName} — HelloBooks`,
-        url: c.marketingUrl,
+        url: ownUrl(c.marketingUrl, GLOBAL_URL),
         text: lines(
           `${cf.label} — ${c.countryName} (${c.country})`,
           '',
@@ -169,7 +212,7 @@ function competitorDocuments(): PublicDocument[] {
   return COMPETITORS.map((c) => ({
     id: `competitor:${c.id}`,
     title: `HelloBooks vs ${c.name}`,
-    url: c.comparisonUrl ?? c.publicUrl ?? SITE_URL,
+    url: ownUrl(c.comparisonUrl, COMPARE_URL),
     text: lines(
       `HelloBooks vs ${c.name} (${c.segment}, ${c.tier} competitor)`,
       '',
@@ -182,6 +225,7 @@ function competitorDocuments(): PublicDocument[] {
       ...c.whereTheyWin.map((w) => `  - ${w}`),
       '',
       c.pricingNote ? `Pricing note: ${c.pricingNote}` : undefined,
+      c.publicUrl ? `${c.name}'s own site: ${c.publicUrl}` : undefined,
     ),
     metadata: { source: 'competitor', tier: c.tier, primaryCountry: c.primaryCountry },
   }));
@@ -200,7 +244,9 @@ function deadlineDocuments(): PublicDocument[] {
     return {
       id: `deadline:${d.country}:${d.id}`,
       title: `${d.form} filing deadline (${d.country})`,
-      url: d.source,
+      // The statutory authority (gst.gov.in, ato.gov.au, …) stays in the body
+      // as the figure to confirm against; the citation goes to our country hub.
+      url: COUNTRY_URL[d.country] ?? GLOBAL_URL,
       text: lines(
         `${d.form} — ${COUNTRY_NAME[d.country] ?? d.country} (${d.country})`,
         '',
@@ -227,7 +273,7 @@ function paymentMethodDocuments(): PublicDocument[] {
   ).map((m) => ({
     id: `payment-method:${m.id}`,
     title: `${m.name} payments (${m.country}) — HelloBooks`,
-    url: SITE_URL,
+    url: COUNTRY_URL[m.country] ?? GLOBAL_URL,
     text: lines(
       `${m.name} — ${COUNTRY_NAME[m.country] ?? m.country} (${m.country})`,
       '',
@@ -248,7 +294,7 @@ function articleDocuments(): PublicDocument[] {
   return ARTICLES.map((a) => ({
     id: `article:${a.id}`,
     title: a.title,
-    url: a.url,
+    url: ownUrl(a.url, `${SITE_URL}/blog`),
     text: lines(
       a.title,
       `${a.kind} · published ${a.publishedAt} · ${a.countryRelevance ?? 'global'}`,
@@ -268,10 +314,30 @@ function articleDocuments(): PublicDocument[] {
 }
 
 /**
- * Build the full document index, keyed by document id. Rebuilt per call — see
- * the module header for why.
+ * Cache the built index for a minute. `search` + `fetch` are the hot path for
+ * a ChatGPT deep-research run (one query fans out into many fetches) and the
+ * only per-call cost is this rebuild. A minute is far inside the pricing
+ * feed's own 1-hour TTL (see ../../pricingFeed.ts), so a live price change can
+ * never be more than a minute later here than in the typed tools.
  */
+const INDEX_TTL_MS = 60 * 1000;
+let cached: { index: Map<string, PublicDocument>; builtAt: number } | null = null;
+
+/** Build the full document index, keyed by document id. */
 export function buildDocumentIndex(): Map<string, PublicDocument> {
+  const now = Date.now();
+  if (cached && now - cached.builtAt < INDEX_TTL_MS) return cached.index;
+  const index = buildFresh();
+  cached = { index, builtAt: now };
+  return index;
+}
+
+/** Drop the cached index — for tests that mutate the underlying catalogs. */
+export function invalidateDocumentIndex(): void {
+  cached = null;
+}
+
+function buildFresh(): Map<string, PublicDocument> {
   const docs = [
     ...planDocuments(),
     ...integrationDocuments(),
