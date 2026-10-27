@@ -32,6 +32,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createServer, SERVER_VERSION } from './server.js';
 import { track } from './analytics.js';
 import { mcpAnalytics } from './middleware/mcpAnalytics.js';
+import { createVoiceKnowledgeRouter } from './voiceKnowledgeRouter.js';
 import {
   generateAgentCard,
   generateAiPluginManifest,
@@ -56,7 +57,6 @@ import {
   isValidSlug,
 } from './lib/shareUrl/index.js';
 import { createReportingRouter } from './reporting/endpoint.js';
-import { createVoiceKnowledgeRouter } from './voiceKnowledgeRouter.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
