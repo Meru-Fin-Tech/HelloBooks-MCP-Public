@@ -56,6 +56,13 @@ export interface Plan {
   /** Annual ledger transaction cap (Starter: 200 per year); absent means this catalog does not publish a cap. */
   annualTransactionLimit?: number;
   features: string[];
+  /**
+   * Region-specific feature bullets from the live feed, keyed by priced
+   * country. India's Free card leads with GST filing and its Pro card carries
+   * GSTR-9 / e-invoicing / Tally; `features` is the region-neutral list.
+   * Absent on the baked catalog.
+   */
+  featuresByCountry?: Partial<Record<CountryCode, string[]>>;
   prices: PlanPrice[];
   publicSignupUrl: string;
 }
