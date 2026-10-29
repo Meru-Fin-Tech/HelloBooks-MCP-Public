@@ -73,3 +73,38 @@ test('blogEntryToArticle produces a searchable, well-formed Article', () => {
   assert.equal(a.title, slugToTitle('best-gst-software-for-ca-firms'));
   assert.equal(a.url, 'https://hellobooks.ai/blog/best-gst-software-for-ca-firms');
 });
+
+test('fetchBlogEntries follows sitemapindex to fetch child blog sitemaps', async () => {
+  const { fetchBlogEntries } = await import('../src/lib/blogSitemap.js');
+  // Mock global fetch to return a sitemapindex then a urlset
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, init) => {
+      const urlStr = String(url);
+      if (urlStr.endsWith('sitemap.xml')) {
+        return new Response(`<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://hellobooks.ai/sitemap/blog.xml</loc>
+  </sitemap>
+</sitemapindex>`, { status: 200, headers: { 'Content-Type': 'application/xml' } });
+      }
+      if (urlStr.endsWith('blog.xml')) {
+        return new Response(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://hellobooks.ai/blog/test-indexed-post</loc>
+    <lastmod>2026-10-28</lastmod>
+  </url>
+</urlset>`, { status: 200, headers: { 'Content-Type': 'application/xml' } });
+      }
+      return new Response('Not found', { status: 404 });
+    };
+    const entries = await fetchBlogEntries('https://hellobooks.ai/sitemap.xml', 2000);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0]!.slug, 'test-indexed-post');
+    assert.equal(entries[0]!.lastmod, '2026-10-28');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

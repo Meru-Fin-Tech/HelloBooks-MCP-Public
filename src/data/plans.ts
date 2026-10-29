@@ -51,6 +51,9 @@ export interface Plan {
   /** Human wording for plans whose AI allowance has no published number. */
   aiCreditsNote?: string;
   /** Annual ledger transaction cap; absent means this catalog does not publish a cap. */
+  /** Lifetime ledger transaction cap (Free plan: 200 in total, never resets). */
+  lifetimeTransactionLimit?: number;
+  /** Annual ledger transaction cap (Starter: 200 per year); absent means this catalog does not publish a cap. */
   annualTransactionLimit?: number;
   features: string[];
   prices: PlanPrice[];
@@ -58,15 +61,17 @@ export interface Plan {
 }
 
 export const FREE_AI_CREDITS_NOTE =
-  'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year. Upgrade to Pro or Business for more transaction volume and more AI — credit packs are for paid plans.';
+  "Free AI credits included to get started; Free is capped at up to 200 transactions in total (the count doesn't reset each year). Upgrade to Pro or Business for more transaction volume and more AI.";
 
-export const FREE_ANNUAL_TRANSACTION_LIMIT = 200;
+export const FREE_TRANSACTION_LIMIT = 200;
+/** @deprecated Kept for back-compat; Free is a lifetime total, not annual. Use FREE_TRANSACTION_LIMIT. */
+export const FREE_ANNUAL_TRANSACTION_LIMIT = FREE_TRANSACTION_LIMIT;
 export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
-  'Up to 200 transactions per year',
-  'Free AI credits to get started (one-time)',
+  'Up to 200 transactions',
+  'Free AI credits to get started',
   'Invoices, bills & quotes included',
   'Unlimited email payment reminders',
   '10 WhatsApp sends (one-time allowance)',
@@ -175,7 +180,7 @@ interface RegionConfig {
   currency: CurrencyCode;
   symbol: string;
   /**
-   * Starter and Scale are US-only on the marketing site today. `undefined`
+   * Starter is US-only on the marketing site today. Scale is sold in US and India. `undefined`
    * means "not sold in this region" — Web-Fire's buildPlans() expresses the
    * same thing as `available: Boolean(cfg.starter)`. Do NOT invent a local
    * price to fill the gap; that is a pricing decision, not a data fix.
@@ -223,6 +228,7 @@ const REGIONS: RegionConfig[] = [
   { country: 'IN', currency: 'INR', symbol: '₹',
     pro:      { monthly:   499, annual:  4999,  anchor:   999 },
     business: { monthly:  1999, annual: 19999,  anchor:  3999 },
+    scale:    { monthly:  4999, annual: 49999 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 249, power: 699, mega: 1999, ultra: 4999 } },
   { country: 'CA', currency: 'CAD', symbol: 'C$',
@@ -314,7 +320,7 @@ export const PLANS: Plan[] = [
     tagline: 'Everything you need to start',
     monthlyAiCredits: null,
     aiCreditsNote: FREE_AI_CREDITS_NOTE,
-    annualTransactionLimit: FREE_ANNUAL_TRANSACTION_LIMIT,
+    lifetimeTransactionLimit: FREE_TRANSACTION_LIMIT,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',

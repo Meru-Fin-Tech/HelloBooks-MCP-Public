@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { CURATED_ARTICLES } from '../src/data/articles.js';
 import {
   DEFAULT_SITEMAP_URL,
+  fetchBlogEntries,
   parseBlogEntries,
   slugToTitle,
   deriveTags,
@@ -35,11 +36,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dirname, '..', 'src', 'data', 'articlesDiscovered.ts');
 
 async function main(): Promise<void> {
-  const res = await fetch(DEFAULT_SITEMAP_URL);
-  if (!res.ok) throw new Error(`sitemap fetch failed: HTTP ${res.status}`);
-  const xml = await res.text();
-
-  const blogs = parseBlogEntries(xml);
+  const blogs = await fetchBlogEntries(DEFAULT_SITEMAP_URL, 30000);
 
   // Drop slugs already covered by the curated catalog (re-running the script
   // is idempotent — we only ever target slugs absent from CURATED_ARTICLES).
@@ -68,15 +65,27 @@ async function main(): Promise<void> {
   lines.push('');
   lines.push("import type { Article } from './articles.js';");
   lines.push('');
+  // Chunk into 500-element arrays so TypeScript compiler does not hit TS2590 union complexity limit
+  const CHUNK_SIZE = 500;
+  const numChunks = Math.ceil(fresh.length / CHUNK_SIZE);
+  for (let c = 0; c < numChunks; c++) {
+    lines.push(`const CHUNK_${c}: Article[] = [`);
+    const slice = fresh.slice(c * CHUNK_SIZE, (c + 1) * CHUNK_SIZE);
+    for (const b of slice) {
+      const title = slugToTitle(b.slug).replace(/'/g, "\\'");
+      const tags = deriveTags(b.slug).map((t) => `'${t}'`).join(', ');
+      const country = guessCountry(b.slug);
+      const excerpt = `${title} — published on hellobooks.ai. Open the article for the full write-up.`.replace(/'/g, "\\'");
+      lines.push(
+        `  { id: '${b.slug}', title: '${title}', excerpt: '${excerpt}', tags: [${tags}], countryRelevance: '${country}', url: 'https://hellobooks.ai/blog/${b.slug}', publishedAt: '${b.lastmod}', kind: 'blog' },`,
+      );
+    }
+    lines.push('];');
+    lines.push('');
+  }
   lines.push('export const DISCOVERED_ARTICLES: Article[] = [');
-  for (const b of fresh) {
-    const title = slugToTitle(b.slug).replace(/'/g, "\\'");
-    const tags = deriveTags(b.slug).map((t) => `'${t}'`).join(', ');
-    const country = guessCountry(b.slug);
-    const excerpt = `${title} — published on hellobooks.ai. Open the article for the full write-up.`.replace(/'/g, "\\'");
-    lines.push(
-      `  { id: '${b.slug}', title: '${title}', excerpt: '${excerpt}', tags: [${tags}], countryRelevance: '${country}', url: 'https://hellobooks.ai/blog/${b.slug}', publishedAt: '${b.lastmod}', kind: 'blog' },`,
-    );
+  for (let c = 0; c < numChunks; c++) {
+    lines.push(`  ...CHUNK_${c},`);
   }
   lines.push('];');
   lines.push('');

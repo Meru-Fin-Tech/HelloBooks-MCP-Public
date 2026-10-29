@@ -26,7 +26,7 @@ import { ARTICLES as BAKED_ARTICLES } from './data/articles.js';
 import type { Article } from './data/articles.js';
 import { DEFAULT_SITEMAP_URL, blogEntryToArticle, type BlogEntry } from './lib/blogSitemap.js';
 
-const FETCH_TIMEOUT_MS = 4000;
+const FETCH_TIMEOUT_MS = 10000;
 const TTL_MS = 60 * 60 * 1000;            // serve a successful fetch for 1 hour
 const MIN_REFETCH_GAP_MS = 5 * 60 * 1000; // attempt a refresh at most every 5 min
 

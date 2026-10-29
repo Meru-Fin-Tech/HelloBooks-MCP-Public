@@ -154,5 +154,27 @@ export async function fetchBlogEntries(url: string, timeoutMs: number): Promise<
     headers: { accept: 'application/xml,text/xml,*/*' },
   });
   if (!res.ok) throw new Error(`sitemap HTTP ${res.status}`);
-  return parseBlogEntries(await res.text());
+  const text = await res.text();
+  if (text.includes('<sitemapindex')) {
+    const sitemapBlocks = text.match(/<sitemap>[\s\S]*?<\/sitemap>/g) ?? [];
+    const locs: string[] = [];
+    for (const sm of sitemapBlocks) {
+      const locMatch = sm.match(/<loc>([^<]+)<\/loc>/);
+      if (locMatch) locs.push(locMatch[1]!.trim());
+    }
+    const blogLocs = locs.filter((l) => l.includes('blog'));
+    const targets = blogLocs.length > 0 ? blogLocs : locs;
+    const entries: BlogEntry[] = [];
+    for (const target of targets) {
+      const childRes = await fetch(target, {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { accept: 'application/xml,text/xml,*/*' },
+      });
+      if (childRes.ok) {
+        entries.push(...parseBlogEntries(await childRes.text()));
+      }
+    }
+    return entries;
+  }
+  return parseBlogEntries(text);
 }

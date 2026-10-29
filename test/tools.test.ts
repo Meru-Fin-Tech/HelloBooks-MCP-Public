@@ -52,11 +52,16 @@ test('list_plans returns all 8 tiers when unfiltered (incl. add-ons)', () => {
     if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
       assert.equal(p.prices.length, 1, `${p.plan} should be USD-only`);
       assert.equal(p.prices[0].currency, 'USD');
-    } else if (p.plan === 'starter' || p.plan === 'scale') {
+    } else if (p.plan === 'starter') {
       // US-only on the marketing site today — priced in exactly one market.
       assert.equal(p.prices.length, 1, `${p.plan} should be US-only`);
       assert.equal(p.prices[0].country, 'US');
       assert.equal(p.prices[0].currency, 'USD');
+    } else if (p.plan === 'scale') {
+      // Sold in US and IN today.
+      assert.equal(p.prices.length, 2, `${p.plan} should be US and IN`);
+      assert.ok(p.prices.some((price) => price.country === 'US' && price.currency === 'USD'));
+      assert.ok(p.prices.some((price) => price.country === 'IN' && price.currency === 'INR'));
     } else {
       assert.equal(p.prices.length, 8);
     }
@@ -75,20 +80,27 @@ test('list_plans Starter and Scale carry the US five-rung ladder prices', () => 
   const scale = listPlans({ plan: 'scale' }).plans[0];
   assert.equal(scale.name, 'Scale');
   assert.equal(scale.monthlyAiCredits, 150_000);
-  assert.equal(scale.prices[0].monthly, 199);
-  assert.equal(scale.prices[0].annual, 1990);
+  const usPrice = scale.prices.find((p) => p.country === 'US');
+  assert.equal(usPrice?.monthly, 199);
+  assert.equal(usPrice?.annual, 1990);
+  const inPrice = scale.prices.find((p) => p.country === 'IN');
+  assert.equal(inPrice?.monthly, 4999);
+  assert.equal(inPrice?.annual, 49999);
 });
 
-test('list_plans never prices Starter or Scale outside the US', () => {
-  // Regression guard: a US-only tier must return NO price for another market
-  // rather than a US dollar figure labelled with that country's code.
+test('list_plans never prices Starter outside the US, and Scale outside US and IN', () => {
+  // Regression guard: a region-limited tier must return NO price for unpriced markets
   for (const country of ['IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ'] as const) {
-    for (const plan of ['starter', 'scale'] as const) {
-      const r = listPlans({ country, plan });
-      assert.equal(r.plans[0].prices.length, 0,
-        `${plan} must not be priced in ${country} — it is not sold there`);
-    }
+    const r = listPlans({ country, plan: 'starter' });
+    assert.equal(r.plans[0].prices.length, 0, `starter must not be priced in ${country}`);
   }
+  for (const country of ['CA', 'GB', 'AU', 'AE', 'SG', 'NZ'] as const) {
+    const r = listPlans({ country, plan: 'scale' });
+    assert.equal(r.plans[0].prices.length, 0, `scale must not be priced in ${country}`);
+  }
+  const inScale = listPlans({ country: 'IN', plan: 'scale' });
+  assert.equal(inScale.plans[0].prices.length, 1);
+  assert.equal(inScale.plans[0].prices[0].monthly, 4999);
 });
 
 test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 regions', () => {
@@ -117,12 +129,12 @@ test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 region
   assert.equal(listPlans({ plan: 'business' }).plans[0].monthlyAiCredits, 50_000);
 });
 
-test('list_plans publishes Free and Starter 200/year transaction caps separately from AI credits', () => {
+test('list_plans publishes Free lifetime and Starter annual transaction caps separately from AI credits', () => {
   const free = listPlans({ plan: 'free' }).plans[0];
   assert.equal(free.monthlyAiCredits, null);
-  assert.equal(free.annualTransactionLimit, 200);
-  assert.match(free.aiCreditsNote ?? '', /200 transactions per year/i);
-  assert.ok(free.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.equal(free.lifetimeTransactionLimit, 200);
+  assert.match(free.aiCreditsNote ?? '', /200 transactions in total/i);
+  assert.ok(free.features.some((feature) => /up to 200 transactions/i.test(feature)));
   assert.ok(!free.features.some((feature) => /200\s+AI/i.test(feature)));
 
   const starter = listPlans({ plan: 'starter' }).plans[0];
@@ -388,8 +400,8 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   const free = plans.find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
-  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
-  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
+  assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill/i);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
@@ -1398,8 +1410,8 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const { parsePricingFeed, feedToPlans } = await import('../src/pricingFeed.js');
   const freeTier = {
     id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
-    features: ['Free AI credits to get started', 'Up to 200 transactions per year'],
-    limits: { perClientPrice: 0, monthlyAiCredits: null, annualTransactionLimit: 200, aiCreditsNote: 'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year.' },
+    features: ['Free AI credits to get started', 'Up to 200 transactions'],
+    limits: { perClientPrice: 0, monthlyAiCredits: null, lifetimeTransactionLimit: 200, aiCreditsNote: "Free AI credits included to get started; Free is capped at up to 200 transactions in total (the count doesn't reset each year). Upgrade to Pro or Business for more transaction volume and more AI." },
   };
   const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
   const parsed = parsePricingFeed(raw);
@@ -1407,10 +1419,9 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const free = feedToPlans(parsed.data).find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
-  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
-  assert.equal(free?.annualTransactionLimit, 200);
-  assert.ok(free?.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
-  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
+  assert.equal(free?.lifetimeTransactionLimit, 200);
+  assert.ok(free?.features.some((feature) => /up to 200 transactions/i.test(feature)));
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill/i);
   assert.ok(!free?.features.some((f) => /2,?500/.test(f)), 'no Free AI number in features');
   // Paid plans still carry their number.
   assert.equal(feedToPlans(parsed.data).find((p) => p.plan === 'pro')?.monthlyAiCredits, 99999);
