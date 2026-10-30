@@ -51,22 +51,24 @@ export interface Plan {
   monthlyAiCredits: number | null;
   /** Human wording for plans whose AI allowance has no published number. */
   aiCreditsNote?: string;
-  /** Annual ledger transaction cap; absent means this catalog does not publish a cap. */
-  annualTransactionLimit?: number;
+  /** Lifetime ledger transaction cap (the count never resets); absent means this catalog does not publish a cap. */
+  lifetimeTransactionLimit?: number;
   features: string[];
   prices: PlanPrice[];
   publicSignupUrl: string;
 }
 
 export const FREE_AI_CREDITS_NOTE =
-  'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year. Upgrade to Pro or Business for more transaction volume and more AI — credit packs are for paid plans.';
+  'Free AI credits included to get started; Free is capped at up to 200 transactions in total (the count doesn\'t reset each year). Upgrade to Pro or Business for more transaction volume and more AI.';
 
-export const FREE_ANNUAL_TRANSACTION_LIMIT = 200;
-export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
+/** Free plan ledger transaction cap — lifetime, never resets (changed from annual 2026-10-30). */
+export const FREE_LIFETIME_TRANSACTION_LIMIT = 200;
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
-  'Up to 200 transactions per year',
+  'Multi-state sales tax with nexus alerts',
+  '1099 contractor tracking + 1099-NEC/MISC prep',
+  'Up to 200 transactions',
   'Free AI credits to get started',
   'Invoices, bills & quotes included',
   'Unlimited email payment reminders',
@@ -83,16 +85,12 @@ const FREE_FEATURES = [
 // all of which stay Pro/Business.
 const STARTER_FEATURES = [
   'Everything in Free, plus:',
-  'AI auto-categorization (95%+ accuracy)',
-  'Up to 200 transactions per year',
+  'Unlimited transactions',
   'Up to 5 users',
   '3 bank connections',
-  'Invoices, bills & quotes included',
+  'AI auto-categorization (95%+ accuracy)',
   'Recurring invoices',
-  'AP/AR aging reports',
-  'P&L, Balance Sheet, Cash Flow',
   'Export to Excel',
-  'Full mobile app (iOS & Android)',
   'Free customization — email us your requirements',
 ];
 
@@ -112,7 +110,6 @@ const SCALE_FEATURES = [
 
 const PRO_FEATURES = [
   'Everything in Starter, plus:',
-  'AI auto-categorization (95%+ accuracy)',
   'Unlimited bank connections',
   'Unlimited users + roles',
   'AI Analysis & Comparative View on every report',
@@ -132,7 +129,6 @@ const BUSINESS_FEATURES = [
   'Sandbox environment',
   'Multi-entity management across subscribed entities',
   'API access',
-  'Priority email support',
   'Dedicated success manager',
   'Free onboarding support',
   'Free customization — email us your requirements',
@@ -321,7 +317,7 @@ export const PLANS: Plan[] = [
     tagline: 'Everything you need to start',
     monthlyAiCredits: null,
     aiCreditsNote: FREE_AI_CREDITS_NOTE,
-    annualTransactionLimit: FREE_ANNUAL_TRANSACTION_LIMIT,
+    lifetimeTransactionLimit: FREE_LIFETIME_TRANSACTION_LIMIT,
     features: FREE_FEATURES,
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
@@ -331,7 +327,6 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     tagline: 'A first paid step — more users and bank feeds',
     monthlyAiCredits: 7500,
-    annualTransactionLimit: STARTER_ANNUAL_TRANSACTION_LIMIT,
     features: STARTER_FEATURES,
     // US-only today: pricesFor() returns a single US entry. See RegionConfig.
     prices: pricesFor('starter'),

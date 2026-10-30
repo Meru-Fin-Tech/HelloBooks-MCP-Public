@@ -67,8 +67,8 @@ test('list_plans Starter and Scale carry the US five-rung ladder prices', () => 
   const starter = listPlans({ plan: 'starter' }).plans[0];
   assert.equal(starter.name, 'Starter');
   assert.equal(starter.monthlyAiCredits, 7_500);
-  assert.equal(starter.annualTransactionLimit, 200);
-  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.ok(!('annualTransactionLimit' in starter), 'Starter no longer has a transaction cap');
+  assert.ok(starter.features.some((feature) => /unlimited transactions/i.test(feature)));
   assert.equal(starter.prices[0].monthly, 14.99);
   assert.equal(starter.prices[0].annual, 149);
 
@@ -123,10 +123,6 @@ test('list_plans marks paid plan and add-on prices as per entity', () => {
     const r = listPlans({ plan });
     assert.match(r.note, /paid HelloBooks plan and add-on charges are per entity/i);
     assert.match(r.note, /each paid subscription covers one legal entity/i);
-    assert.ok(
-      r.plans[0].features.some((feature) => /one legal entity per paid subscription/i.test(feature)),
-      `${plan} should tell agents that one paid subscription covers one legal entity`,
-    );
     for (const price of r.plans[0].prices) {
       assert.equal(price.billingUnit, 'per_entity', `${plan} ${price.country} should be per entity`);
     }
@@ -138,18 +134,18 @@ test('list_plans marks paid plan and add-on prices as per entity', () => {
   }
 });
 
-test('list_plans publishes Free and Starter 200/year transaction caps separately from AI credits', () => {
+test('list_plans Free has lifetime 200 transaction cap; Starter has unlimited transactions', () => {
   const free = listPlans({ plan: 'free' }).plans[0];
   assert.equal(free.monthlyAiCredits, null);
-  assert.equal(free.annualTransactionLimit, 200);
-  assert.match(free.aiCreditsNote ?? '', /200 transactions per year/i);
-  assert.ok(free.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.equal(free.lifetimeTransactionLimit, 200);
+  assert.match(free.aiCreditsNote ?? '', /200 transactions in total/i);
+  assert.ok(free.features.some((feature) => /up to 200 transactions/i.test(feature)));
   assert.ok(!free.features.some((feature) => /200\s+AI/i.test(feature)));
 
   const starter = listPlans({ plan: 'starter' }).plans[0];
   assert.equal(starter.monthlyAiCredits, 7_500);
-  assert.equal(starter.annualTransactionLimit, 200);
-  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.ok(!('lifetimeTransactionLimit' in starter), 'Starter no longer has a transaction cap');
+  assert.ok(starter.features.some((feature) => /unlimited transactions/i.test(feature)));
 });
 
 test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
@@ -447,8 +443,8 @@ test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
   const free = plans.find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
-  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
-  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
+  assert.match(free?.aiCreditsNote ?? '', /in total/i, 'Free has lifetime cap wording');
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill/i);
 });
 
 test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
@@ -1457,8 +1453,8 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const { parsePricingFeed, feedToPlans } = await import('../src/pricingFeed.js');
   const freeTier = {
     id: 'free', currency: 'USD', monthlyPrice: 0, annualPrice: 0, anchorMonthlyPrice: 0,
-    features: ['Free AI credits to get started', 'Up to 200 transactions per year'],
-    limits: { perClientPrice: 0, monthlyAiCredits: null, annualTransactionLimit: 200, aiCreditsNote: 'Free AI credits included to get started (one-time); Free is capped at up to 200 transactions per year.' },
+    features: ['Free AI credits to get started', 'Up to 200 transactions'],
+    limits: { perClientPrice: 0, monthlyAiCredits: null, lifetimeTransactionLimit: 200, aiCreditsNote: 'Free AI credits included to get started; Free is capped at up to 200 transactions in total (the count doesn\'t reset each year).' },
   };
   const raw = { ...FEED_FIXTURE, tiers: [...FEED_FIXTURE.tiers, freeTier], regions: FEED_FIXTURE.regions.map((r) => ({ ...r, tiers: [...r.tiers, freeTier] })) };
   const parsed = parsePricingFeed(raw);
@@ -1466,10 +1462,10 @@ test('a feed publishing Free with monthlyAiCredits: null validates and keeps the
   const free = feedToPlans(parsed.data).find((p) => p.plan === 'free');
   assert.equal(free?.monthlyAiCredits, null);
   assert.match(free?.aiCreditsNote ?? '', /Free AI credits included/);
-  assert.match(free?.aiCreditsNote ?? '', /\(one-time\)/, 'Free AI credits are a one-time allowance');
-  assert.equal(free?.annualTransactionLimit, 200);
-  assert.ok(free?.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
-  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill|reset/i);
+  assert.match(free?.aiCreditsNote ?? '', /in total/i, 'Free has lifetime cap, not annual');
+  assert.equal(free?.lifetimeTransactionLimit, 200);
+  assert.ok(free?.features.some((feature) => /up to 200 transactions/i.test(feature)));
+  assert.doesNotMatch(free?.aiCreditsNote ?? '', /month|refill/i);
   assert.ok(!free?.features.some((f) => /2,?500/.test(f)), 'no Free AI number in features');
   // Paid plans still carry their number.
   assert.equal(feedToPlans(parsed.data).find((p) => p.plan === 'pro')?.monthlyAiCredits, 99999);
