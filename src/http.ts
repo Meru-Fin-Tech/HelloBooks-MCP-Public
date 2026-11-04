@@ -1,8 +1,8 @@
 /**
  * HTTP transport entry point.
  *
- * Exposes the MCP server over Streamable HTTP at POST /mcp and SSE GET /mcp,
- * with two layers of rate limiting:
+ * Exposes the MCP server over Streamable HTTP at POST /mcp, SSE GET /mcp and
+ * session termination DELETE /mcp, with two layers of rate limiting:
  *   1. Per-IP global limiter (catches scrapers / runaway clients).
  *   2. Per-session limiter (caps single-session requests to a reasonable bound).
  *
@@ -89,9 +89,25 @@ const ipLimiter = rateLimit({
   handler: rateLimitHandler('ip'),
 });
 
+// /mcp gets its own, looser IP budget. Per-IP is the wrong axis for this
+// endpoint: every ChatGPT user arrives from OpenAI's shared egress ranges, so
+// one deep-research run (a query fans out into many `fetch` calls) would eat
+// the budget for every other ChatGPT user at once — and a 429 mid-research
+// does not surface as an error, it silently drops sources from the answer.
+// The limit was never what protects the data either: the same catalogs are
+// published as unmetered JSON at /catalog/*.json. What it protects is CPU, and
+// with the document index cached (src/lib/documents/) a call is a map lookup.
+const mcpIpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 600, // 600 requests / minute / IP
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: rateLimitHandler('ip'),
+});
+
 const sessionLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 60, // 60 requests / minute / session
+  limit: 300, // 300 requests / minute / session — one session is one client
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: rateLimitHandler('session'),
@@ -202,6 +218,34 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1); // accurate req.ip behind a load balancer
 app.use(express.json({ limit: '256kb' })); // requests are tiny — cap aggressively
 
+// ---------------------------------------------------------------------------
+// CORS
+// ---------------------------------------------------------------------------
+//
+// Claude and ChatGPT reach this server from their own backends, where CORS does
+// not apply. Browser-hosted MCP clients (the MCP Inspector, in-page agents) do
+// need it, and `Mcp-Session-Id` must be *exposed* or they cannot read the
+// session id off the initialize response and every follow-up request 400s.
+//
+// `*` with no credentials is the correct posture here: the catalog is public,
+// there is no auth, and no cookie is ever read — so there is nothing an
+// attacker's page could read that it could not fetch itself.
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Accept, Authorization, Mcp-Session-Id, MCP-Protocol-Version, Last-Event-ID',
+  );
+  res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id, WWW-Authenticate');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', sessions: sessions.size, shares: defaultShareStore.size });
 });
@@ -214,6 +258,12 @@ app.get('/info', (_req, res) => {
       'Public read-only MCP server for HelloBooks plans, integrations, country support, compliance, competitors, deadlines, local payment methods, feature catalog data, published articles, and product videos.',
     transport: { http: '/mcp', sse: '/mcp' },
     install: 'claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp',
+    connectorUrl: 'https://agents.hellobooks.ai/mcp',
+    auth: 'none',
+    clients: {
+      claude: 'Settings → Connectors → Add custom connector → paste the connector URL (no sign-in).',
+      chatgpt: 'Settings → Connectors → paste the connector URL (no authentication). search + fetch are implemented, so deep research and company knowledge work as well as developer mode.',
+    },
     docs: 'https://hellobooks.ai/mcp',
     repository: 'https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public',
     discovery: {
@@ -344,12 +394,17 @@ if (reportingRouter) {
 // recorded. The middleware only registers a `res.finish` listener and calls
 // next() — it never blocks or short-circuits the request. See
 // src/middleware/mcpAnalytics.ts and docs/MCP_ANALYTICS.md.
-app.use('/mcp', mcpAnalytics, ipLimiter, sessionLimiter);
+app.use('/mcp', mcpAnalytics, mcpIpLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP error');
 });
 app.get('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP SSE error');
+});
+// Session termination (MCP spec: DELETE with a session id). Without this route
+// Express answers 404 and a well-behaved client logs a failure on disconnect.
+app.delete('/mcp', (req, res) => {
+  handleMcpRequestFailure(req, res, 'MCP session-delete error');
 });
 
 function handleMcpRequestFailure(req: Parameters<typeof handleMcpRequest>[0], res: Parameters<typeof handleMcpRequest>[1], label: string): void {

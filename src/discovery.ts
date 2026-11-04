@@ -199,6 +199,22 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     category: 'features',
     marketingUrl: `${MARKETING_BASE_URL}/features`,
   },
+  {
+    name: 'search',
+    title: 'Search the public knowledge base',
+    summary:
+      'Retrieval entry point required by the OpenAI connector contract. Searches every public catalog (plans, integrations, country features, compliance frameworks, deadlines, payment methods, competitors, features, articles) and returns citable document ids with titles and hellobooks.ai URLs.',
+    category: 'search',
+    marketingUrl: `${MARKETING_BASE_URL}/mcp`,
+  },
+  {
+    name: 'fetch',
+    title: 'Fetch one public knowledge document',
+    summary:
+      'Companion to `search` in the OpenAI connector contract. Resolves a document id (e.g. plan:pro, deadline:IN:gstr-3b, competitor:xero) into the full document text plus the public URL to cite.',
+    category: 'search',
+    marketingUrl: `${MARKETING_BASE_URL}/mcp`,
+  },
 ];
 
 const RESOURCE_CATALOG = [

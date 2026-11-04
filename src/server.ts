@@ -67,6 +67,13 @@ import { lookupTaxRate, lookupTaxRateSchema } from './tools/lookupTaxRate.js';
 export { lookupTaxRate } from './tools/lookupTaxRate.js';
 import { howMunimjiHelps, howMunimjiHelpsSchema } from './tools/howMunimjiHelps.js';
 export { howMunimjiHelps } from './tools/howMunimjiHelps.js';
+import {
+  publicSearch,
+  publicFetch,
+  publicSearchSchema,
+  publicFetchSchema,
+} from './tools/publicSearch.js';
+export { publicSearch, publicFetch } from './tools/publicSearch.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
 import { track } from './analytics.js';
@@ -109,6 +116,21 @@ function runTool(
   extra: unknown,
   produce: () => unknown,
 ) {
+  return asJsonContent(withTelemetry(toolName, args, extra, produce));
+}
+
+/**
+ * Run `produce`, emit the Layer-2 telemetry event, and return its raw payload.
+ * Shared by `runTool` (JSON text content) and `runStructuredTool` (text +
+ * structured content). Telemetry is fire-and-forget and never alters tool
+ * behaviour: a thrown error is always re-thrown. See src/analytics.ts.
+ */
+function withTelemetry<T>(
+  toolName: string,
+  args: unknown,
+  extra: unknown,
+  produce: () => T,
+): T {
   const startedAt = Date.now();
   const clientId = sessionIdOf(extra);
   try {
@@ -123,7 +145,7 @@ function runTool(
       },
       clientId,
     );
-    return asJsonContent(payload);
+    return payload;
   } catch (err) {
     track(
       'mcp_tool_errored',
@@ -135,6 +157,52 @@ function runTool(
     );
     throw err;
   }
+}
+
+/**
+ * Output schemas for the OpenAI `search` / `fetch` contract. Declaring them
+ * makes the SDK validate the `structuredContent` we return, so a drift in
+ * ./lib/documents/ fails loudly here instead of silently breaking citations.
+ */
+const SEARCH_OUTPUT_SCHEMA = {
+  results: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      url: z.string(),
+    }),
+  ),
+};
+
+const FETCH_OUTPUT_SCHEMA = {
+  id: z.string(),
+  title: z.string(),
+  text: z.string(),
+  url: z.string(),
+  metadata: z.record(z.string()),
+};
+
+/** Every tool on this server is a read-only public-data lookup. */
+const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
+
+/**
+ * Like `runTool`, but also returns the payload as `structuredContent`. The
+ * OpenAI connector contract requires both the JSON-encoded text block (for
+ * clients without structured output) and the structured object.
+ */
+function runStructuredTool<T extends object>(
+  toolName: string,
+  args: unknown,
+  extra: unknown,
+  produce: () => T,
+) {
+  const payload = withTelemetry(toolName, args, extra, produce);
+  return {
+    ...asJsonContent(payload),
+    // Validated against the declared outputSchema by the SDK; the cast only
+    // satisfies the SDK's Record index signature.
+    structuredContent: payload as unknown as Record<string, unknown>,
+  };
 }
 
 export function createServer(): McpServer {
@@ -391,6 +459,41 @@ export function createServer(): McpServer {
     howMunimjiHelpsSchema,
     async (args, extra) =>
       runTool('how_munimji_helps', args, extra, () => howMunimjiHelps(args)),
+  );
+
+  // ─── OpenAI connector contract — `search` + `fetch` ───────────────────
+  // Fixed names and shapes required by ChatGPT's deep-research and company-
+  // knowledge paths; without both, ChatGPT rejects the server outside
+  // Developer Mode. Declared via registerTool (not .tool) so the response can
+  // carry `structuredContent` against an output schema and the read-only
+  // annotation. Ranking reuses feature_search; see ./tools/publicSearch.ts.
+
+  server.registerTool(
+    'search',
+    {
+      title: 'Search HelloBooks public knowledge',
+      description:
+        'Search the HelloBooks public knowledge base and return citable document ids. Covers pricing plans, AI credit allowances, integrations, per-country features and compliance frameworks, statutory filing deadlines, local payment methods, competitor positioning, the marketing feature catalog, and published articles on hellobooks.ai. Returns `{ results: [{ id, title, url }] }`; pass an `id` to `fetch` for the full document. No customer or account data is reachable through this server.',
+      inputSchema: publicSearchSchema,
+      outputSchema: SEARCH_OUTPUT_SCHEMA,
+      annotations: READ_ONLY,
+    },
+    async (args, extra) =>
+      runStructuredTool('search', args, extra, () => publicSearch(args)),
+  );
+
+  server.registerTool(
+    'fetch',
+    {
+      title: 'Fetch a HelloBooks public document',
+      description:
+        'Retrieve the full text of one HelloBooks public knowledge document by the `id` returned from `search` (e.g. "plan:pro", "deadline:IN:gstr-3b", "competitor:xero"). Returns `{ id, title, text, url, metadata }` where `url` is the public hellobooks.ai page to cite. Call `search` first — ids are not guessable.',
+      inputSchema: publicFetchSchema,
+      outputSchema: FETCH_OUTPUT_SCHEMA,
+      annotations: READ_ONLY,
+    },
+    async (args, extra) =>
+      runStructuredTool('fetch', args, extra, () => publicFetch(args)),
   );
 
   // Resources
