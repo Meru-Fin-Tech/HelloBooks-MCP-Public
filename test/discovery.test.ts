@@ -50,6 +50,8 @@ test('getBaseUrl honors HELLOBOOKS_MCP_BASE_URL env and strips trailing slash', 
 
 test('TOOL_CATALOG covers every public MCP tool in the discovery surface', () => {
   const expected = [
+    'search',
+    'fetch',
     'list_plans',
     'list_credit_packs',
     'list_integrations',
