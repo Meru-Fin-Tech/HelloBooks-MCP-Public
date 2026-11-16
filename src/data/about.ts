@@ -20,10 +20,11 @@ HelloBooks is an AI-native, agentic accounting platform that automates bookkeepi
 
 ## Plans
 
-- **Free** — up to 200 transactions per year, free AI credits included to get started (one-time — they never refill; when they run out, AI automation pauses and the books keep working; upgrade to get more AI credits), 1 live bank feed, 2 users, invoices, bills & quotes included.
+- **Free** — up to 200 transactions in total (a lifetime cap — the count doesn't reset each year), free AI credits included to get started (one-time — they never refill; when they run out, AI automation pauses and the books keep working; upgrade to get more AI credits), 1 live bank feed, 2 users, invoices, bills & quotes included. India includes Tally sync and unlimited GST return filing.
 - **Starter** — US-only today. Includes up to 200 transactions per year, 7,500 AI credits/month, 5 users and 3 bank connections.
-- **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + users, multi-entity, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync, API access.
-- **Business** — 50,000 AI credits/month, lot/batch + multi-warehouse inventory, 3-way matching (PO/Bill/GRN), cohort & retention analytics, sandbox environment, higher API rate limits, dedicated success manager. Priced ~4× Pro to match Partner Points.
+- **Pro** — 15,000 AI credits/month, AI auto-categorization (95%+ accuracy), unlimited bank connections + unlimited users from Pro, GST filing (GSTR-1/3B/9) + e-invoicing, Tally sync.
+- **Business** — 50,000 AI credits/month, multi-entity management across subscribed entities, 3-way matching (PO/Bill/GRN), lot/batch + multi-warehouse inventory, cohort & retention analytics, sandbox environment, API access, dedicated success manager.
+- **Scale** — Available in US ($199/mo, $1,990/yr) and India (₹4,999/mo, ₹49,999/yr). 150,000 AI credits/month, manufacturing (BOM, work orders, MRP), warehouse depth (bins, waves, FEFO), higher API limits, custom development, named implementation lead.
 - **Partner Program** (\`cpa\` plan id) — free to join. Resell standard Pro/Business plans to clients and earn a wholesale discount that grows with status (Bronze 5% → Platinum 20%). Partner Points: Pro client = 1 pt, Business client = 4 pts. Apply at hellobooks.ai/partner-program/apply.
 - **Warehouse Add-on** — $9/mo per entity, stackable on any paid plan.
 - **Manufacturing Add-on** — $14/mo per entity, stackable on any paid plan.
@@ -82,6 +83,12 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-10-28', title: 'Live sitemap index blog federation and India Scale tier sync', category: 'improvement',
+    description: 'Updated blog discovery to seamlessly parse sitemap indexes (supporting the migrated /sitemap/blog.xml feed). Synced India Scale pricing (₹4,999/mo, ₹49,999/yr) into baked fallback and live federation.' },
+  { date: '2026-10-21', title: 'Tier alignment and compliance claim audit', category: 'fix',
+    description: 'Aligned multi-entity management, 3-way matching, and API access to the Business tier. Removed external GSP vendor naming from e-invoicing features in favour of direct IRP/GSTN integration. Marked Gusto payroll integration live.' },
+  { date: '2026-10-17', title: 'Free plan transaction cap is lifetime (never resets); Tally on India Free', category: 'fix',
+    description: 'Reflecting founder decision of 2026-10-17: the Free plan 200-transaction cap is a lifetime total that never resets (enforced by Auth-V3 Limits.TransactionsLifetime = 200). Starter keeps its 200/year annual transaction cap. Tally integration sync is included on Free for Indian businesses.' },
   { date: '2026-09-30', title: 'Free and Starter transaction caps clarified', category: 'fix',
     description: 'Free and Starter now publish annualTransactionLimit: 200. That 200 is the annual ledger transaction cap, not an AI-credit allowance and not AI-categorized transactions. Free continues to publish no AI-credit number; Starter keeps 7,500 AI credits/month while also carrying the 200 annual transaction cap.' },
   { date: '2026-09-30', title: 'Free plan AI credits are one-time, never refill', category: 'fix',

@@ -1,8 +1,8 @@
 /**
  * HTTP transport entry point.
  *
- * Exposes the MCP server over Streamable HTTP at POST /mcp and SSE GET /mcp,
- * with two layers of rate limiting:
+ * Exposes the MCP server over Streamable HTTP at POST /mcp, SSE GET /mcp and
+ * session termination DELETE /mcp, with two layers of rate limiting:
  *   1. Per-IP global limiter (catches scrapers / runaway clients).
  *   2. Per-session limiter (caps single-session requests to a reasonable bound).
  *
@@ -32,6 +32,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createServer, SERVER_VERSION } from './server.js';
 import { track } from './analytics.js';
 import { mcpAnalytics } from './middleware/mcpAnalytics.js';
+import { createVoiceKnowledgeRouter } from './voiceKnowledgeRouter.js';
 import {
   generateAgentCard,
   generateAiPluginManifest,
@@ -56,6 +57,11 @@ import {
   isValidSlug,
 } from './lib/shareUrl/index.js';
 import { createReportingRouter } from './reporting/endpoint.js';
+import { z } from 'zod';
+import { listAccountants, listAccountantsSchema, getAccountant } from './accountants.js';
+import { listApiCatalog, apiCatalogSchema, developerReference } from './apiCatalog.js';
+import { renderApiCatalog } from './apiCatalog.js';
+import { renderAccountants, renderAccountant, renderPage } from './directoryPages.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -89,9 +95,25 @@ const ipLimiter = rateLimit({
   handler: rateLimitHandler('ip'),
 });
 
+// /mcp gets its own, looser IP budget. Per-IP is the wrong axis for this
+// endpoint: every ChatGPT user arrives from OpenAI's shared egress ranges, so
+// one deep-research run (a query fans out into many `fetch` calls) would eat
+// the budget for every other ChatGPT user at once — and a 429 mid-research
+// does not surface as an error, it silently drops sources from the answer.
+// The limit was never what protects the data either: the same catalogs are
+// published as unmetered JSON at /catalog/*.json. What it protects is CPU, and
+// with the document index cached (src/lib/documents/) a call is a map lookup.
+const mcpIpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 600, // 600 requests / minute / IP
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: rateLimitHandler('ip'),
+});
+
 const sessionLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 60, // 60 requests / minute / session
+  limit: 300, // 300 requests / minute / session — one session is one client
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: rateLimitHandler('session'),
@@ -202,6 +224,34 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1); // accurate req.ip behind a load balancer
 app.use(express.json({ limit: '256kb' })); // requests are tiny — cap aggressively
 
+// ---------------------------------------------------------------------------
+// CORS
+// ---------------------------------------------------------------------------
+//
+// Claude and ChatGPT reach this server from their own backends, where CORS does
+// not apply. Browser-hosted MCP clients (the MCP Inspector, in-page agents) do
+// need it, and `Mcp-Session-Id` must be *exposed* or they cannot read the
+// session id off the initialize response and every follow-up request 400s.
+//
+// `*` with no credentials is the correct posture here: the catalog is public,
+// there is no auth, and no cookie is ever read — so there is nothing an
+// attacker's page could read that it could not fetch itself.
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Accept, Authorization, Mcp-Session-Id, MCP-Protocol-Version, Last-Event-ID',
+  );
+  res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id, WWW-Authenticate');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', sessions: sessions.size, shares: defaultShareStore.size });
 });
@@ -214,6 +264,12 @@ app.get('/info', (_req, res) => {
       'Public read-only MCP server for HelloBooks plans, integrations, country support, compliance, competitors, deadlines, local payment methods, feature catalog data, published articles, and product videos.',
     transport: { http: '/mcp', sse: '/mcp' },
     install: 'claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp',
+    connectorUrl: 'https://agents.hellobooks.ai/mcp',
+    auth: 'none',
+    clients: {
+      claude: 'Settings → Connectors → Add custom connector → paste the connector URL (no sign-in).',
+      chatgpt: 'Settings → Connectors → paste the connector URL (no authentication). search + fetch are implemented, so deep research and company knowledge work as well as developer mode.',
+    },
     docs: 'https://hellobooks.ai/mcp',
     repository: 'https://github.com/Meru-Fin-Tech/HelloBooks-MCP-Public',
     discovery: {
@@ -225,6 +281,7 @@ app.get('/info', (_req, res) => {
       llms_txt: '/llms.txt',
       catalog: '/catalog.json',
       catalog_feeds: '/catalog/index.json',
+      voice_knowledge_pack: '/kb/voice.json?country=IN',
       changelog: '/changelog.json',
       sitemap: '/sitemap.xml',
       robots: '/robots.txt',
@@ -263,12 +320,68 @@ app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(CATALOG_FEEDS)
 app.get('/robots.txt', (_req, res) => sendText(res, generateRobotsTxt(), 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(CATALOG_FEEDS), 'application/xml; charset=utf-8'));
 app.get('/feed.xml', (_req, res) => sendText(res, generateRssFeed(), 'application/rss+xml; charset=utf-8'));
-app.get('/openapi.json', (_req, res) => sendJson(res, generateOpenApi()));
+app.get('/openapi.json', (_req, res) => sendJson(res, generateOpenApi(CATALOG_FEEDS)));
 app.get('/catalog.json', (_req, res) => sendJson(res, generateCatalogJson()));
 app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson()));
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+
+function parameters(req: Request): Record<string, unknown> {
+  const values: Record<string, unknown> = { ...req.query };
+  for (const key of Object.keys(values)) {
+    if (values[key] === '') delete values[key];
+  }
+  for (const key of ['page', 'pageSize']) {
+    if (typeof values[key] === 'string') values[key] = Number(values[key]);
+  }
+  if (values.acceptingClients === 'true') values.acceptingClients = true;
+  if (values.acceptingClients === 'false') values.acceptingClients = false;
+  return values;
+}
+function asyncRoute(handler: (req: Request, res: Response) => Promise<void>) {
+  return (req: Request, res: Response) => {
+    handler(req, res).catch(error => {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'invalid-parameters', issues: error.issues.map(i => ({ path: i.path, message: i.message })) });
+      } else {
+        res.status(503).json({ error: 'catalog-unavailable', message: 'Please retry shortly.' });
+      }
+    });
+  };
+}
+app.get('/api/developer-reference.json', (_req, res) => sendJson(res, developerReference));
+app.get('/api/catalog.json', asyncRoute(async (req, res) => {
+  const result = await listApiCatalog(z.object(apiCatalogSchema).parse(parameters(req)));
+  if (req.query.id && !result.entries.length) res.status(404);
+  sendJson(res, result);
+}));
+app.get('/apis', asyncRoute(async (req, res) => {
+  const result = await listApiCatalog(z.object(apiCatalogSchema).parse(parameters(req)));
+  if (req.query.id && !result.entries.length) res.status(404);
+  sendText(res, renderApiCatalog(result, new URL(req.originalUrl, 'http://localhost').searchParams), 'text/html; charset=utf-8');
+}));
+app.get('/api/accountants.json', asyncRoute(async (req, res) => {
+  const result = await listAccountants(z.object(listAccountantsSchema).parse(parameters(req)));
+  res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+  res.status(result.status === 'unavailable' ? 503 : 200).json(result);
+}));
+app.get('/accountants', asyncRoute(async (req, res) => {
+  const result = await listAccountants(z.object(listAccountantsSchema).parse(parameters(req)));
+  res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+  res.status(result.status === 'unavailable' ? 503 : 200).type('html').send(renderAccountants(result, new URL(req.originalUrl, 'http://localhost').searchParams));
+}));
+for (const route of ['/api/accountants/:slug.json', '/accountants/:slug']) {
+  app.get(route, asyncRoute(async (req, res) => {
+    const slug = z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(200).parse(req.params.slug);
+    const result = await getAccountant({ slug });
+    res.setHeader('Cache-Control', result.status === 'live' ? 'public, max-age=60' : 'no-store');
+    res.status(result.found ? 200 : result.status === 'live' ? 404 : 503);
+    if (route.startsWith('/api/')) res.json(result);
+    else res.type('html').send(result.firm ? renderAccountant(result.firm, result.error)
+      : renderPage('Accountant profile', `<h1>${result.status !== 'live' ? 'Directory temporarily unavailable' : 'Profile not found'}</h1><p><a href="/accountants">Browse the directory</a></p>`));
+  }));
+}
 
 // ---------------------------------------------------------------------------
 // Per-catalog JSON feeds — the API-based source-of-truth surface.
@@ -290,6 +403,14 @@ for (const feed of CATALOG_FEEDS) {
     sendJson(res, body);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Voice knowledge pack — precompiled per-country facts for AI phone agents.
+// ---------------------------------------------------------------------------
+//
+// Fetched once per call (ETag-revalidated) by HelloCRM's AI caller, never
+// queried mid-call. See ./voiceKnowledge.ts and ./voiceKnowledgeRouter.ts.
+app.use('/kb', ipLimiter, createVoiceKnowledgeRouter());
 
 // ---------------------------------------------------------------------------
 // Share-URL surface — minted by analytical MCP tools, rendered here.
@@ -344,12 +465,17 @@ if (reportingRouter) {
 // recorded. The middleware only registers a `res.finish` listener and calls
 // next() — it never blocks or short-circuits the request. See
 // src/middleware/mcpAnalytics.ts and docs/MCP_ANALYTICS.md.
-app.use('/mcp', mcpAnalytics, ipLimiter, sessionLimiter);
+app.use('/mcp', mcpAnalytics, mcpIpLimiter, sessionLimiter);
 app.post('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP error');
 });
 app.get('/mcp', (req, res) => {
   handleMcpRequestFailure(req, res, 'MCP SSE error');
+});
+// Session termination (MCP spec: DELETE with a session id). Without this route
+// Express answers 404 and a well-behaved client logs a failure on disconnect.
+app.delete('/mcp', (req, res) => {
+  handleMcpRequestFailure(req, res, 'MCP session-delete error');
 });
 
 function handleMcpRequestFailure(req: Parameters<typeof handleMcpRequest>[0], res: Parameters<typeof handleMcpRequest>[1], label: string): void {

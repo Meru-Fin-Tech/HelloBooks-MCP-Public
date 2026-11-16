@@ -9,7 +9,7 @@ import {
   refreshArticlesFromSitemap,
   __resetArticlesCacheForTests,
 } from '../src/articlesFeed.js';
-import { parseBlogEntries, blogEntryToArticle, slugToTitle } from '../src/lib/blogSitemap.js';
+import { parseBlogEntries, parseSitemapIndex, fetchBlogEntries, blogEntryToArticle, slugToTitle } from '../src/lib/blogSitemap.js';
 
 test('mergeSitemapArticles appends a genuinely new slug and sorts newest-first', () => {
   const merged = mergeSitemapArticles([
@@ -72,4 +72,58 @@ test('blogEntryToArticle produces a searchable, well-formed Article', () => {
   assert.ok(a.excerpt.length > 30); // list_articles invariant
   assert.equal(a.title, slugToTitle('best-gst-software-for-ca-firms'));
   assert.equal(a.url, 'https://hellobooks.ai/blog/best-gst-software-for-ca-firms');
+});
+
+test('parseBlogEntries also captures regional blog posts and /cpa/ pages', () => {
+  const xml = `<urlset>
+    <url><loc>https://hellobooks.ai/ie/blog/xero-price-increase</loc><lastmod>2026-10-27</lastmod></url>
+    <url><loc>https://hellobooks.ai/uae/blog/vat-return-guide</loc></url>
+    <url><loc>https://hellobooks.ai/cpa/tax-return-changes/form-8995-changes-2025</loc></url>
+    <url><loc>https://hellobooks.ai/cpa/tax-return-changes</loc></url>
+    <url><loc>https://hellobooks.ai/xx/blog/not-a-region</loc></url>
+  </urlset>`;
+  const entries = parseBlogEntries(xml);
+  assert.deepEqual(entries.map((e) => e.path), [
+    'ie/blog/xero-price-increase',
+    'uae/blog/vat-return-guide',
+    'cpa/tax-return-changes/form-8995-changes-2025',
+  ]);
+  const ie = blogEntryToArticle(entries[0]!);
+  assert.equal(ie.id, 'ie-blog-xero-price-increase');
+  assert.equal(ie.url, 'https://hellobooks.ai/ie/blog/xero-price-increase');
+  assert.equal(ie.countryRelevance, 'IE');
+  assert.equal(blogEntryToArticle(entries[1]!).countryRelevance, 'AE');
+  assert.equal(blogEntryToArticle(entries[2]!).url, 'https://hellobooks.ai/cpa/tax-return-changes/form-8995-changes-2025');
+});
+
+test('parseSitemapIndex lists child sitemaps and skips media sitemaps', () => {
+  const xml = `<sitemapindex>
+    <sitemap><loc>https://hellobooks.ai/sitemap/blog.xml</loc></sitemap>
+    <sitemap><loc>https://hellobooks.ai/sitemap/pages.xml</loc></sitemap>
+    <sitemap><loc>https://hellobooks.ai/image-sitemap.xml</loc></sitemap>
+  </sitemapindex>`;
+  assert.deepEqual(parseSitemapIndex(xml), [
+    'https://hellobooks.ai/sitemap/blog.xml',
+    'https://hellobooks.ai/sitemap/pages.xml',
+  ]);
+  assert.deepEqual(parseSitemapIndex('<urlset></urlset>'), []);
+});
+
+test('fetchBlogEntries follows a sitemap index and de-duplicates across children', async () => {
+  const docs: Record<string, string> = {
+    'https://x.test/sitemap.xml': `<sitemapindex>
+      <sitemap><loc>https://x.test/a.xml</loc></sitemap>
+      <sitemap><loc>https://x.test/b.xml</loc></sitemap></sitemapindex>`,
+    'https://x.test/a.xml': `<urlset><url><loc>https://hellobooks.ai/blog/one</loc></url></urlset>`,
+    'https://x.test/b.xml': `<urlset><url><loc>https://hellobooks.ai/blog/one</loc></url>
+      <url><loc>https://hellobooks.ai/cpa/tools/w-9-checklist</loc></url></urlset>`,
+  };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => new Response(docs[url] ?? '', { status: docs[url] ? 200 : 404 })) as typeof fetch;
+  try {
+    const entries = await fetchBlogEntries('https://x.test/sitemap.xml', 1000);
+    assert.deepEqual(entries.map((e) => e.path ?? `blog/${e.slug}`), ['blog/one', 'cpa/tools/w-9-checklist']);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

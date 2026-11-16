@@ -6,8 +6,9 @@
  * Direction of truth:
  *   - The curated + baked-discovered arrays in src/data/articles.ts are the
  *     availability guarantee (always present, hand-edited excerpts survive).
- *   - hellobooks.ai/sitemap.xml is the freshness overlay: any /blog/ slug not
- *     already in the baked catalog is folded in with a slug-derived title.
+ *   - hellobooks.ai/sitemap.xml (a sitemap index) is the freshness overlay:
+ *     any /blog/, /<region>/blog/ or /cpa/ page not already in the baked
+ *     catalog is folded in with a slug-derived title.
  *
  * Same opportunistic-refresh design as pricingFeed.ts:
  *   - getArticles() is SYNCHRONOUS and never blocks on the network — baked on
@@ -26,7 +27,7 @@ import { ARTICLES as BAKED_ARTICLES } from './data/articles.js';
 import type { Article } from './data/articles.js';
 import { DEFAULT_SITEMAP_URL, blogEntryToArticle, type BlogEntry } from './lib/blogSitemap.js';
 
-const FETCH_TIMEOUT_MS = 4000;
+const FETCH_TIMEOUT_MS = 15000; // per sitemap; the blog child sitemap is ~2 MB
 const TTL_MS = 60 * 60 * 1000;            // serve a successful fetch for 1 hour
 const MIN_REFETCH_GAP_MS = 5 * 60 * 1000; // attempt a refresh at most every 5 min
 
@@ -46,8 +47,8 @@ function sitemapUrl(): string {
 export function mergeSitemapArticles(entries: BlogEntry[]): Article[] {
   const known = new Set(BAKED_ARTICLES.map((a) => a.id));
   const fresh = entries
-    .filter((e) => !known.has(e.slug))
-    .map(blogEntryToArticle);
+    .map(blogEntryToArticle)
+    .filter((a) => !known.has(a.id));
   return [...BAKED_ARTICLES, ...fresh].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 

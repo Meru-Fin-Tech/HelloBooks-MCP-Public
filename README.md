@@ -10,6 +10,19 @@ country support, compliance frameworks — instead of relying on stale web snipp
 
 ## Developer Portal
 
+Use [API catalog](https://agents.hellobooks.ai/apis) to search every public HTTP
+endpoint, registered MCP tool, and operation in the generated accounting API
+reference. Open an entry for its parameters, authorization requirements, request
+example and full published schema. Accounting calls use company-scoped OAuth at
+the documented API host.
+
+The [accountant directory](https://agents.hellobooks.ai/accountants) includes all
+published firms and full public profiles. Availability is a filter, so firms not
+accepting new clients are still accessible. The `list_accountants`,
+`get_accountant`, and `list_api_catalog` tools expose these surfaces over MCP.
+See [API and directory documentation](docs/API_DIRECTORY.md) for endpoints,
+pagination, freshness and reference maintenance.
+
 Build an integration with the [HelloBooks Developer Portal](https://developer.hellobooks.ai/).
 The [API documentation](https://developer.hellobooks.ai/docs/overview) covers
 registering an app, connecting a company with OAuth, and testing with an India sandbox.
@@ -30,10 +43,42 @@ Or, for local development:
 claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.js
 ```
 
+### Add by URL (Claude and ChatGPT connectors)
+
+One URL, no sign-in, for both products:
+
+```
+https://agents.hellobooks.ai/mcp
+```
+
+- **Claude** (claude.ai / Desktop) — Settings → Connectors → *Add custom connector*, paste the
+  URL, authentication **No sign in**. Streamable HTTP; the server must stay reachable from
+  Anthropic's IP ranges.
+- **ChatGPT** — Settings → Connectors, paste the URL, authentication **No authentication**.
+  Works in Developer Mode (all 31 tools) *and* in deep research / company knowledge, because
+  the server implements OpenAI's two-tool retrieval contract: `search` returns
+  `{ results: [{ id, title, url }] }` and `fetch` resolves one of those ids into
+  `{ id, title, text, url, metadata }`. Every document carries a non-empty `url`, so answers
+  come back cited.
+
+Verify a URL install without a client:
+
+```bash
+curl -s -X POST https://agents.hellobooks.ai/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}'
+```
+
+Note the `Accept` header: per the MCP spec the server answers `406` unless the client accepts
+**both** `application/json` and `text/event-stream`. Claude and ChatGPT both send both.
+
 ## Tools
 
 | Tool | Description |
 | --- | --- |
+| `search` | OpenAI connector contract. Free-text search across every public catalog; returns citable document ids as `{ results: [{ id, title, url }] }`. Ranking reuses `feature_search`. |
+| `fetch` | OpenAI connector contract. Resolves one document id from `search` (e.g. `plan:pro`, `deadline:IN:gstr-3b`, `competitor:xero`) into `{ id, title, text, url, metadata }`. |
 | `list_plans` | All HelloBooks plans (Free, Starter, Pro, Business, Scale, Partner Program) + Warehouse / Manufacturing add-ons. Optional `country` and `plan` filters; non-priced supported countries return USD/default fallback pricing with metadata. |
 | `list_integrations` | Banks, payments, payroll, time tracking, shipping, tax-compliance, accounting sync, ecommerce, CRM, storage (Drive/OneDrive), freelance (Upwork). Optional `category`, `country`, `status` filters. |
 | `country_support` | Country support matrix for all 187 public country hubs, with detailed compliance rows where separately curated. |
@@ -47,6 +92,19 @@ claude mcp add hellobooks-local node /path/to/HelloBooks-MCP-Public/dist/stdio.j
 | `list_articles` | Published content on hellobooks.ai — head-to-head compare pages, country guides, curated flagship posts, and sitemap-discovered blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
 | `list_tax_rates` | Statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant), UK VAT (20/5/zero/exempt), AU GST (10/GST-free), US state-administered summary, CA GST + HST (ON, Atlantic), SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/…), or `scheme` (standard/reduced/zero/exempt/composition/cess). Every entry carries an effective-from date and a `source` URL — confirm before quoting. |
 | `lookup_tax_rate` | Pick a single statutory rate by exact `id` (e.g. `IN-standard-18`) or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports"). Returns the matched rate, score, and source URL. |
+
+## Voice knowledge pack (for AI phone agents)
+
+Precompiled, per-country facts an AI caller loads **once per call** and keeps in its system prompt — no retrieval mid-call. About 850–1,350 tokens per country.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /kb/voice.json?country=IN` | structured pack: plans + prices for that country, the currency actually charged, onboarding support offer, included support, GST / local compliance + due dates, guardrails, call goals, and `text` (the prompt-ready block) |
+| `GET /kb/voice.json` (no `country`, or `country=all`) | **every supported country in one response**: `{ version, generatedAt, factsAsOf, countries, packs: { IN: {...}, US: {...}, ... } }` — for syncing the whole knowledge base at once (~700 KB; revalidate with `If-None-Match`). Put only the customer's own country pack in a call prompt. |
+| `GET /kb/voice.txt?country=IN` | just the prompt-ready text (omit `country` for all countries) |
+| `POST /kb/refresh` | re-pull live pricing now (`Authorization: Bearer $HELLOBOOKS_KB_REFRESH_TOKEN`; 404 when the env var is unset) |
+
+Caching: `ETag` is the content hash (`version`), so send `If-None-Match` and re-download only on a 304 miss. Every response carries `X-KB-Facts-As-Of` (when pricing last changed) and `X-KB-Generated-At`. Prices come from the live hellobooks.ai pricing feed; the onboarding offer and call rules live in `src/data/onboardingSupport.ts` and `src/voiceKnowledge.ts` and change by commit.
 
 ## Resources
 

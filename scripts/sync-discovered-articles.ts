@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { CURATED_ARTICLES } from '../src/data/articles.js';
 import {
   DEFAULT_SITEMAP_URL,
-  parseBlogEntries,
+  fetchBlogEntries,
   slugToTitle,
   deriveTags,
   guessCountry,
@@ -35,11 +35,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dirname, '..', 'src', 'data', 'articlesDiscovered.ts');
 
 async function main(): Promise<void> {
-  const res = await fetch(DEFAULT_SITEMAP_URL);
-  if (!res.ok) throw new Error(`sitemap fetch failed: HTTP ${res.status}`);
-  const xml = await res.text();
-
-  const blogs = parseBlogEntries(xml);
+  // Follows the sitemap index; keep only top-level /blog/ posts here so the
+  // baked file stays a blog catalog (regional and /cpa/ pages arrive live).
+  const blogs = (await fetchBlogEntries(DEFAULT_SITEMAP_URL, 30_000)).filter((b) => !b.path);
 
   // Drop slugs already covered by the curated catalog (re-running the script
   // is idempotent — we only ever target slugs absent from CURATED_ARTICLES).
