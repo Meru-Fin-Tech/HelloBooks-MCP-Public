@@ -109,12 +109,41 @@ export function deriveTags(slug: string): string[] {
 export interface BlogEntry {
   slug: string;
   lastmod: string; // YYYY-MM-DD
+  /**
+   * Site path when the page is not a top-level `/blog/<slug>` post, e.g.
+   * `ie/blog/xero-price-increase` or `cpa/tax-return-changes/form-8995-changes-2025`.
+   * Absent for plain blog posts so existing ids and URLs stay unchanged.
+   */
+  path?: string;
+}
+
+// Regional blogs live at /<region>/blog/<slug>. The site uses `uae` for the
+// Emirates and ISO-style codes elsewhere.
+const REGION_PREFIXES: Record<string, CountryRelevance> = {
+  in: 'IN', us: 'US', uk: 'GB', au: 'AU', uae: 'AE', ca: 'CA', sg: 'SG', nz: 'NZ', ie: 'IE',
+};
+
+/** Map a sitemap URL onto a catalog entry, or null when it is not an article page. */
+function entryFromLoc(loc: string, lastmod: string): BlogEntry | null {
+  const path = loc.replace(/^https?:\/\/[^/]+\//, '').replace(/\/$/, '');
+  const parts = path.split('/');
+  // /blog/<slug> — nested paths under /blog/ (category indexes) are skipped.
+  if (parts[0] === 'blog') return parts.length === 2 && parts[1] ? { slug: parts[1], lastmod } : null;
+  // /<region>/blog/<slug>
+  if (parts.length === 3 && parts[1] === 'blog' && REGION_PREFIXES[parts[0]!] && parts[2]) {
+    return { slug: parts[2], lastmod, path };
+  }
+  // /cpa/<section>/<page> — CPA guides, tax-change pages and tools (hubs skipped).
+  if (parts[0] === 'cpa' && parts.length >= 3 && parts[parts.length - 1]) {
+    return { slug: parts[parts.length - 1]!, lastmod, path };
+  }
+  return null;
 }
 
 /**
- * Extract `/blog/<slug>` entries from a sitemap XML string. No XML library —
- * the sitemap shape is stable and trivially scrape-safe. Nested paths under
- * /blog/ (e.g. category indexes) are skipped so only leaf posts are captured.
+ * Extract article entries from a sitemap XML string: top-level `/blog/<slug>`
+ * posts, regional `/<region>/blog/<slug>` posts and `/cpa/` content pages. No
+ * XML library — the sitemap shape is stable and trivially scrape-safe.
  */
 export function parseBlogEntries(xml: string): BlogEntry[] {
   const urlBlocks = xml.match(/<url>[\s\S]*?<\/url>/g) ?? [];
@@ -123,36 +152,62 @@ export function parseBlogEntries(xml: string): BlogEntry[] {
     const locMatch = block.match(/<loc>([^<]+)<\/loc>/);
     const lmMatch = block.match(/<lastmod>([^<]+)<\/lastmod>/);
     if (!locMatch) continue;
-    const loc = locMatch[1]!;
-    if (!loc.includes('/blog/')) continue;
-    const slug = loc.split('/blog/')[1]?.replace(/\/$/, '') ?? '';
-    if (!slug || slug.includes('/')) continue; // skip nested pages
-    out.push({ slug, lastmod: (lmMatch?.[1] ?? '').slice(0, 10) || '2026-01-01' });
+    const entry = entryFromLoc(locMatch[1]!.trim(), (lmMatch?.[1] ?? '').slice(0, 10) || '2026-01-01');
+    if (entry) out.push(entry);
   }
   return out;
+}
+
+/** Child sitemap URLs from a `<sitemapindex>`; empty for a plain `<urlset>`. Media sitemaps are skipped. */
+export function parseSitemapIndex(xml: string): string[] {
+  if (!/<sitemapindex[\s>]/.test(xml)) return [];
+  const blocks = xml.match(/<sitemap>[\s\S]*?<\/sitemap>/g) ?? [];
+  return blocks
+    .map((b) => b.match(/<loc>([^<]+)<\/loc>/)?.[1]?.trim() ?? '')
+    .filter((u) => u && !/(image|video)-sitemap/.test(u));
 }
 
 /** Turn a discovered blog entry into a catalog Article (slug-derived title). */
 export function blogEntryToArticle(entry: BlogEntry): Article {
   const title = slugToTitle(entry.slug);
   return {
-    id: entry.slug,
+    id: entry.path ? entry.path.replace(/\//g, '-') : entry.slug,
     title,
     excerpt: `${title} — published on hellobooks.ai. Open the article for the full write-up.`,
     tags: deriveTags(entry.slug),
-    countryRelevance: guessCountry(entry.slug),
-    url: `${SITE_ROOT}/blog/${entry.slug}`,
+    countryRelevance: REGION_PREFIXES[entry.path?.split('/')[0] ?? ''] ?? guessCountry(entry.slug),
+    url: entry.path ? `${SITE_ROOT}/${entry.path}` : `${SITE_ROOT}/blog/${entry.slug}`,
     publishedAt: entry.lastmod,
     kind: 'blog',
   };
 }
 
-/** Fetch + parse the live sitemap. Throws on network / HTTP error (callers decide fallback). */
-export async function fetchBlogEntries(url: string, timeoutMs: number): Promise<BlogEntry[]> {
+async function fetchXml(url: string, timeoutMs: number): Promise<string> {
   const res = await fetch(url, {
     signal: AbortSignal.timeout(timeoutMs),
     headers: { accept: 'application/xml,text/xml,*/*' },
   });
   if (!res.ok) throw new Error(`sitemap HTTP ${res.status}`);
-  return parseBlogEntries(await res.text());
+  return res.text();
+}
+
+/**
+ * Fetch + parse the live sitemap. hellobooks.ai/sitemap.xml is a sitemap
+ * index, so its child sitemaps are fetched in parallel and merged (first
+ * occurrence of a URL wins). Throws on network / HTTP error (callers decide fallback).
+ */
+export async function fetchBlogEntries(url: string, timeoutMs: number): Promise<BlogEntry[]> {
+  const xml = await fetchXml(url, timeoutMs);
+  const children = parseSitemapIndex(xml);
+  if (children.length === 0) return parseBlogEntries(xml);
+  const pages = await Promise.all(children.map((child) => fetchXml(child, timeoutMs)));
+  const seen = new Set<string>();
+  const out: BlogEntry[] = [];
+  for (const entry of pages.flatMap(parseBlogEntries)) {
+    const key = entry.path ?? `blog/${entry.slug}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(entry);
+  }
+  return out;
 }

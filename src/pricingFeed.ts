@@ -69,6 +69,7 @@ const feedTierSchema = z.object({
     // null = no published number (Free, since 2026-09-28).
     monthlyAiCredits: z.number().nullable().optional(),
     // Annual ledger transaction cap. For Free/Starter this is separate from AI credits.
+    lifetimeTransactionLimit: z.number().int().positive().optional(),
     annualTransactionLimit: z.number().int().positive().optional(),
   }).passthrough(),
 });
@@ -120,6 +121,7 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
     if (!feedTier) return baked; // e.g. warehouse-addon / manufacturing-addon
 
     const prices: PlanPrice[] = [];
+    const featuresByCountry: Partial<Record<CountryCode, string[]>> = {};
     for (const country of COUNTRIES) {
       const region = feed.regions.find((r) => r.region === country);
       const tier = region?.tiers.find((t) => t.id === baked.plan);
@@ -136,6 +138,8 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
         if (bakedPrice) prices.push(bakedPrice);
         continue;
       }
+
+      if (tier.features.length > 0) featuresByCountry[country] = tier.features;
 
       // `perClient` is vestigial after Web-Fire #514 — the retired
       // "$59.99/mo + $4.99/client" CPA SKU is gone and the field is no
@@ -154,10 +158,12 @@ export function feedToPlans(feed: PricingFeed): Plan[] {
       ...baked,
       prices,
       features: feedTier.features.length > 0 ? feedTier.features : baked.features,
+      ...(Object.keys(featuresByCountry).length > 0 ? { featuresByCountry } : {}),
       // undefined falls back to baked; null is a deliberate "no number".
       monthlyAiCredits: feedTier.limits.monthlyAiCredits === undefined
         ? baked.monthlyAiCredits
         : feedTier.limits.monthlyAiCredits,
+      lifetimeTransactionLimit: feedTier.limits.lifetimeTransactionLimit ?? baked.lifetimeTransactionLimit,
       annualTransactionLimit: feedTier.limits.annualTransactionLimit ?? baked.annualTransactionLimit,
       ...(feedTier.limits.monthlyAiCredits === null
         ? { aiCreditsNote: typeof feedTier.limits.aiCreditsNote === 'string' ? feedTier.limits.aiCreditsNote : baked.aiCreditsNote }
@@ -244,6 +250,29 @@ function maybeRefresh(): void {
   refreshing = refreshPricingFromFeed().finally(() => {
     refreshing = null;
   });
+}
+
+/**
+ * Await live pricing before building something a customer will hear. Unlike
+ * getPlans() this may block (up to the fetch timeout) — but only while the
+ * snapshot is still the baked cold-start copy, and at most once per throttle
+ * window, so a dead feed costs one timeout and then serves baked data.
+ */
+export async function ensurePricingWarm(): Promise<void> {
+  if (feedDisabled() || current.source === 'feed') {
+    maybeRefresh();
+    return;
+  }
+  if (refreshing) {
+    await refreshing;
+    return;
+  }
+  if (Date.now() < nextAllowedFetch) return;
+  nextAllowedFetch = Date.now() + MIN_REFETCH_GAP_MS;
+  refreshing = refreshPricingFromFeed().finally(() => {
+    refreshing = null;
+  });
+  await refreshing;
 }
 
 /**
