@@ -315,6 +315,8 @@ ${toolItems}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Google Search Console ownership for the agents.hellobooks.ai property (HTML-tag method). -->
+  <meta name="google-site-verification" content="_l6D7myYhIZU-FIDTlxwA9_fF0IoybVjiRqlxQEFS3o">
   <title>HelloBooks Public MCP — agents.hellobooks.ai</title>
   <meta name="description" content="Public read-only Model Context Protocol (MCP) server for HelloBooks. Exposes ${TOOL_CATALOG.length} tools and ${RESOURCE_CATALOG.length} resources so AI agents can ground answers about HelloBooks pricing, integrations, compliance, and features in live data.">
   <link rel="canonical" href="${baseUrl}/">

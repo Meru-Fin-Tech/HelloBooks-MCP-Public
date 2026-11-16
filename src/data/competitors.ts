@@ -199,7 +199,7 @@ export const COMPETITORS: Competitor[] = [
       'Native HelloTime + HelloGrowth CRM tenancy gives one-login attendance → payroll → P&L',
       'Compliance calendar with PF / ESI / PT / GST due-dates pre-loaded',
       'Guided QuickBooks + Xero migration path',
-      'India GST e-invoice + e-way bill via Fynamics GSP — fewer hand-offs than Zoho',
+      'India GST e-invoice + e-way bill generation — fewer hand-offs than Zoho',
     ],
     whereTheyWin: [
       'Zoho One bundle gives 40+ apps (CRM, HRMS, Desk, etc.) under one subscription',
