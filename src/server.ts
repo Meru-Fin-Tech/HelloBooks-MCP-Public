@@ -413,7 +413,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'country_support',
-    'Return features available per supported country (AU, IN, UK, US, CA, AE, SG, NZ).',
+    'Return features + compliance frameworks available per supported country (187 country hubs, with detailed rows for AU, IN, GB, US, CA, AE, SG, NZ). Pass a `country` for one country’s full detail. The full unfiltered matrix is large, so for "which countries are supported?" pass `summary: true` to get a compact per-country index (feature/compliance counts) and then drill into a specific country.',
     countrySupportSchema,
     READ_ONLY,
     async (args, extra) =>

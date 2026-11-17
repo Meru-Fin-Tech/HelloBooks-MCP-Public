@@ -67,3 +67,10 @@ test('response-size: a scoped country_support query is small', () => {
   const n = size(countrySupport({ country: 'IN' }));
   assert.ok(n <= GENERAL_BUDGET, `country_support({country:'IN'}) is ${n} chars — filter should keep it small`);
 });
+
+test('response-size: country_support summary mode is far smaller than the full matrix', () => {
+  const full = size(countrySupport({}));
+  const summary = size(countrySupport({ summary: true }));
+  assert.ok(summary <= GENERAL_BUDGET, `summary mode is ${summary} chars (> ${GENERAL_BUDGET})`);
+  assert.ok(summary < full / 2, 'summary must be well under half the full matrix size');
+});
