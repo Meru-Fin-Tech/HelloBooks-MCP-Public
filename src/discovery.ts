@@ -37,6 +37,7 @@ import type { CatalogFeedDescriptor } from './catalogFeeds.js';
 // drifting behind the MCP handshake version, as it had at 0.7.0 vs 1.5.0.
 import { SERVER_VERSION } from './server.js';
 import { PUBLIC_API_PATHS } from './apiCatalog.js';
+import { SUPPORTED_COUNTRIES } from './data/supportedCountries.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
@@ -746,6 +747,7 @@ ${resources}
 - [Changelog JSON](${baseUrl}/changelog.json)
 - [Sitemap](${baseUrl}/sitemap.xml)
 - [RSS feed](${baseUrl}/feed.xml)
+- [llms-full.txt (long-form grounding)](${baseUrl}/llms-full.txt)
 
 ## Catalog data feeds
 
@@ -782,6 +784,122 @@ ${recentChanges}
 - **How fresh is the data?** Plan and credit-pack pricing federates live from hellobooks.ai/api/feed/pricing.json (1-hour TTL, 5-min minimum refetch). Blog articles refresh from hellobooks.ai/sitemap.xml on demand in the background (1-hour TTL, 5-min minimum retry), with a bundled fallback. Other catalogs ship with each release. The catalog date records published catalog changes, not the last runtime feed refresh.
 - **Where's the source?** ${GITHUB_REPO_URL}
 - **Who runs it?** HelloBooks (Meru Fin Tech). Contact ${CONTACT_EMAIL}.
+`;
+}
+
+/**
+ * llms-full.txt — the long-form companion to llms.txt (llmstxt.org convention).
+ *
+ * Where llms.txt is a terse index of links, llms-full.txt inlines the prose an
+ * LLM needs to ground an answer in one fetch: every tool described in full and
+ * grouped by area, the resources, the country/compliance coverage, and the full
+ * changelog. Static-by-construction (derived from the same catalogs the MCP
+ * serves), so it can never drift from /mcp.
+ */
+export function generateLlmsFullTxt(
+  feeds: readonly Pick<CatalogFeedDescriptor, 'slug' | 'title' | 'description'>[] = [],
+): string {
+  const baseUrl = getBaseUrl();
+
+  const CATEGORY_TITLES: Record<string, string> = {
+    search: 'Search & retrieval (OpenAI connector contract)',
+    pricing: 'Pricing, plans & cost',
+    features: 'Features & capabilities',
+    integrations: 'Integrations',
+    compliance: 'Tax, compliance & statutory deadlines',
+    content: 'Content, articles & media',
+  };
+  const order = ['search', 'pricing', 'features', 'integrations', 'compliance', 'content'];
+  const categories = [
+    ...order.filter((c) => TOOL_CATALOG.some((t) => t.category === c)),
+    ...[...new Set(TOOL_CATALOG.map((t) => t.category))].filter((c) => !order.includes(c)),
+  ];
+
+  const toolSections = categories
+    .map((cat) => {
+      const rows = TOOL_CATALOG.filter((t) => t.category === cat)
+        .map((t) => `#### \`${t.name}\` — ${t.title}\n\n${t.summary}\n\nSee: ${t.marketingUrl}`)
+        .join('\n\n');
+      return `### ${CATEGORY_TITLES[cat] ?? cat}\n\n${rows}`;
+    })
+    .join('\n\n');
+
+  const resources = RESOURCE_CATALOG.map(
+    (r) => `- \`${r.uri}\` (${r.mimeType}) — ${r.name}`,
+  ).join('\n');
+
+  const pricedCountries = SUPPORTED_COUNTRIES.filter((c) => c.tier === 'full')
+    .map((c) => `${c.name} (${c.iso}, ${c.currency})`)
+    .join(', ');
+  const vocabCountries = SUPPORTED_COUNTRIES.filter((c) => c.tier === 'vocab')
+    .map((c) => `${c.name} (${c.iso})`)
+    .join(', ');
+
+  const feedLinks = feeds
+    .map((feed) => `- [${feed.title}](${baseUrl}/catalog/${feed.slug}.json) — ${feed.description}`)
+    .join('\n');
+
+  const changes = CHANGELOG.map(
+    (c) => `- **${c.date}** [${c.category}] ${c.title} — ${c.description}`,
+  ).join('\n');
+
+  return `# HelloBooks Public MCP — full grounding file
+
+> Long-form companion to [${baseUrl}/llms.txt](${baseUrl}/llms.txt). Everything an LLM needs to answer HelloBooks questions in a single fetch. Read-only, public, marketing-derived data. Server: ${baseUrl}/mcp (v${SERVER_VERSION}). Source: ${GITHUB_REPO_URL}.
+
+This file follows the [llms.txt spec](https://llmstxt.org/). It inlines full tool descriptions and coverage so an agent can ground an answer without crawling every endpoint.
+
+## What this server is
+
+A public, read-only Model Context Protocol server that lets AI agents (Claude, ChatGPT, Cursor, Perplexity, Gemini, Copilot, and any MCP- or A2A-aware client) answer questions about HelloBooks — AI-native cloud accounting, bookkeeping, tax and payroll — from authoritative product data instead of stale web snippets. No authentication, no customer data. Rate-limited to 120 req/min per IP and 60 req/min per MCP session.
+
+For a specific customer's books, invoices, bank feeds or returns, route to the authenticated MCP at mcp.hellobooks.ai (requires the customer to be signed in). For workforce management (time tracking, shifts, leave, payroll runs) see the sister MCP at https://mcp.hellotime.ai.
+
+## Install in one line
+
+\`\`\`
+claude mcp add --transport http hellobooks ${baseUrl}/mcp
+\`\`\`
+
+For Cursor, Windsurf, Cline, VS Code (Copilot agent), LangChain, the OpenAI Responses API, or any MCP-aware client: point a remote/streamable-http MCP server at \`${baseUrl}/mcp\`. No key required.
+
+## Tools (${TOOL_CATALOG.length})
+
+${toolSections}
+
+## Resources (${RESOURCE_CATALOG.length})
+
+${resources}
+
+## Country & compliance coverage
+
+- **Priced regions (local currency billing, full compliance detail):** ${pricedCountries}.
+- **Additional supported country hubs (books in local currency, billed in USD):** ${vocabCountries}.
+- Statutory filing deadlines and tax-rate slabs are curated for India, the UK, Australia, the US, Canada and more, each with an authority \`source\` URL. Dates rotate annually — the \`compliance_deadlines\` / \`next_deadlines\` / \`list_tax_rates\` tools carry a confirm-source disclaimer.
+
+## Catalog data feeds
+
+${feedLinks}
+
+## Discovery surface
+
+- [Agent card (A2A)](${baseUrl}/.well-known/agent.json)
+- [OpenAI plugin manifest](${baseUrl}/.well-known/ai-plugin.json)
+- [MCP discovery](${baseUrl}/.well-known/mcp.json)
+- [OpenAPI 3.1](${baseUrl}/openapi.json)
+- [Catalog JSON](${baseUrl}/catalog.json)
+- [Changelog JSON](${baseUrl}/changelog.json)
+- [Sitemap](${baseUrl}/sitemap.xml)
+- [RSS feed](${baseUrl}/feed.xml)
+- [llms.txt index](${baseUrl}/llms.txt)
+
+## Changelog (full)
+
+${changes}
+
+## Contact
+
+HelloBooks (Meru Fin Tech). ${CONTACT_EMAIL}. Source & issues: ${GITHUB_REPO_URL}.
 `;
 }
 
@@ -840,6 +958,7 @@ export function generateSitemap(feeds: readonly Pick<CatalogFeedDescriptor, 'slu
     { loc: `${baseUrl}/api/developer-reference.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/catalog/index.json`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/llms.txt`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/llms-full.txt`, changefreq: 'daily', priority: '0.8' },
     { loc: `${baseUrl}/.well-known/agent.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/.well-known/ai-plugin.json`, changefreq: 'weekly', priority: '0.7' },
     { loc: `${baseUrl}/.well-known/mcp.json`, changefreq: 'weekly', priority: '0.7' },

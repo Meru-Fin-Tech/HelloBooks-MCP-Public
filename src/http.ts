@@ -40,6 +40,7 @@ import {
   generateChangelogJson,
   generateLandingHtml,
   generateLlmsTxt,
+  generateLlmsFullTxt,
   generateMcpDiscovery,
   generateOpenApi,
   generateRobotsTxt,
@@ -279,6 +280,7 @@ app.get('/info', (_req, res) => {
       mcp: '/.well-known/mcp.json',
       openapi: '/openapi.json',
       llms_txt: '/llms.txt',
+      llms_full_txt: '/llms-full.txt',
       catalog: '/catalog.json',
       catalog_feeds: '/catalog/index.json',
       voice_knowledge_pack: '/kb/voice.json?country=IN',
@@ -317,6 +319,7 @@ function sendJson(res: Response, body: unknown): void {
 
 app.get('/', (_req, res) => sendText(res, generateLandingHtml(), 'text/html; charset=utf-8'));
 app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(CATALOG_FEEDS), 'text/plain; charset=utf-8'));
+app.get('/llms-full.txt', (_req, res) => sendText(res, generateLlmsFullTxt(CATALOG_FEEDS), 'text/plain; charset=utf-8'));
 app.get('/robots.txt', (_req, res) => sendText(res, generateRobotsTxt(), 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(CATALOG_FEEDS), 'application/xml; charset=utf-8'));
 app.get('/feed.xml', (_req, res) => sendText(res, generateRssFeed(), 'application/rss+xml; charset=utf-8'));
