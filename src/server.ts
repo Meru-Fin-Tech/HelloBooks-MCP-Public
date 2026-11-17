@@ -35,6 +35,8 @@ import { partnerProgramInfo, partnerProgramInfoSchema } from './tools/partnerPro
 export { partnerProgramInfo } from './tools/partnerProgramInfo.js';
 import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/practiceManagementInfo.js';
 export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
+import { onboardingSupport, onboardingSupportSchema } from './tools/onboardingSupportInfo.js';
+export { onboardingSupport } from './tools/onboardingSupportInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { checkIntegration, checkIntegrationSchema } from './tools/checkIntegration.js';
@@ -365,6 +367,14 @@ export function createServer(): McpServer {
     READ_ONLY,
     async (args, extra) =>
       runTool('practice_management_info', args, extra, () => practiceManagementInfo(args)),
+  );
+
+  server.tool(
+    'onboarding_support',
+    'The paid 1:1 onboarding offer and included support. Call with no args for every published offer, or with a `country`. Published hourly onboarding exists for India (₹5,000 / 10 hours) and the US ($300 / 10 hours) only — for any other country the response sets hasHourlyOffer:false and you must NOT invent or convert one. Also returns the always-included basic support and the SEPARATE done-for-you migration service note per country. Read-only public data.',
+    onboardingSupportSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('onboarding_support', args, extra, () => onboardingSupport(args)),
   );
 
   server.tool(

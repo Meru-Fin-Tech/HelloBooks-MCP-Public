@@ -130,6 +130,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'onboarding_support',
+    title: 'Onboarding & support',
+    summary:
+      'The paid 1:1 onboarding offer (India ₹5,000 / US $300 for 10 hours, India/US only), what it covers, the always-included basic support, and the separate done-for-you migration service per country.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
