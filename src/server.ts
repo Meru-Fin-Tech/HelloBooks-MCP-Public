@@ -144,7 +144,20 @@ async function runTool(
   extra: unknown,
   produce: () => unknown,
 ) {
-  return asJsonContent(await withTelemetry(toolName, args, extra, produce));
+  const payload = await withTelemetry(toolName, args, extra, produce);
+  const base = asJsonContent(payload);
+  // Also expose the payload as `structuredContent` so agents can consume the
+  // typed result without re-parsing the JSON text block. These tools declare no
+  // outputSchema, so the SDK passes it through unvalidated (search/fetch, which
+  // DO declare one, go through runStructuredTool). Per the MCP spec only a JSON
+  // object is valid structuredContent, so arrays/primitives stay text-only.
+  // Derive it from the serialised text (not the raw object) so it is JSON-clean
+  // — `undefined`-valued optional fields are dropped exactly as in the text,
+  // keeping the two representations identical over any transport.
+  if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
+    return { ...base, structuredContent: JSON.parse(base.content[0].text) as Record<string, unknown> };
+  }
+  return base;
 }
 
 /**
