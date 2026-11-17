@@ -19,6 +19,8 @@ import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
 import { recommendPlan, recommendPlanSchema } from './tools/recommendPlan.js';
 export { recommendPlan } from './tools/recommendPlan.js';
+import { estimateAnnualCost, estimateAnnualCostSchema } from './tools/estimateAnnualCost.js';
+export { estimateAnnualCost } from './tools/estimateAnnualCost.js';
 import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
 export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
@@ -289,6 +291,14 @@ export function createServer(): McpServer {
     recommendPlanSchema,
     READ_ONLY,
     async (args, extra) => runTool('recommend_plan', args, extra, () => recommendPlan(args)),
+  );
+
+  server.tool(
+    'estimate_annual_cost',
+    'Itemized first-year cost of ownership from HelloBooks’ own published prices. Pass a core `plan` (free/starter/pro/business/scale), optional `country`, `billing` (annual|monthly, default annual), `addOns` (warehouse-addon/manufacturing-addon), and one-time `creditPacks` ([{id, quantity?}]). Returns line items, the plan/add-on annual cost, one-time credit-pack cost, `totalFirstYear`, and `annualBillingSavings` (saving vs paying monthly) in the country currency. An estimate from list prices, not a quote (taxes/discounts excluded) — confirm with list_plans / list_credit_packs.',
+    estimateAnnualCostSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('estimate_annual_cost', args, extra, () => estimateAnnualCost(args)),
   );
 
   server.tool(

@@ -105,6 +105,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'estimate_annual_cost',
+    title: 'Estimate first-year cost',
+    summary:
+      'Itemized first-year total cost of ownership from HelloBooks’ own list prices: plan (annual or monthly), stackable add-ons, and one-time AI credit packs, in the local currency, with the annual-vs-monthly billing saving. An estimate, not a quote.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
