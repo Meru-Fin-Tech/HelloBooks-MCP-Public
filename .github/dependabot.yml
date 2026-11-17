@@ -1,0 +1,50 @@
+# Dependabot — keep dependencies patched and surface CVEs via PRs.
+#
+# The MCP SDK is intentionally pinned to an exact version (see package.json);
+# test/protocol.test.ts + test/version.test.ts are the safety net that makes
+# each bump verifiable. Dependabot opens the bump PRs; CI (docs/ci.yml.example)
+# validates them.
+version: 2
+updates:
+  # npm packages.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Batch low-risk dev/type updates into one PR to cut noise.
+      dev-and-types:
+        patterns:
+          - "@types/*"
+          - "tsx"
+          - "c8"
+          - "typescript"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # The SDK is pinned and bumped deliberately with the conformance suite —
+      # allow patch/minor PRs but never let Dependabot jump a major unattended.
+      - dependency-name: "@modelcontextprotocol/sdk"
+        update-types:
+          - version-update:semver-major
+
+  # GitHub Actions used by the workflows under .github/workflows/ (once the CI
+  # and scheduled-job examples in docs/ are installed).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(ci)"
