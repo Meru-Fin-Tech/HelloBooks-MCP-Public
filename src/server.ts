@@ -19,6 +19,8 @@ import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
 import { recommendPlan, recommendPlanSchema } from './tools/recommendPlan.js';
 export { recommendPlan } from './tools/recommendPlan.js';
+import { comparePlans, comparePlansSchema } from './tools/comparePlans.js';
+export { comparePlans } from './tools/comparePlans.js';
 import { estimateAnnualCost, estimateAnnualCostSchema } from './tools/estimateAnnualCost.js';
 export { estimateAnnualCost } from './tools/estimateAnnualCost.js';
 import { supportedCurrencies, supportedCurrenciesSchema } from './tools/supportedCurrencies.js';
@@ -303,6 +305,14 @@ export function createServer(): McpServer {
     estimateAnnualCostSchema,
     READ_ONLY,
     async (args, extra) => runTool('estimate_annual_cost', args, extra, () => estimateAnnualCost(args)),
+  );
+
+  server.tool(
+    'compare_plans',
+    'Side-by-side diff of two HelloBooks tiers (e.g. "Pro vs Business"). Pass `planA`, `planB` (free/starter/pro/business/scale/cpa) and an optional `country`. Returns each plan’s monthly + annual price, AI credit allowance and transaction limit, the monthly/annual price delta (B minus A) and which is cheaper, plus the features shared, only in A, and only in B. Prices are live-fed via list_plans; feature diff is over published bullets — confirm specifics with list_features.',
+    comparePlansSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('compare_plans', args, extra, () => comparePlans(args)),
   );
 
   server.tool(

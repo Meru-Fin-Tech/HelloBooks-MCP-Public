@@ -114,6 +114,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'compare_plans',
+    title: 'Compare two plans',
+    summary:
+      'Side-by-side diff of two HelloBooks tiers (e.g. Pro vs Business): monthly + annual price and the delta, AI credit allowance, transaction limits, and the features shared vs unique to each. Live-fed pricing; feature diff over published bullets.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'supported_currencies',
     title: 'Supported currencies',
     summary:

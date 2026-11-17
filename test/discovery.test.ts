@@ -57,6 +57,7 @@ test('TOOL_CATALOG covers every public MCP tool in the discovery surface', () =>
     'list_plans',
     'recommend_plan',
     'estimate_annual_cost',
+    'compare_plans',
     'supported_currencies',
     'list_credit_packs',
     'list_integrations',
