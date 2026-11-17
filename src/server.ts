@@ -21,6 +21,10 @@ import { recommendPlan, recommendPlanSchema } from './tools/recommendPlan.js';
 export { recommendPlan } from './tools/recommendPlan.js';
 import { estimateAnnualCost, estimateAnnualCostSchema } from './tools/estimateAnnualCost.js';
 export { estimateAnnualCost } from './tools/estimateAnnualCost.js';
+import { supportedCurrencies, supportedCurrenciesSchema } from './tools/supportedCurrencies.js';
+export { supportedCurrencies } from './tools/supportedCurrencies.js';
+import { explainTerm, explainTermSchema } from './tools/explainTerm.js';
+export { explainTerm } from './tools/explainTerm.js';
 import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
 export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
@@ -299,6 +303,22 @@ export function createServer(): McpServer {
     estimateAnnualCostSchema,
     READ_ONLY,
     async (args, extra) => runTool('estimate_annual_cost', args, extra, () => estimateAnnualCost(args)),
+  );
+
+  server.tool(
+    'supported_currencies',
+    'Which currencies HelloBooks bills and keeps books in. Call with no args for every supported currency grouped by code (with the countries using it and whether each is billed locally or in USD), or with a `country` for that country’s books currency + billing behaviour. The 8 priced regions check out in local currency; other supported countries are billed in USD while their books run in the local currency. Read-only public data.',
+    supportedCurrenciesSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('supported_currencies', args, extra, () => supportedCurrencies(args)),
+  );
+
+  server.tool(
+    'explain_term',
+    'Plain-language definition of an accounting, tax, or compliance term (e.g. "accrual", "GSTR-3B", "input tax credit", "P&L", "reconciliation", "BAS", "1099"). Resolves by exact name, alias, or fuzzy match against a curated glossary scoped to bookkeeping plus the IN/UK/AU/US/CA regimes HelloBooks serves; returns the definition, related terms, or the closest suggestions. Definitions are general guidance — confirm specifics against the relevant authority.',
+    explainTermSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('explain_term', args, extra, () => explainTerm(args)),
   );
 
   server.tool(

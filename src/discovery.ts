@@ -113,6 +113,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'supported_currencies',
+    title: 'Supported currencies',
+    summary:
+      'Which currencies HelloBooks bills and keeps books in — the 8 priced regions check out in local currency, other supported countries are billed in USD while their books run locally. Grouped by currency, or per country.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
@@ -173,6 +181,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     title: 'Statutory filing deadlines',
     summary:
       'When statutory returns and payroll filings are due, per country. IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super), GB (VAT MTD, RTI, SA), US (1099, W-2, 941/940), CA (T4, GST/HST).',
+    category: 'compliance',
+    marketingUrl: `${MARKETING_BASE_URL}/global`,
+  },
+  {
+    name: 'explain_term',
+    title: 'Explain an accounting term',
+    summary:
+      'Plain-language definitions of accounting, tax and compliance terms (accrual, GSTR-3B, input tax credit, P&L, reconciliation, BAS, 1099, …) scoped to bookkeeping and the IN/UK/AU/US/CA regimes HelloBooks serves, with related terms.',
     category: 'compliance',
     marketingUrl: `${MARKETING_BASE_URL}/global`,
   },
