@@ -64,6 +64,10 @@ pipeline {
         sh 'node --version'
         sh 'npm ci --no-audit --no-fund'
         sh 'npm run lint'
+        // Hard gate: no deploy may ship if any PII / auth-token string appears
+        // in src/data/. README advertises this as a deploy blocker; this is the
+        // stage that enforces it. Offline and fast (< 1s).
+        sh 'npm run audit:public-data'
         sh 'npm run test:coverage'
       }
       post {
