@@ -97,6 +97,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'recommend_plan',
+    title: 'Recommend a HelloBooks plan',
+    summary:
+      'Recommends the lowest-priced eligible tier (Free → Starter → Pro → Business → Scale) for a business, scored against stated needs and expected transaction volume, with a full ranked breakdown and local pricing. Heuristic over published feature bullets, not a quote.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:

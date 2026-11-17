@@ -17,6 +17,8 @@ import { z } from 'zod';
 
 import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
+import { recommendPlan, recommendPlanSchema } from './tools/recommendPlan.js';
+export { recommendPlan } from './tools/recommendPlan.js';
 import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
 export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
@@ -279,6 +281,14 @@ export function createServer(): McpServer {
     listPlansSchema,
     READ_ONLY,
     async (args, extra) => runTool('list_plans', args, extra, () => listPlans(args)),
+  );
+
+  server.tool(
+    'recommend_plan',
+    'Recommend the right HelloBooks tier for a business. Pass `needs` (free-text phrases like "GST filing", "multi-currency", "API access", "multi-entity", "payroll"), an optional `estimatedAnnualTransactions`, and an optional `country` for local pricing. Scores the core ladder (Free → Starter → Pro → Business → Scale) against the stated needs and transaction volume and returns the LOWEST-priced eligible tier that covers the most needs, plus the full ranked breakdown with matched/unmatched needs and per-tier price. Heuristic over published feature bullets, not a quote — confirm with list_plans / list_features. Add-ons and the free Partner Program are excluded from the core ladder.',
+    recommendPlanSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('recommend_plan', args, extra, () => recommendPlan(args)),
   );
 
   server.tool(
