@@ -38,6 +38,7 @@ import type { CatalogFeedDescriptor } from './catalogFeeds.js';
 import { SERVER_VERSION } from './server.js';
 import { PUBLIC_API_PATHS } from './apiCatalog.js';
 import { SUPPORTED_COUNTRIES } from './data/supportedCountries.js';
+import { PROMPTS } from './prompts/index.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
@@ -313,6 +314,17 @@ const RESOURCE_CATALOG = [
   { uri: 'hellobooks://comparison/zoho-books', name: 'HelloBooks vs Zoho Books', mimeType: 'text/markdown' },
   { uri: 'hellobooks://comparison/tally', name: 'HelloBooks vs Tally', mimeType: 'text/markdown' },
 ] as const;
+
+/**
+ * Prompt catalog for the discovery surface — name, description and argument
+ * names of each curated MCP prompt. Derived from the single prompt registry in
+ * src/prompts so the discovery surface never drifts from what /mcp serves.
+ */
+export const PROMPT_CATALOG = PROMPTS.map((p) => ({
+  name: p.name,
+  description: p.description,
+  arguments: Object.keys(p.argsSchema),
+}));
 
 // ---------------------------------------------------------------------------
 // Discovery generators
@@ -752,6 +764,12 @@ ${tools}
 
 ${resources}
 
+## Prompts (${PROMPT_CATALOG.length})
+
+Curated one-click flows that wrap the tools above:
+
+${PROMPT_CATALOG.map((p) => `- \`${p.name}\` — ${p.description}`).join('\n')}
+
 ## Discovery surface
 
 - [Agent card (A2A)](${baseUrl}/.well-known/agent.json)
@@ -887,6 +905,12 @@ ${toolSections}
 
 ${resources}
 
+## Prompts (${PROMPT_CATALOG.length})
+
+Curated flows a client can offer as one-click actions; each wraps the tools above.
+
+${PROMPT_CATALOG.map((p) => `- \`${p.name}\`(${p.arguments.join(', ')}) — ${p.description}`).join('\n')}
+
 ## Country & compliance coverage
 
 - **Priced regions (local currency billing, full compliance detail):** ${pricedCountries}.
@@ -966,6 +990,7 @@ export function generateCatalogJson(): Record<string, unknown> {
       name: r.name,
       mimeType: r.mimeType,
     })),
+    prompts: PROMPT_CATALOG,
     contact: { email: CONTACT_EMAIL, organization: 'HelloBooks', url: MARKETING_BASE_URL },
   };
 }

@@ -198,6 +198,20 @@ test('sitemap includes the llms-full.txt endpoint', () => {
   assert.match(xml, /\/llms-full\.txt/);
 });
 
+test('catalog.json, llms.txt and llms-full.txt advertise the curated prompts', () => {
+  const cat = generateCatalogJson() as { prompts?: Array<{ name: string; arguments: string[] }> };
+  assert.ok(Array.isArray(cat.prompts) && cat.prompts.length >= 4, 'catalog.json must list prompts');
+  for (const p of cat.prompts!) {
+    assert.ok(p.name && Array.isArray(p.arguments), 'each catalog prompt needs name + arguments');
+  }
+  const idx = generateLlmsTxt(CATALOG_FEEDS);
+  const full = generateLlmsFullTxt(CATALOG_FEEDS);
+  for (const p of cat.prompts!) {
+    assert.match(idx, new RegExp(`\`${p.name}\``), `llms.txt must mention prompt ${p.name}`);
+    assert.match(full, new RegExp(`\`${p.name}\``), `llms-full.txt must mention prompt ${p.name}`);
+  }
+});
+
 test('generateSecurityTxt is RFC 9116-shaped with a future Expires', () => {
   const txt = generateSecurityTxt();
   assert.match(txt, /^Contact:\s+mailto:/m);
