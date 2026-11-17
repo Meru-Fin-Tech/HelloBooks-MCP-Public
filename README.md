@@ -73,6 +73,67 @@ curl -s -X POST https://agents.hellobooks.ai/mcp \
 Note the `Accept` header: per the MCP spec the server answers `406` unless the client accepts
 **both** `application/json` and `text/event-stream`. Claude and ChatGPT both send both.
 
+### Agent frameworks & SDKs
+
+The same one URL (`https://agents.hellobooks.ai/mcp`, no sign-in) loads into every major
+agent runtime. Copy-paste cards:
+
+**Anthropic Claude Agent SDK** — attach as a remote MCP server:
+
+```python
+from claude_agent_sdk import ClaudeAgentOptions, query
+
+options = ClaudeAgentOptions(
+    mcp_servers={
+        "hellobooks": {"type": "http", "url": "https://agents.hellobooks.ai/mcp"}
+    },
+    allowed_tools=["mcp__hellobooks__search", "mcp__hellobooks__fetch"],
+)
+async for msg in query(prompt="What does HelloBooks cost in India?", options=options):
+    print(msg)
+```
+
+Claude Code uses the same transport: `claude mcp add --transport http hellobooks https://agents.hellobooks.ai/mcp`.
+
+**OpenAI Agents / Responses API** — hosted remote MCP tool:
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+resp = client.responses.create(
+    model="gpt-4.1",
+    input="Compare HelloBooks to Xero on pricing.",
+    tools=[{
+        "type": "mcp",
+        "server_label": "hellobooks",
+        "server_url": "https://agents.hellobooks.ai/mcp",
+        "require_approval": "never",
+    }],
+)
+print(resp.output_text)
+```
+
+**LangChain / LangGraph** — via `langchain-mcp-adapters`:
+
+```python
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+client = MultiServerMCPClient({
+    "hellobooks": {"transport": "streamable_http", "url": "https://agents.hellobooks.ai/mcp"},
+})
+tools = await client.get_tools()  # hand these to any LangGraph/LangChain agent
+```
+
+**Cursor / VS Code (GitHub Copilot agent mode) / Windsurf / Cline** — add to the client's
+MCP config (e.g. `.cursor/mcp.json` or `.vscode/mcp.json`):
+
+```json
+{ "mcpServers": { "hellobooks": { "url": "https://agents.hellobooks.ai/mcp" } } }
+```
+
+All reads are public and read-only; no API key is required for any of these.
+
 ## Tools
 
 | Tool | Description |
