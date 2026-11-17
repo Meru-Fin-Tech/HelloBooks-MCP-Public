@@ -153,6 +153,11 @@ npm run build
 npm run audit:public-data
 ```
 
+Continuous integration runs on Jenkins (see `Jenkinsfile`). A GitHub-native CI
+workflow that runs lint, the public-data audit, build, and the full test suite on
+every push and PR is provided as [`docs/ci.yml.example`](docs/ci.yml.example) —
+move it to `.github/workflows/ci.yml` to enable PR status checks.
+
 ### Project layout
 
 ```
