@@ -113,6 +113,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/integration`,
   },
   {
+    name: 'check_integration',
+    title: 'Check a specific integration',
+    summary:
+      'Deterministic "does HelloBooks work with <bank/app/service>?" answer. Matches a named provider (Stripe, HDFC, Shopify, QuickBooks, …) against the integrations catalog and returns a supported yes/no with rollout status, or the closest suggestions.',
+    category: 'integrations',
+    marketingUrl: `${MARKETING_BASE_URL}/integration`,
+  },
+  {
     name: 'country_support',
     title: 'Country support matrix',
     summary:
@@ -149,6 +157,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     title: 'Statutory filing deadlines',
     summary:
       'When statutory returns and payroll filings are due, per country. IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super), GB (VAT MTD, RTI, SA), US (1099, W-2, 941/940), CA (T4, GST/HST).',
+    category: 'compliance',
+    marketingUrl: `${MARKETING_BASE_URL}/global`,
+  },
+  {
+    name: 'next_deadlines',
+    title: 'Upcoming statutory deadlines',
+    summary:
+      'Time-aware "what is due next?" — upcoming statutory filings sorted soonest-first with a computed next-due date and days-until, filterable by country and a days window. Dates rotate annually; confirm against each authority source.',
     category: 'compliance',
     marketingUrl: `${MARKETING_BASE_URL}/global`,
   },

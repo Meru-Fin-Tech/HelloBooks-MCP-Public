@@ -27,6 +27,8 @@ import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/pr
 export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
+import { checkIntegration, checkIntegrationSchema } from './tools/checkIntegration.js';
+export { checkIntegration } from './tools/checkIntegration.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
 export { countrySupport } from './tools/countrySupport.js';
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
@@ -37,6 +39,8 @@ import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.
 export { listCompetitors } from './tools/listCompetitors.js';
 import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
 export { complianceDeadlines } from './tools/complianceDeadlines.js';
+import { nextDeadlines, nextDeadlinesSchema } from './tools/nextDeadlines.js';
+export { nextDeadlines } from './tools/nextDeadlines.js';
 import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
 export { localPaymentMethods } from './tools/paymentMethods.js';
 import { listFeatures, listFeaturesSchema } from './tools/listFeatures.js';
@@ -323,6 +327,15 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'check_integration',
+    'Answer "does HelloBooks work with <bank/app/service>?" deterministically. Pass a `name` (e.g. "Stripe", "HDFC Bank", "Shopify", "QuickBooks"). Returns a `supported` yes/no with the matched integration and its rollout `status` (live/beta/coming-soon), or the closest catalog `suggestions` when there is no direct match. Prefer this over free-text search when the user names a specific provider.',
+    checkIntegrationSchema,
+    READ_ONLY,
+    async (args, extra) =>
+      runTool('check_integration', args, extra, () => checkIntegration(args)),
+  );
+
+  server.tool(
     'country_support',
     'Return features available per supported country (AU, IN, UK, US, CA, AE, SG, NZ).',
     countrySupportSchema,
@@ -369,6 +382,15 @@ export function createServer(): McpServer {
       runTool('compliance_deadlines', args, extra, () =>
         complianceDeadlines(args),
       ),
+  );
+
+  server.tool(
+    'next_deadlines',
+    'Time-aware "what statutory filing is due next?" Returns upcoming filings sorted soonest-first, each with a computed `nextDue` date and `daysUntil`. Optional `country`, `withinDays` (e.g. the next 30/60/90 days), `limit`, and `asOf` (reference date, defaults to today UTC). A concrete date is computed only when it can be placed unambiguously (monthly filings with a due day, or entries with explicit annual dates); quarterly/half-yearly entries given only a day-of-month and per-event filings come back with `scheduleVaries: true` and `nextDue: null`. Dates rotate annually — confirm against each `source` URL.',
+    nextDeadlinesSchema,
+    READ_ONLY,
+    async (args, extra) =>
+      runTool('next_deadlines', args, extra, () => nextDeadlines(args)),
   );
 
   server.tool(
