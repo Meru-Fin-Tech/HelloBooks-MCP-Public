@@ -10,6 +10,23 @@
  */
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { completable } from '@modelcontextprotocol/sdk/server/completable.js';
+import { SUPPORTED_COUNTRY_CODES } from '../data/supportedCountries.js';
+import { COMPETITORS } from '../data/competitors.js';
+import { INTEGRATIONS } from '../data/integrations.js';
+
+/** Case-insensitive prefix completer over a fixed option list (max 100). */
+function prefixComplete(options: readonly string[]) {
+  const uniq = [...new Set(options)];
+  return (value: string): string[] => {
+    const v = (value ?? '').toLowerCase();
+    return uniq.filter((o) => o.toLowerCase().startsWith(v)).slice(0, 100);
+  };
+}
+
+const completeCountry = prefixComplete(SUPPORTED_COUNTRY_CODES);
+const completeCompetitor = prefixComplete(COMPETITORS.flatMap((c) => [c.id, c.name]));
+const completeIntegration = prefixComplete(INTEGRATIONS.flatMap((i) => [i.id, i.name]));
 
 export interface PromptDef {
   name: string;
@@ -45,7 +62,10 @@ export const PROMPTS: PromptDef[] = [
     name: 'compare_to_competitor',
     description: 'Compare HelloBooks against a named competitor for a given market.',
     argsSchema: {
-      competitor: z.string().describe('Competitor name or id, e.g. QuickBooks, Xero, Tally, Zoho Books.'),
+      competitor: completable(
+        z.string().describe('Competitor name or id, e.g. QuickBooks, Xero, Tally, Zoho Books.'),
+        completeCompetitor,
+      ),
       country: z.string().optional().describe('ISO country code for pricing/market context.'),
     },
     build: (a) => {
@@ -66,7 +86,10 @@ export const PROMPTS: PromptDef[] = [
     name: 'whats_due_next',
     description: 'List the upcoming statutory filing deadlines for a country, soonest first.',
     argsSchema: {
-      country: z.string().describe('ISO country code, e.g. IN, GB, AU, US, CA.'),
+      country: completable(
+        z.string().describe('ISO country code, e.g. IN, GB, AU, US, CA.'),
+        completeCountry,
+      ),
       withinDays: z.string().optional().describe('Optional window in days, e.g. 30 or 90.'),
     },
     build: (a) => {
@@ -86,7 +109,10 @@ export const PROMPTS: PromptDef[] = [
     name: 'integration_and_payments_check',
     description: 'Check whether HelloBooks supports a specific app/bank and the local payment rails.',
     argsSchema: {
-      name: z.string().describe('The app, bank or service to check, e.g. Stripe, HDFC, Shopify.'),
+      name: completable(
+        z.string().describe('The app, bank or service to check, e.g. Stripe, HDFC, Shopify.'),
+        completeIntegration,
+      ),
       country: z.string().optional().describe('ISO country code for local payment methods.'),
     },
     build: (a) => {

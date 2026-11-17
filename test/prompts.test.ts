@@ -65,6 +65,41 @@ test('getPrompt renders a non-empty user message that names the right tools', as
   }
 });
 
+test('prompt arguments offer completions from the real catalogs', async () => {
+  const { client, close } = await connect();
+  try {
+    // Country codes: "I" → IN, ID, IE, IT, …
+    const country = await client.complete({
+      ref: { type: 'ref/prompt', name: 'whats_due_next' },
+      argument: { name: 'country', value: 'I' },
+    });
+    assert.ok(country.completion.values.includes('IN'), 'country completion should offer IN');
+    assert.ok(country.completion.values.every((v) => v.toUpperCase().startsWith('I')));
+
+    // Competitor names/ids: "X" → Xero.
+    const competitor = await client.complete({
+      ref: { type: 'ref/prompt', name: 'compare_to_competitor' },
+      argument: { name: 'competitor', value: 'X' },
+    });
+    assert.ok(
+      competitor.completion.values.some((v) => /xero/i.test(v)),
+      'competitor completion should offer Xero',
+    );
+
+    // Integration names: "Str" → Stripe.
+    const integration = await client.complete({
+      ref: { type: 'ref/prompt', name: 'integration_and_payments_check' },
+      argument: { name: 'name', value: 'Str' },
+    });
+    assert.ok(
+      integration.completion.values.some((v) => /stripe/i.test(v)),
+      'integration completion should offer Stripe',
+    );
+  } finally {
+    await close();
+  }
+});
+
 test('every prompt builds a message for its documented args', () => {
   for (const p of PROMPTS) {
     const text = p.build({ country: 'US', competitor: 'QuickBooks', name: 'Stripe', withinDays: '30', needs: 'api' });
