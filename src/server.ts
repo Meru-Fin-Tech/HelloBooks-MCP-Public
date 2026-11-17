@@ -104,7 +104,7 @@ import { listAccountants, listAccountantsSchema, getAccountant } from './account
 import { listApiCatalog, apiCatalogSchema } from './apiCatalog.js';
 
 const SERVER_NAME = 'hellobooks-public';
-export const SERVER_VERSION = '1.5.0';
+export const SERVER_VERSION = '1.6.0';
 
 /** Every tool on this server is a read-only public-data lookup. */
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
