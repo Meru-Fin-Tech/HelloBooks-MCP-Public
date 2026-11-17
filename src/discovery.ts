@@ -886,6 +886,7 @@ ${feedLinks}
 - [Agent card (A2A)](${baseUrl}/.well-known/agent.json)
 - [OpenAI plugin manifest](${baseUrl}/.well-known/ai-plugin.json)
 - [MCP discovery](${baseUrl}/.well-known/mcp.json)
+- [Security contact (RFC 9116)](${baseUrl}/.well-known/security.txt)
 - [OpenAPI 3.1](${baseUrl}/openapi.json)
 - [Catalog JSON](${baseUrl}/catalog.json)
 - [Changelog JSON](${baseUrl}/changelog.json)
@@ -900,6 +901,25 @@ ${changes}
 ## Contact
 
 HelloBooks (Meru Fin Tech). ${CONTACT_EMAIL}. Source & issues: ${GITHUB_REPO_URL}.
+`;
+}
+
+/**
+ * security.txt (RFC 9116) — a responsible-disclosure contact for a public
+ * endpoint. `Expires` is generated ~1 year out so the file is always valid;
+ * regenerate on deploy keeps it from going stale.
+ */
+export function generateSecurityTxt(): string {
+  const baseUrl = getBaseUrl();
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  return `# Security contact for the HelloBooks Public MCP (${baseUrl}).
+# This is a read-only, public-data endpoint — no customer data is reachable here.
+Contact: mailto:${CONTACT_EMAIL}
+Expires: ${expires}
+Preferred-Languages: en
+Canonical: ${baseUrl}/.well-known/security.txt
+Policy: ${GITHUB_REPO_URL}/security/policy
+Acknowledgments: ${GITHUB_REPO_URL}
 `;
 }
 

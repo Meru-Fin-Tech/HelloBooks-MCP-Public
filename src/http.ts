@@ -42,6 +42,7 @@ import {
   generateLlmsTxt,
   generateLlmsFullTxt,
   generateMcpDiscovery,
+  generateSecurityTxt,
   generateOpenApi,
   generateRobotsTxt,
   generateRssFeed,
@@ -278,6 +279,7 @@ app.get('/info', (_req, res) => {
       agent_card: '/.well-known/agent.json',
       ai_plugin: '/.well-known/ai-plugin.json',
       mcp: '/.well-known/mcp.json',
+      security_txt: '/.well-known/security.txt',
       openapi: '/openapi.json',
       llms_txt: '/llms.txt',
       llms_full_txt: '/llms-full.txt',
@@ -329,6 +331,8 @@ app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson())
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+app.get('/.well-known/security.txt', (_req, res) => sendText(res, generateSecurityTxt(), 'text/plain; charset=utf-8'));
+app.get('/security.txt', (_req, res) => sendText(res, generateSecurityTxt(), 'text/plain; charset=utf-8'));
 
 function parameters(req: Request): Record<string, unknown> {
   const values: Record<string, unknown> = { ...req.query };

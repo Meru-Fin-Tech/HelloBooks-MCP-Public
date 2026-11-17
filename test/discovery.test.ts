@@ -26,6 +26,7 @@ import {
   generateLandingHtml,
   generateLlmsTxt,
   generateLlmsFullTxt,
+  generateSecurityTxt,
   generateMcpDiscovery,
   generateOpenApi,
   generateRobotsTxt,
@@ -193,6 +194,17 @@ test('generateLlmsFullTxt inlines every tool with its summary and coverage', () 
 test('sitemap includes the llms-full.txt endpoint', () => {
   const xml = generateSitemap(CATALOG_FEEDS);
   assert.match(xml, /\/llms-full\.txt/);
+});
+
+test('generateSecurityTxt is RFC 9116-shaped with a future Expires', () => {
+  const txt = generateSecurityTxt();
+  assert.match(txt, /^Contact:\s+mailto:/m);
+  const expires = /^Expires:\s+(.+)$/m.exec(txt);
+  assert.ok(expires, 'security.txt must carry an Expires field');
+  const when = new Date(expires![1]);
+  assert.ok(!Number.isNaN(when.getTime()), 'Expires must be a valid date');
+  assert.ok(when.getTime() > Date.now(), 'Expires must be in the future');
+  assert.match(txt, /^Canonical:\s+https:\/\/[^\s]+\/\.well-known\/security\.txt$/m);
 });
 
 test('generateSitemap is valid XML, contains <lastmod>, and the host root URL', () => {
