@@ -27,6 +27,9 @@ import { listPlans } from '../src/tools/listPlans.js';
 import { localPaymentMethods } from '../src/tools/paymentMethods.js';
 import { featureSearch } from '../src/tools/featureSearch.js';
 import { complianceDeadlines } from '../src/tools/complianceDeadlines.js';
+import { comparePlans } from '../src/tools/comparePlans.js';
+import { onboardingSupport } from '../src/tools/onboardingSupportInfo.js';
+import { migrationChecklist } from '../src/tools/migrationChecklist.js';
 
 // Deterministic, offline.
 process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
@@ -143,6 +146,42 @@ const GOLDEN: GoldenCase[] = [
     question: 'List India statutory filing deadlines.',
     run: () => complianceDeadlines({ country: 'IN' }),
     includes: ['GSTR'],
+  },
+  {
+    id: 'compare-pro-vs-business',
+    question: 'Pro vs Business in the US — what\'s the difference?',
+    run: () => comparePlans({ planA: 'pro', planB: 'business', country: 'US' }),
+    check: (r) => {
+      assert.equal(r.priceDeltaMonthly, 40);
+      assert.equal(r.cheaperMonthly, 'pro');
+    },
+  },
+  {
+    id: 'onboarding-india',
+    question: 'What onboarding help do I get in India?',
+    run: () => onboardingSupport({ country: 'IN' }),
+    check: (r) => {
+      assert.equal(r.hasHourlyOffer, true);
+      assert.equal(r.offer?.price, 5000);
+    },
+  },
+  {
+    id: 'onboarding-unlisted-country-no-fabrication',
+    question: 'What onboarding help do I get in Singapore?',
+    run: () => onboardingSupport({ country: 'SG' }),
+    check: (r) => {
+      assert.equal(r.hasHourlyOffer, false);
+      assert.equal(r.offer, null);
+    },
+  },
+  {
+    id: 'migration-from-quickbooks',
+    question: 'How do I migrate from QuickBooks to HelloBooks?',
+    run: () => migrationChecklist({ from: 'quickbooks', country: 'US' }),
+    check: (r) => {
+      assert.equal(r.phases.length, 7);
+      assert.ok(r.estimatedTimelineDays[1] >= r.estimatedTimelineDays[0]);
+    },
   },
 ];
 
