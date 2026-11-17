@@ -98,6 +98,7 @@ import {
 export { publicSearch, publicFetch } from './tools/publicSearch.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
+import { registerPrompts } from './prompts/index.js';
 import { track } from './analytics.js';
 import { listAccountants, listAccountantsSchema, getAccountant } from './accountants.js';
 import { listApiCatalog, apiCatalogSchema } from './apiCatalog.js';
@@ -661,6 +662,9 @@ export function createServer(): McpServer {
       },
     );
   }
+
+  // Prompts — curated one-click flows that wrap the tools above.
+  registerPrompts(server);
 
   return server;
 }
