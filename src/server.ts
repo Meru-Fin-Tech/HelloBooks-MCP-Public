@@ -76,6 +76,8 @@ export { analyzeJournalVariance } from './tools/analyzeJournalVariance.js';
 import { compareBooksToHellobooks, compareBooksToHellobooksSchema } from './tools/compareBooksToHellobooks.js';
 export { compareBooksToHellobooks } from './tools/compareBooksToHellobooks.js';
 import { estimateMigrationEffort, estimateMigrationEffortSchema } from './tools/estimateMigrationEffort.js';
+import { migrationChecklist, migrationChecklistSchema } from './tools/migrationChecklist.js';
+export { migrationChecklist } from './tools/migrationChecklist.js';
 export { estimateMigrationEffort } from './tools/estimateMigrationEffort.js';
 import { analyzeTrialBalance, analyzeTrialBalanceSchema } from './tools/analyzeTrialBalance.js';
 export { analyzeTrialBalance } from './tools/analyzeTrialBalance.js';
@@ -576,6 +578,14 @@ export function createServer(): McpServer {
     estimateMigrationEffortSchema,
     READ_ONLY,
     async (args) => asJsonContent(estimateMigrationEffort(args)),
+  );
+
+  server.tool(
+    'migration_checklist',
+    'A phased, best-practice plan for moving to HelloBooks from another system. Pass `from` (quickbooks/xero/tally/zoho-books/wave/sage/excel/other), optional `country` (adds the right tax-setup step), `complexity` (low/medium/high — scales phase durations), and `includeHistory`. Returns 7 ordered phases (plan → export → clean & map → set up → import → reconcile → parallel run & cutover), each with concrete steps and a day-range, plus an estimated total timeline. Complements estimate_migration_effort (which quotes hours/price from an uploaded CSV). Guidance, not a binding plan.',
+    migrationChecklistSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('migration_checklist', args, extra, () => migrationChecklist(args)),
   );
 
   server.tool(

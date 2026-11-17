@@ -131,6 +131,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'migration_checklist',
+    title: 'Migration checklist & timeline',
+    summary:
+      'A phased, best-practice plan for moving to HelloBooks from QuickBooks/Xero/Tally/others: 7 ordered phases (plan → export → clean → set up → import → reconcile → cutover) with steps, a day-range each, and the country-specific tax-setup step. Complements estimate_migration_effort.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'onboarding_support',
     title: 'Onboarding & support',
     summary:
