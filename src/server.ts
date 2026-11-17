@@ -37,6 +37,8 @@ import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/pr
 export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
 import { onboardingSupport, onboardingSupportSchema } from './tools/onboardingSupportInfo.js';
 export { onboardingSupport } from './tools/onboardingSupportInfo.js';
+import { getSandboxInfo, getSandboxInfoSchema } from './tools/getSandboxInfo.js';
+export { getSandboxInfo } from './tools/getSandboxInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
 import { checkIntegration, checkIntegrationSchema } from './tools/checkIntegration.js';
@@ -391,6 +393,14 @@ export function createServer(): McpServer {
     onboardingSupportSchema,
     READ_ONLY,
     async (args, extra) => runTool('onboarding_support', args, extra, () => onboardingSupport(args)),
+  );
+
+  server.tool(
+    'get_sandbox_info',
+    'How to try or connect HelloBooks from an AI agent or integration. Returns two paths: the no-auth public MCP (agents.hellobooks.ai/mcp — read-only product knowledge, works today) and the OAuth company API (developer.hellobooks.ai, with an India sandbox and the authenticated MCP at mcp.hellobooks.ai for a customer’s own books). Pass `surface` (public-mcp / company-api / both) to scope the answer. Use this when a developer or agent asks "how do I try this?", "is there a sandbox?", or "how do I connect my books?".',
+    getSandboxInfoSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('get_sandbox_info', args, extra, () => getSandboxInfo(args)),
   );
 
   server.tool(
