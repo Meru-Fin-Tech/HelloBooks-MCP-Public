@@ -25,6 +25,8 @@ import {
   generateChangelogJson,
   generateLandingHtml,
   generateLlmsTxt,
+  generateLlmsFullTxt,
+  generateSecurityTxt,
   generateMcpDiscovery,
   generateOpenApi,
   generateRobotsTxt,
@@ -53,13 +55,22 @@ test('TOOL_CATALOG covers every public MCP tool in the discovery surface', () =>
     'search',
     'fetch',
     'list_plans',
+    'recommend_plan',
+    'estimate_annual_cost',
+    'compare_plans',
+    'supported_currencies',
+    'migration_checklist',
+    'onboarding_support',
     'list_credit_packs',
     'list_integrations',
+    'check_integration',
     'country_support',
     'compliance_capabilities',
     'feature_search',
     'list_competitors',
     'compliance_deadlines',
+    'next_deadlines',
+    'explain_term',
     'local_payment_methods',
     'list_features',
     'list_feature_categories',
@@ -166,6 +177,53 @@ test('generateLlmsTxt lists every tool by name and points at /mcp', () => {
   assert.match(txt, /\/mcp/);
 });
 
+test('generateLlmsFullTxt inlines every tool with its summary and coverage', () => {
+  const txt = generateLlmsFullTxt(CATALOG_FEEDS);
+  assert.match(txt, /full grounding file/i);
+  // Every tool appears by name AND its full summary prose is inlined.
+  for (const tool of TOOL_CATALOG) {
+    assert.match(txt, new RegExp(`\`${tool.name}\``), `llms-full must mention ${tool.name}`);
+  }
+  // Richer than the index: country coverage + a full changelog section.
+  assert.match(txt, /Country & compliance coverage/);
+  assert.match(txt, /Changelog \(full\)/);
+  // Points back at the terse index and the MCP endpoint.
+  assert.match(txt, /\/llms\.txt/);
+  assert.match(txt, /\/mcp/);
+  // Substantially longer than the index (it inlines prose).
+  assert.ok(txt.length > generateLlmsTxt(CATALOG_FEEDS).length, 'llms-full must be longer than llms.txt');
+});
+
+test('sitemap includes the llms-full.txt endpoint', () => {
+  const xml = generateSitemap(CATALOG_FEEDS);
+  assert.match(xml, /\/llms-full\.txt/);
+});
+
+test('catalog.json, llms.txt and llms-full.txt advertise the curated prompts', () => {
+  const cat = generateCatalogJson() as { prompts?: Array<{ name: string; arguments: string[] }> };
+  assert.ok(Array.isArray(cat.prompts) && cat.prompts.length >= 4, 'catalog.json must list prompts');
+  for (const p of cat.prompts!) {
+    assert.ok(p.name && Array.isArray(p.arguments), 'each catalog prompt needs name + arguments');
+  }
+  const idx = generateLlmsTxt(CATALOG_FEEDS);
+  const full = generateLlmsFullTxt(CATALOG_FEEDS);
+  for (const p of cat.prompts!) {
+    assert.match(idx, new RegExp(`\`${p.name}\``), `llms.txt must mention prompt ${p.name}`);
+    assert.match(full, new RegExp(`\`${p.name}\``), `llms-full.txt must mention prompt ${p.name}`);
+  }
+});
+
+test('generateSecurityTxt is RFC 9116-shaped with a future Expires', () => {
+  const txt = generateSecurityTxt();
+  assert.match(txt, /^Contact:\s+mailto:/m);
+  const expires = /^Expires:\s+(.+)$/m.exec(txt);
+  assert.ok(expires, 'security.txt must carry an Expires field');
+  const when = new Date(expires![1]);
+  assert.ok(!Number.isNaN(when.getTime()), 'Expires must be a valid date');
+  assert.ok(when.getTime() > Date.now(), 'Expires must be in the future');
+  assert.match(txt, /^Canonical:\s+https:\/\/[^\s]+\/\.well-known\/security\.txt$/m);
+});
+
 test('generateSitemap is valid XML, contains <lastmod>, and the host root URL', () => {
   const xml = generateSitemap();
   assert.match(xml, /^<\?xml/);
@@ -195,7 +253,7 @@ test('sitemap and llms.txt link every registered feed exactly once on each host'
       const xml = generateSitemap(CATALOG_FEEDS);
       const text = generateLlmsTxt(CATALOG_FEEDS);
       const locations = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g), (match) => match[1]);
-      assert.equal(locations.length, 15 + CATALOG_FEEDS.length);
+      assert.equal(locations.length, 16 + CATALOG_FEEDS.length);
       for (const path of ['/apis', '/accountants', '/api/catalog.json', '/api/accountants.json', '/api/developer-reference.json']) {
         assert.ok(locations.includes(`${baseUrl}${path}`));
         assert.ok(text.includes(`${baseUrl}${path}`));

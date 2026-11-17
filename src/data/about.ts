@@ -83,6 +83,12 @@ export interface ChangelogEntry {
  * once the marketing backend ships that endpoint.
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2026-11-17', title: 'Eight new advisory tools (1.6.0)', category: 'feature',
+    description: 'Added check_integration (does HelloBooks work with a named bank/app?), next_deadlines (time-aware "what filing is due next?"), recommend_plan (lowest-priced tier that covers stated needs), estimate_annual_cost (first-year TCO from list prices), compare_plans (side-by-side tier diff), supported_currencies (billing vs books currency), explain_term (curated accounting/tax glossary), and onboarding_support (the India/US 1:1 onboarding offer). All read-only; all reuse live-fed pricing where relevant.' },
+  { date: '2026-11-17', title: 'MCP Prompts primitive', category: 'feature',
+    description: 'The server now advertises the prompts capability with four curated one-click flows that wrap the tools: which_plan_for_me, compare_to_competitor, whats_due_next, and integration_and_payments_check. Prompts are listed on the protocol surface (prompts/list) and in the discovery files (catalog.json, llms.txt, llms-full.txt).' },
+  { date: '2026-11-17', title: 'Discovery, freshness and safety surface', category: 'improvement',
+    description: 'Added /llms-full.txt (long-form LLM grounding), /.well-known/security.txt (RFC 9116 disclosure contact), a telemetry-privacy transparency doc, a source-URL reachability validator (offline shape test + scheduled check), a per-tool response-size budget guard, and a golden-answer eval suite that locks the answers agents actually get.' },
   { date: '2026-10-28', title: 'Live sitemap index blog federation and India Scale tier sync', category: 'improvement',
     description: 'Updated blog discovery to seamlessly parse sitemap indexes (supporting the migrated /sitemap/blog.xml feed). Synced India Scale pricing (₹4,999/mo, ₹49,999/yr) into baked fallback and live federation.' },
   { date: '2026-10-21', title: 'Tier alignment and compliance claim audit', category: 'fix',

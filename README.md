@@ -55,7 +55,7 @@ https://agents.hellobooks.ai/mcp
   URL, authentication **No sign in**. Streamable HTTP; the server must stay reachable from
   Anthropic's IP ranges.
 - **ChatGPT** — Settings → Connectors, paste the URL, authentication **No authentication**.
-  Works in Developer Mode (all 31 tools) *and* in deep research / company knowledge, because
+  Works in Developer Mode (all tools) *and* in deep research / company knowledge, because
   the server implements OpenAI's two-tool retrieval contract: `search` returns
   `{ results: [{ id, title, url }] }` and `fetch` resolves one of those ids into
   `{ id, title, text, url, metadata }`. Every document carries a non-empty `url`, so answers
@@ -153,6 +153,14 @@ All reads are public and read-only; no API key is required for any of these.
 | `list_articles` | Published content on hellobooks.ai — head-to-head compare pages, country guides, curated flagship posts, and sitemap-discovered blog posts. Optional `country`, `tag`, `query`, `limit` filters. |
 | `list_tax_rates` | Statutory tax-rate slabs by jurisdiction — IN GST (5/12/18/28 + zero + exempt + composition trader/manufacturer/restaurant), UK VAT (20/5/zero/exempt), AU GST (10/GST-free), US state-administered summary, CA GST + HST (ON, Atlantic), SG GST 9%, NZ GST 15%, AE VAT 5%. Filter by `country`, `taxType` (GST/VAT/Sales-Tax/HST/…), or `scheme` (standard/reduced/zero/exempt/composition/cess). Every entry carries an effective-from date and a `source` URL — confirm before quoting. |
 | `lookup_tax_rate` | Pick a single statutory rate by exact `id` (e.g. `IN-standard-18`) or by `country` + free-text `category` (e.g. "office supplies", "restaurant", "exports"). Returns the matched rate, score, and source URL. |
+| `check_integration` | Deterministic "does HelloBooks work with `<bank/app/service>`?" Matches a named provider (Stripe, HDFC, Shopify, QuickBooks…) against the integrations catalog and returns a supported yes/no with rollout status, or the closest suggestions. |
+| `next_deadlines` | Time-aware "what's due next?" — upcoming statutory filings sorted soonest-first with a computed `nextDue` date and `daysUntil`. Optional `country`, `withinDays`, `limit`, `asOf`. Entries that can't be placed to a date return `scheduleVaries`. |
+| `recommend_plan` | Recommend the lowest-priced eligible tier (Free→Scale) for a business, scored against `needs` and `estimatedAnnualTransactions`, with a full ranked breakdown. Heuristic over published feature bullets, not a quote. |
+| `estimate_annual_cost` | Itemized first-year cost of ownership from HelloBooks' own list prices: plan (annual/monthly) + add-ons + one-time credit packs, in local currency, with the annual-vs-monthly saving. |
+| `compare_plans` | Side-by-side diff of two tiers (e.g. Pro vs Business): price + delta, AI credits, transaction limits, and features shared / unique to each. |
+| `supported_currencies` | Which currencies HelloBooks bills and keeps books in — the 8 priced regions bill locally, other supported countries bill in USD while books run locally. Grouped by currency, or per `country`. |
+| `explain_term` | Plain-language definitions of accounting/tax/compliance terms (accrual, GSTR-3B, input tax credit, P&L, BAS, 1099…) from a curated glossary scoped to the IN/UK/AU/US/CA regimes, with related terms. |
+| `onboarding_support` | The paid 1:1 onboarding offer (India ₹5,000 / US $300 for 10 hours, India/US only), what it covers, the always-included support, and the separate done-for-you migration note per country. |
 
 ## Voice knowledge pack (for AI phone agents)
 
@@ -175,6 +183,18 @@ Caching: `ETag` is the content hash (`version`), so send `If-None-Match` and re-
 | `hellobooks://changelog` | Recent release notes as JSON. |
 | `hellobooks://feature-catalog` | Full marketing feature catalog (96+ features across 13 categories) as JSON. |
 
+## Prompts
+
+Curated one-click flows (MCP `prompts/`) that wrap the tools above, so clients like Claude and
+Cursor can offer them as actions. Argument values (country, competitor, integration) autocomplete.
+
+| Prompt | Wraps |
+| --- | --- |
+| `which_plan_for_me` | `recommend_plan` + `estimate_annual_cost` |
+| `compare_to_competitor` | `list_competitors` + `feature_search` + `list_plans` |
+| `whats_due_next` | `next_deadlines` |
+| `integration_and_payments_check` | `check_integration` + `local_payment_methods` |
+
 ## Security posture
 
 - **Read-only by construction.** No tool mutates state. No tool reaches a customer system.
@@ -193,6 +213,11 @@ npm test            # node:test runner
 npm run build
 npm run audit:public-data
 ```
+
+Continuous integration runs on Jenkins (see `Jenkinsfile`). A GitHub-native CI
+workflow that runs lint, the public-data audit, build, and the full test suite on
+every push and PR is provided as [`docs/ci.yml.example`](docs/ci.yml.example) —
+move it to `.github/workflows/ci.yml` to enable PR status checks.
 
 ### Project layout
 
@@ -233,6 +258,10 @@ docker run -p 8080:8080 hellobooks-mcp-public
 - Listed in the [MCP registry](https://github.com/modelcontextprotocol/registry).
 - Linked from the marketing site footer and `/mcp` page.
 - Referenced in `https://hellobooks.ai/llms.txt`.
+- Self-describing grounding files at the origin: `/llms.txt` (index) and `/llms-full.txt`
+  (long-form — every tool, prompt, and the full changelog in one fetch).
+- Security contact at `/.well-known/security.txt` (RFC 9116); telemetry scope documented in
+  [`docs/TELEMETRY_PRIVACY.md`](docs/TELEMETRY_PRIVACY.md).
 
 ## License
 

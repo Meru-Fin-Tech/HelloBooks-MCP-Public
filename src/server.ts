@@ -17,6 +17,16 @@ import { z } from 'zod';
 
 import { listPlans, listPlansSchema } from './tools/listPlans.js';
 export { listPlans } from './tools/listPlans.js';
+import { recommendPlan, recommendPlanSchema } from './tools/recommendPlan.js';
+export { recommendPlan } from './tools/recommendPlan.js';
+import { comparePlans, comparePlansSchema } from './tools/comparePlans.js';
+export { comparePlans } from './tools/comparePlans.js';
+import { estimateAnnualCost, estimateAnnualCostSchema } from './tools/estimateAnnualCost.js';
+export { estimateAnnualCost } from './tools/estimateAnnualCost.js';
+import { supportedCurrencies, supportedCurrenciesSchema } from './tools/supportedCurrencies.js';
+export { supportedCurrencies } from './tools/supportedCurrencies.js';
+import { explainTerm, explainTermSchema } from './tools/explainTerm.js';
+export { explainTerm } from './tools/explainTerm.js';
 import { listCreditPacks, listCreditPacksSchema } from './tools/listCreditPacks.js';
 export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
@@ -25,8 +35,12 @@ import { partnerProgramInfo, partnerProgramInfoSchema } from './tools/partnerPro
 export { partnerProgramInfo } from './tools/partnerProgramInfo.js';
 import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/practiceManagementInfo.js';
 export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
+import { onboardingSupport, onboardingSupportSchema } from './tools/onboardingSupportInfo.js';
+export { onboardingSupport } from './tools/onboardingSupportInfo.js';
 import { listIntegrations, listIntegrationsSchema } from './tools/listIntegrations.js';
 export { listIntegrations } from './tools/listIntegrations.js';
+import { checkIntegration, checkIntegrationSchema } from './tools/checkIntegration.js';
+export { checkIntegration } from './tools/checkIntegration.js';
 import { countrySupport, countrySupportSchema } from './tools/countrySupport.js';
 export { countrySupport } from './tools/countrySupport.js';
 import { complianceCapabilities, complianceCapabilitiesSchema } from './tools/complianceCapabilities.js';
@@ -37,6 +51,8 @@ import { listCompetitors, listCompetitorsSchema } from './tools/listCompetitors.
 export { listCompetitors } from './tools/listCompetitors.js';
 import { complianceDeadlines, complianceDeadlinesSchema } from './tools/complianceDeadlines.js';
 export { complianceDeadlines } from './tools/complianceDeadlines.js';
+import { nextDeadlines, nextDeadlinesSchema } from './tools/nextDeadlines.js';
+export { nextDeadlines } from './tools/nextDeadlines.js';
 import { localPaymentMethods, localPaymentMethodsSchema } from './tools/paymentMethods.js';
 export { localPaymentMethods } from './tools/paymentMethods.js';
 import { listFeatures, listFeaturesSchema } from './tools/listFeatures.js';
@@ -60,6 +76,8 @@ export { analyzeJournalVariance } from './tools/analyzeJournalVariance.js';
 import { compareBooksToHellobooks, compareBooksToHellobooksSchema } from './tools/compareBooksToHellobooks.js';
 export { compareBooksToHellobooks } from './tools/compareBooksToHellobooks.js';
 import { estimateMigrationEffort, estimateMigrationEffortSchema } from './tools/estimateMigrationEffort.js';
+import { migrationChecklist, migrationChecklistSchema } from './tools/migrationChecklist.js';
+export { migrationChecklist } from './tools/migrationChecklist.js';
 export { estimateMigrationEffort } from './tools/estimateMigrationEffort.js';
 import { analyzeTrialBalance, analyzeTrialBalanceSchema } from './tools/analyzeTrialBalance.js';
 export { analyzeTrialBalance } from './tools/analyzeTrialBalance.js';
@@ -82,12 +100,13 @@ import {
 export { publicSearch, publicFetch } from './tools/publicSearch.js';
 import { refreshPricingFromFeed } from './pricingFeed.js';
 import { RESOURCES, readResource } from './resources/index.js';
+import { registerPrompts } from './prompts/index.js';
 import { track } from './analytics.js';
 import { listAccountants, listAccountantsSchema, getAccountant } from './accountants.js';
 import { listApiCatalog, apiCatalogSchema } from './apiCatalog.js';
 
 const SERVER_NAME = 'hellobooks-public';
-export const SERVER_VERSION = '1.5.0';
+export const SERVER_VERSION = '1.6.0';
 
 /** Every tool on this server is a read-only public-data lookup. */
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
@@ -127,7 +146,20 @@ async function runTool(
   extra: unknown,
   produce: () => unknown,
 ) {
-  return asJsonContent(await withTelemetry(toolName, args, extra, produce));
+  const payload = await withTelemetry(toolName, args, extra, produce);
+  const base = asJsonContent(payload);
+  // Also expose the payload as `structuredContent` so agents can consume the
+  // typed result without re-parsing the JSON text block. These tools declare no
+  // outputSchema, so the SDK passes it through unvalidated (search/fetch, which
+  // DO declare one, go through runStructuredTool). Per the MCP spec only a JSON
+  // object is valid structuredContent, so arrays/primitives stay text-only.
+  // Derive it from the serialised text (not the raw object) so it is JSON-clean
+  // — `undefined`-valued optional fields are dropped exactly as in the text,
+  // keeping the two representations identical over any transport.
+  if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
+    return { ...base, structuredContent: JSON.parse(base.content[0].text) as Record<string, unknown> };
+  }
+  return base;
 }
 
 /**
@@ -278,6 +310,46 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'recommend_plan',
+    'Recommend the right HelloBooks tier for a business. Pass `needs` (free-text phrases like "GST filing", "multi-currency", "API access", "multi-entity", "payroll"), an optional `estimatedAnnualTransactions`, and an optional `country` for local pricing. Scores the core ladder (Free → Starter → Pro → Business → Scale) against the stated needs and transaction volume and returns the LOWEST-priced eligible tier that covers the most needs, plus the full ranked breakdown with matched/unmatched needs and per-tier price. Heuristic over published feature bullets, not a quote — confirm with list_plans / list_features. Add-ons and the free Partner Program are excluded from the core ladder.',
+    recommendPlanSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('recommend_plan', args, extra, () => recommendPlan(args)),
+  );
+
+  server.tool(
+    'estimate_annual_cost',
+    'Itemized first-year cost of ownership from HelloBooks’ own published prices. Pass a core `plan` (free/starter/pro/business/scale), optional `country`, `billing` (annual|monthly, default annual), `addOns` (warehouse-addon/manufacturing-addon), and one-time `creditPacks` ([{id, quantity?}]). Returns line items, the plan/add-on annual cost, one-time credit-pack cost, `totalFirstYear`, and `annualBillingSavings` (saving vs paying monthly) in the country currency. An estimate from list prices, not a quote (taxes/discounts excluded) — confirm with list_plans / list_credit_packs.',
+    estimateAnnualCostSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('estimate_annual_cost', args, extra, () => estimateAnnualCost(args)),
+  );
+
+  server.tool(
+    'compare_plans',
+    'Side-by-side diff of two HelloBooks tiers (e.g. "Pro vs Business"). Pass `planA`, `planB` (free/starter/pro/business/scale/cpa) and an optional `country`. Returns each plan’s monthly + annual price, AI credit allowance and transaction limit, the monthly/annual price delta (B minus A) and which is cheaper, plus the features shared, only in A, and only in B. Prices are live-fed via list_plans; feature diff is over published bullets — confirm specifics with list_features.',
+    comparePlansSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('compare_plans', args, extra, () => comparePlans(args)),
+  );
+
+  server.tool(
+    'supported_currencies',
+    'Which currencies HelloBooks bills and keeps books in. Call with no args for every supported currency grouped by code (with the countries using it and whether each is billed locally or in USD), or with a `country` for that country’s books currency + billing behaviour. The 8 priced regions check out in local currency; other supported countries are billed in USD while their books run in the local currency. Read-only public data.',
+    supportedCurrenciesSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('supported_currencies', args, extra, () => supportedCurrencies(args)),
+  );
+
+  server.tool(
+    'explain_term',
+    'Plain-language definition of an accounting, tax, or compliance term (e.g. "accrual", "GSTR-3B", "input tax credit", "P&L", "reconciliation", "BAS", "1099"). Resolves by exact name, alias, or fuzzy match against a curated glossary scoped to bookkeeping plus the IN/UK/AU/US/CA regimes HelloBooks serves; returns the definition, related terms, or the closest suggestions. Definitions are general guidance — confirm specifics against the relevant authority.',
+    explainTermSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('explain_term', args, extra, () => explainTerm(args)),
+  );
+
+  server.tool(
     'list_credit_packs',
     'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return local currency prices; other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any paid plan; Free users cannot buy packs and should upgrade for more AI credits. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
     listCreditPacksSchema,
@@ -314,6 +386,14 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'onboarding_support',
+    'The paid 1:1 onboarding offer and included support. Call with no args for every published offer, or with a `country`. Published hourly onboarding exists for India (₹5,000 / 10 hours) and the US ($300 / 10 hours) only — for any other country the response sets hasHourlyOffer:false and you must NOT invent or convert one. Also returns the always-included basic support and the SEPARATE done-for-you migration service note per country. Read-only public data.',
+    onboardingSupportSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('onboarding_support', args, extra, () => onboardingSupport(args)),
+  );
+
+  server.tool(
     'list_integrations',
     'List integrations (banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM).',
     listIntegrationsSchema,
@@ -323,8 +403,17 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'check_integration',
+    'Answer "does HelloBooks work with <bank/app/service>?" deterministically. Pass a `name` (e.g. "Stripe", "HDFC Bank", "Shopify", "QuickBooks"). Returns a `supported` yes/no with the matched integration and its rollout `status` (live/beta/coming-soon), or the closest catalog `suggestions` when there is no direct match. Prefer this over free-text search when the user names a specific provider.',
+    checkIntegrationSchema,
+    READ_ONLY,
+    async (args, extra) =>
+      runTool('check_integration', args, extra, () => checkIntegration(args)),
+  );
+
+  server.tool(
     'country_support',
-    'Return features available per supported country (AU, IN, UK, US, CA, AE, SG, NZ).',
+    'Return features + compliance frameworks available per supported country (187 country hubs, with detailed rows for AU, IN, GB, US, CA, AE, SG, NZ). Pass a `country` for one country’s full detail. The full unfiltered matrix is large, so for "which countries are supported?" pass `summary: true` to get a compact per-country index (feature/compliance counts) and then drill into a specific country.',
     countrySupportSchema,
     READ_ONLY,
     async (args, extra) =>
@@ -369,6 +458,15 @@ export function createServer(): McpServer {
       runTool('compliance_deadlines', args, extra, () =>
         complianceDeadlines(args),
       ),
+  );
+
+  server.tool(
+    'next_deadlines',
+    'Time-aware "what statutory filing is due next?" Returns upcoming filings sorted soonest-first, each with a computed `nextDue` date and `daysUntil`. Optional `country`, `withinDays` (e.g. the next 30/60/90 days), `limit`, and `asOf` (reference date, defaults to today UTC). A concrete date is computed only when it can be placed unambiguously (monthly filings with a due day, or entries with explicit annual dates); quarterly/half-yearly entries given only a day-of-month and per-event filings come back with `scheduleVaries: true` and `nextDue: null`. Dates rotate annually — confirm against each `source` URL.',
+    nextDeadlinesSchema,
+    READ_ONLY,
+    async (args, extra) =>
+      runTool('next_deadlines', args, extra, () => nextDeadlines(args)),
   );
 
   server.tool(
@@ -483,6 +581,14 @@ export function createServer(): McpServer {
   );
 
   server.tool(
+    'migration_checklist',
+    'A phased, best-practice plan for moving to HelloBooks from another system. Pass `from` (quickbooks/xero/tally/zoho-books/wave/sage/excel/other), optional `country` (adds the right tax-setup step), `complexity` (low/medium/high — scales phase durations), and `includeHistory`. Returns 7 ordered phases (plan → export → clean & map → set up → import → reconcile → parallel run & cutover), each with concrete steps and a day-range, plus an estimated total timeline. Complements estimate_migration_effort (which quotes hours/price from an uploaded CSV). Guidance, not a binding plan.',
+    migrationChecklistSchema,
+    READ_ONLY,
+    async (args, extra) => runTool('migration_checklist', args, extra, () => migrationChecklist(args)),
+  );
+
+  server.tool(
     'analyze_profit_loss',
     'Take a Profit & Loss / Income Statement CSV export from QuickBooks Online, Xero, Zoho Books, or Wave (source auto-detected from section names) and run three checks: (1) pnl.subtotal_mismatch — each "Total Section" subtotal equals the sum of its preceding line items (catches missing or duplicated rows); (2) pnl.negative_expense — flags expense-section line items with negative amounts (usually sign-flips or refunds posted to the wrong side); (3) pnl.margin_red_flag — gross-profit margin < 5% or > 95%, or negative total revenue. Input is raw CSV text of a P&L report (Reports → Profit and Loss in QBO / Xero / Zoho / Wave). Max 5,000 rows; max 5 MB. Returns flags with severity, a summary with totalRevenue / totalCogs / grossProfit / grossMarginPct / netIncome (when detected), and a shareable URL at agents.hellobooks.ai/r/{slug}. Use this when a user pastes a P&L and asks "does my P&L look right?", "any sign errors?", "what is my gross margin?", or "anything suspicious in my income statement?". For period-over-period comparison use analyze_journal_variance with two periods of journal-entry data; this tool is single-period only.',
     analyzeProfitLossSchema,
@@ -579,6 +685,9 @@ export function createServer(): McpServer {
       },
     );
   }
+
+  // Prompts — curated one-click flows that wrap the tools above.
+  registerPrompts(server);
 
   return server;
 }

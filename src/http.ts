@@ -40,7 +40,9 @@ import {
   generateChangelogJson,
   generateLandingHtml,
   generateLlmsTxt,
+  generateLlmsFullTxt,
   generateMcpDiscovery,
+  generateSecurityTxt,
   generateOpenApi,
   generateRobotsTxt,
   generateRssFeed,
@@ -277,8 +279,10 @@ app.get('/info', (_req, res) => {
       agent_card: '/.well-known/agent.json',
       ai_plugin: '/.well-known/ai-plugin.json',
       mcp: '/.well-known/mcp.json',
+      security_txt: '/.well-known/security.txt',
       openapi: '/openapi.json',
       llms_txt: '/llms.txt',
+      llms_full_txt: '/llms-full.txt',
       catalog: '/catalog.json',
       catalog_feeds: '/catalog/index.json',
       voice_knowledge_pack: '/kb/voice.json?country=IN',
@@ -317,6 +321,7 @@ function sendJson(res: Response, body: unknown): void {
 
 app.get('/', (_req, res) => sendText(res, generateLandingHtml(), 'text/html; charset=utf-8'));
 app.get('/llms.txt', (_req, res) => sendText(res, generateLlmsTxt(CATALOG_FEEDS), 'text/plain; charset=utf-8'));
+app.get('/llms-full.txt', (_req, res) => sendText(res, generateLlmsFullTxt(CATALOG_FEEDS), 'text/plain; charset=utf-8'));
 app.get('/robots.txt', (_req, res) => sendText(res, generateRobotsTxt(), 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (_req, res) => sendText(res, generateSitemap(CATALOG_FEEDS), 'application/xml; charset=utf-8'));
 app.get('/feed.xml', (_req, res) => sendText(res, generateRssFeed(), 'application/rss+xml; charset=utf-8'));
@@ -326,6 +331,8 @@ app.get('/changelog.json', (_req, res) => sendJson(res, generateChangelogJson())
 app.get('/.well-known/agent.json', (_req, res) => sendJson(res, generateAgentCard()));
 app.get('/.well-known/ai-plugin.json', (_req, res) => sendJson(res, generateAiPluginManifest()));
 app.get('/.well-known/mcp.json', (_req, res) => sendJson(res, generateMcpDiscovery()));
+app.get('/.well-known/security.txt', (_req, res) => sendText(res, generateSecurityTxt(), 'text/plain; charset=utf-8'));
+app.get('/security.txt', (_req, res) => sendText(res, generateSecurityTxt(), 'text/plain; charset=utf-8'));
 
 function parameters(req: Request): Record<string, unknown> {
   const values: Record<string, unknown> = { ...req.query };

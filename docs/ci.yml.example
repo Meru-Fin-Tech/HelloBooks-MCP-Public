@@ -1,0 +1,61 @@
+# GitHub Actions CI — run the quality gate on every push and pull request.
+#
+# The repo's primary pipeline is Jenkins (see /Jenkinsfile), which also builds
+# and deploys the Docker image. This workflow adds a fast, GitHub-native check so
+# pull requests show a green/red status before review — the offline quality gate
+# only (lint, the public-data PII audit, build, and the full test suite). It
+# needs no secrets and no services.
+#
+# Install (a human with `workflow` scope must do this — the Claude Code OAuth
+# token cannot write under .github/workflows/):
+#   mkdir -p .github/workflows
+#   git mv docs/ci.yml.example .github/workflows/ci.yml
+#   git commit -m "ci: run lint/audit/build/test on push and PR"
+#   git push
+#
+# Once installed, mark the "test" job as a required status check in
+# Settings → Branches → branch protection for `main` so PRs can't merge red.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      # Typecheck (tsc --noEmit).
+      - name: Lint
+        run: npm run lint
+
+      # Hard gate: no PII / auth-token strings in src/data/.
+      - name: Public-data audit
+        run: npm run audit:public-data
+
+      # Compile to dist/ — catches build-only breakage.
+      - name: Build
+        run: npm run build
+
+      # Full node:test suite (offline; feeds are pinned off inside the tests).
+      - name: Test
+        run: npm test

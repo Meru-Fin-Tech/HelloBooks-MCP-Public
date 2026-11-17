@@ -1,0 +1,76 @@
+# SCHEDULED source-URL reachability check (monthly).
+#
+# `scripts/check-source-urls.ts` requests every `source` URL the public catalogs
+# cite (compliance deadlines + tax rates), dedupes them, and reports any that no
+# longer respond with a success/redirect status. It writes source-url-report.md
+# and exits non-zero on any failure. Broken citation links silently erode trust
+# in AI answers, so this job catches them between monthly data reviews.
+#
+# URL *shape* (absolute-https) is already enforced on every CI run by
+# test/source-urls.test.ts; this workflow adds the live-reachability layer and
+# is intentionally kept out of the blocking build (it is network-dependent).
+#
+# Install (a human with `workflow` scope must do this — the Claude Code OAuth
+# token cannot write under .github/workflows/):
+#   mkdir -p .github/workflows
+#   git mv docs/check-source-urls.yml.example \
+#          .github/workflows/check-source-urls.yml
+#   git commit -m "ci: install monthly source-URL reachability check"
+#   git push
+
+name: check-source-urls
+
+on:
+  schedule:
+    - cron: '23 5 2 * *' # 05:23 UTC on the 2nd of each month
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  source-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: Check source URLs
+        id: check
+        run: |
+          set +e
+          npm run check:source-urls
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-url-report
+          path: source-url-report.md
+          if-no-files-found: ignore
+
+      - name: Open an issue on broken sources
+        if: steps.check.outputs.exit_code != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = 'One or more cited `source` URLs are unreachable. Fix or replace them in `src/data/` (compliance deadlines / tax rates).';
+            try {
+              const report = fs.readFileSync('source-url-report.md', 'utf8');
+              body += '\n\n<details><summary>source-url-report.md</summary>\n\n' + report + '\n\n</details>';
+            } catch {}
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Broken source URL(s) detected (${new Date().toISOString().slice(0,10)})`,
+              labels: ['data-freshness'],
+              body,
+            });

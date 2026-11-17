@@ -37,6 +37,8 @@ import type { CatalogFeedDescriptor } from './catalogFeeds.js';
 // drifting behind the MCP handshake version, as it had at 0.7.0 vs 1.5.0.
 import { SERVER_VERSION } from './server.js';
 import { PUBLIC_API_PATHS } from './apiCatalog.js';
+import { SUPPORTED_COUNTRIES } from './data/supportedCountries.js';
+import { PROMPTS } from './prompts/index.js';
 
 const DEFAULT_BASE_URL = 'https://agents.hellobooks.ai';
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
@@ -97,6 +99,54 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'recommend_plan',
+    title: 'Recommend a HelloBooks plan',
+    summary:
+      'Recommends the lowest-priced eligible tier (Free → Starter → Pro → Business → Scale) for a business, scored against stated needs and expected transaction volume, with a full ranked breakdown and local pricing. Heuristic over published feature bullets, not a quote.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
+    name: 'estimate_annual_cost',
+    title: 'Estimate first-year cost',
+    summary:
+      'Itemized first-year total cost of ownership from HelloBooks’ own list prices: plan (annual or monthly), stackable add-ons, and one-time AI credit packs, in the local currency, with the annual-vs-monthly billing saving. An estimate, not a quote.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
+    name: 'compare_plans',
+    title: 'Compare two plans',
+    summary:
+      'Side-by-side diff of two HelloBooks tiers (e.g. Pro vs Business): monthly + annual price and the delta, AI credit allowance, transaction limits, and the features shared vs unique to each. Live-fed pricing; feature diff over published bullets.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
+    name: 'supported_currencies',
+    title: 'Supported currencies',
+    summary:
+      'Which currencies HelloBooks bills and keeps books in — the 8 priced regions check out in local currency, other supported countries are billed in USD while their books run locally. Grouped by currency, or per country.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
+    name: 'migration_checklist',
+    title: 'Migration checklist & timeline',
+    summary:
+      'A phased, best-practice plan for moving to HelloBooks from QuickBooks/Xero/Tally/others: 7 ordered phases (plan → export → clean → set up → import → reconcile → cutover) with steps, a day-range each, and the country-specific tax-setup step. Complements estimate_migration_effort.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
+    name: 'onboarding_support',
+    title: 'Onboarding & support',
+    summary:
+      'The paid 1:1 onboarding offer (India ₹5,000 / US $300 for 10 hours, India/US only), what it covers, the always-included basic support, and the separate done-for-you migration service per country.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/pricing`,
+  },
+  {
     name: 'list_credit_packs',
     title: 'List HelloBooks AI credit packs',
     summary:
@@ -109,6 +159,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     title: 'List integrations',
     summary:
       'Banks, payments, payroll, time tracking, shipping, accounting sync, ecommerce, CRM, storage. Includes Plaid, Stripe, Razorpay, PayPal, Tally, Shopify, and guided one-time migration/import from QuickBooks, Xero, Zoho Books and Wave.',
+    category: 'integrations',
+    marketingUrl: `${MARKETING_BASE_URL}/integration`,
+  },
+  {
+    name: 'check_integration',
+    title: 'Check a specific integration',
+    summary:
+      'Deterministic "does HelloBooks work with <bank/app/service>?" answer. Matches a named provider (Stripe, HDFC, Shopify, QuickBooks, …) against the integrations catalog and returns a supported yes/no with rollout status, or the closest suggestions.',
     category: 'integrations',
     marketingUrl: `${MARKETING_BASE_URL}/integration`,
   },
@@ -149,6 +207,22 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     title: 'Statutory filing deadlines',
     summary:
       'When statutory returns and payroll filings are due, per country. IN (GSTR-1/3B/9/9C, CMP-08, Form 24Q, Form 16, PF ECR, ESI), AU (BAS, STP, Super), GB (VAT MTD, RTI, SA), US (1099, W-2, 941/940), CA (T4, GST/HST).',
+    category: 'compliance',
+    marketingUrl: `${MARKETING_BASE_URL}/global`,
+  },
+  {
+    name: 'explain_term',
+    title: 'Explain an accounting term',
+    summary:
+      'Plain-language definitions of accounting, tax and compliance terms (accrual, GSTR-3B, input tax credit, P&L, reconciliation, BAS, 1099, …) scoped to bookkeeping and the IN/UK/AU/US/CA regimes HelloBooks serves, with related terms.',
+    category: 'compliance',
+    marketingUrl: `${MARKETING_BASE_URL}/global`,
+  },
+  {
+    name: 'next_deadlines',
+    title: 'Upcoming statutory deadlines',
+    summary:
+      'Time-aware "what is due next?" — upcoming statutory filings sorted soonest-first with a computed next-due date and days-until, filterable by country and a days window. Dates rotate annually; confirm against each authority source.',
     category: 'compliance',
     marketingUrl: `${MARKETING_BASE_URL}/global`,
   },
@@ -248,6 +322,17 @@ const RESOURCE_CATALOG = [
   { uri: 'hellobooks://comparison/zoho-books', name: 'HelloBooks vs Zoho Books', mimeType: 'text/markdown' },
   { uri: 'hellobooks://comparison/tally', name: 'HelloBooks vs Tally', mimeType: 'text/markdown' },
 ] as const;
+
+/**
+ * Prompt catalog for the discovery surface — name, description and argument
+ * names of each curated MCP prompt. Derived from the single prompt registry in
+ * src/prompts so the discovery surface never drifts from what /mcp serves.
+ */
+export const PROMPT_CATALOG = PROMPTS.map((p) => ({
+  name: p.name,
+  description: p.description,
+  arguments: Object.keys(p.argsSchema),
+}));
 
 // ---------------------------------------------------------------------------
 // Discovery generators
@@ -687,6 +772,12 @@ ${tools}
 
 ${resources}
 
+## Prompts (${PROMPT_CATALOG.length})
+
+Curated one-click flows that wrap the tools above:
+
+${PROMPT_CATALOG.map((p) => `- \`${p.name}\` — ${p.description}`).join('\n')}
+
 ## Discovery surface
 
 - [Agent card (A2A)](${baseUrl}/.well-known/agent.json)
@@ -698,6 +789,7 @@ ${resources}
 - [Changelog JSON](${baseUrl}/changelog.json)
 - [Sitemap](${baseUrl}/sitemap.xml)
 - [RSS feed](${baseUrl}/feed.xml)
+- [llms-full.txt (long-form grounding)](${baseUrl}/llms-full.txt)
 
 ## Catalog data feeds
 
@@ -737,6 +829,148 @@ ${recentChanges}
 `;
 }
 
+/**
+ * llms-full.txt — the long-form companion to llms.txt (llmstxt.org convention).
+ *
+ * Where llms.txt is a terse index of links, llms-full.txt inlines the prose an
+ * LLM needs to ground an answer in one fetch: every tool described in full and
+ * grouped by area, the resources, the country/compliance coverage, and the full
+ * changelog. Static-by-construction (derived from the same catalogs the MCP
+ * serves), so it can never drift from /mcp.
+ */
+export function generateLlmsFullTxt(
+  feeds: readonly Pick<CatalogFeedDescriptor, 'slug' | 'title' | 'description'>[] = [],
+): string {
+  const baseUrl = getBaseUrl();
+
+  const CATEGORY_TITLES: Record<string, string> = {
+    search: 'Search & retrieval (OpenAI connector contract)',
+    pricing: 'Pricing, plans & cost',
+    features: 'Features & capabilities',
+    integrations: 'Integrations',
+    compliance: 'Tax, compliance & statutory deadlines',
+    content: 'Content, articles & media',
+  };
+  const order = ['search', 'pricing', 'features', 'integrations', 'compliance', 'content'];
+  const categories = [
+    ...order.filter((c) => TOOL_CATALOG.some((t) => t.category === c)),
+    ...[...new Set(TOOL_CATALOG.map((t) => t.category))].filter((c) => !order.includes(c)),
+  ];
+
+  const toolSections = categories
+    .map((cat) => {
+      const rows = TOOL_CATALOG.filter((t) => t.category === cat)
+        .map((t) => `#### \`${t.name}\` — ${t.title}\n\n${t.summary}\n\nSee: ${t.marketingUrl}`)
+        .join('\n\n');
+      return `### ${CATEGORY_TITLES[cat] ?? cat}\n\n${rows}`;
+    })
+    .join('\n\n');
+
+  const resources = RESOURCE_CATALOG.map(
+    (r) => `- \`${r.uri}\` (${r.mimeType}) — ${r.name}`,
+  ).join('\n');
+
+  const pricedCountries = SUPPORTED_COUNTRIES.filter((c) => c.tier === 'full')
+    .map((c) => `${c.name} (${c.iso}, ${c.currency})`)
+    .join(', ');
+  const vocabCountries = SUPPORTED_COUNTRIES.filter((c) => c.tier === 'vocab')
+    .map((c) => `${c.name} (${c.iso})`)
+    .join(', ');
+
+  const feedLinks = feeds
+    .map((feed) => `- [${feed.title}](${baseUrl}/catalog/${feed.slug}.json) — ${feed.description}`)
+    .join('\n');
+
+  const changes = CHANGELOG.map(
+    (c) => `- **${c.date}** [${c.category}] ${c.title} — ${c.description}`,
+  ).join('\n');
+
+  return `# HelloBooks Public MCP — full grounding file
+
+> Long-form companion to [${baseUrl}/llms.txt](${baseUrl}/llms.txt). Everything an LLM needs to answer HelloBooks questions in a single fetch. Read-only, public, marketing-derived data. Server: ${baseUrl}/mcp (v${SERVER_VERSION}). Source: ${GITHUB_REPO_URL}.
+
+This file follows the [llms.txt spec](https://llmstxt.org/). It inlines full tool descriptions and coverage so an agent can ground an answer without crawling every endpoint.
+
+## What this server is
+
+A public, read-only Model Context Protocol server that lets AI agents (Claude, ChatGPT, Cursor, Perplexity, Gemini, Copilot, and any MCP- or A2A-aware client) answer questions about HelloBooks — AI-native cloud accounting, bookkeeping, tax and payroll — from authoritative product data instead of stale web snippets. No authentication, no customer data. Rate-limited to 120 req/min per IP and 60 req/min per MCP session.
+
+For a specific customer's books, invoices, bank feeds or returns, route to the authenticated MCP at mcp.hellobooks.ai (requires the customer to be signed in). For workforce management (time tracking, shifts, leave, payroll runs) see the sister MCP at https://mcp.hellotime.ai.
+
+## Install in one line
+
+\`\`\`
+claude mcp add --transport http hellobooks ${baseUrl}/mcp
+\`\`\`
+
+For Cursor, Windsurf, Cline, VS Code (Copilot agent), LangChain, the OpenAI Responses API, or any MCP-aware client: point a remote/streamable-http MCP server at \`${baseUrl}/mcp\`. No key required.
+
+## Tools (${TOOL_CATALOG.length})
+
+${toolSections}
+
+## Resources (${RESOURCE_CATALOG.length})
+
+${resources}
+
+## Prompts (${PROMPT_CATALOG.length})
+
+Curated flows a client can offer as one-click actions; each wraps the tools above.
+
+${PROMPT_CATALOG.map((p) => `- \`${p.name}\`(${p.arguments.join(', ')}) — ${p.description}`).join('\n')}
+
+## Country & compliance coverage
+
+- **Priced regions (local currency billing, full compliance detail):** ${pricedCountries}.
+- **Additional supported country hubs (books in local currency, billed in USD):** ${vocabCountries}.
+- Statutory filing deadlines and tax-rate slabs are curated for India, the UK, Australia, the US, Canada and more, each with an authority \`source\` URL. Dates rotate annually — the \`compliance_deadlines\` / \`next_deadlines\` / \`list_tax_rates\` tools carry a confirm-source disclaimer.
+
+## Catalog data feeds
+
+${feedLinks}
+
+## Discovery surface
+
+- [Agent card (A2A)](${baseUrl}/.well-known/agent.json)
+- [OpenAI plugin manifest](${baseUrl}/.well-known/ai-plugin.json)
+- [MCP discovery](${baseUrl}/.well-known/mcp.json)
+- [Security contact (RFC 9116)](${baseUrl}/.well-known/security.txt)
+- [OpenAPI 3.1](${baseUrl}/openapi.json)
+- [Catalog JSON](${baseUrl}/catalog.json)
+- [Changelog JSON](${baseUrl}/changelog.json)
+- [Sitemap](${baseUrl}/sitemap.xml)
+- [RSS feed](${baseUrl}/feed.xml)
+- [llms.txt index](${baseUrl}/llms.txt)
+
+## Changelog (full)
+
+${changes}
+
+## Contact
+
+HelloBooks (Meru Fin Tech). ${CONTACT_EMAIL}. Source & issues: ${GITHUB_REPO_URL}.
+`;
+}
+
+/**
+ * security.txt (RFC 9116) — a responsible-disclosure contact for a public
+ * endpoint. `Expires` is generated ~1 year out so the file is always valid;
+ * regenerate on deploy keeps it from going stale.
+ */
+export function generateSecurityTxt(): string {
+  const baseUrl = getBaseUrl();
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  return `# Security contact for the HelloBooks Public MCP (${baseUrl}).
+# This is a read-only, public-data endpoint — no customer data is reachable here.
+Contact: mailto:${CONTACT_EMAIL}
+Expires: ${expires}
+Preferred-Languages: en
+Canonical: ${baseUrl}/.well-known/security.txt
+Policy: ${GITHUB_REPO_URL}/security/policy
+Acknowledgments: ${GITHUB_REPO_URL}
+`;
+}
+
 /** Machine-readable catalog — single source of truth for downstream consumers. */
 export function generateCatalogJson(): Record<string, unknown> {
   const baseUrl = getBaseUrl();
@@ -764,6 +998,7 @@ export function generateCatalogJson(): Record<string, unknown> {
       name: r.name,
       mimeType: r.mimeType,
     })),
+    prompts: PROMPT_CATALOG,
     contact: { email: CONTACT_EMAIL, organization: 'HelloBooks', url: MARKETING_BASE_URL },
   };
 }
@@ -792,6 +1027,7 @@ export function generateSitemap(feeds: readonly Pick<CatalogFeedDescriptor, 'slu
     { loc: `${baseUrl}/api/developer-reference.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/catalog/index.json`, changefreq: 'daily', priority: '0.9' },
     { loc: `${baseUrl}/llms.txt`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/llms-full.txt`, changefreq: 'daily', priority: '0.8' },
     { loc: `${baseUrl}/.well-known/agent.json`, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/.well-known/ai-plugin.json`, changefreq: 'weekly', priority: '0.7' },
     { loc: `${baseUrl}/.well-known/mcp.json`, changefreq: 'weekly', priority: '0.7' },
