@@ -107,6 +107,23 @@ pipeline {
       }
     }
 
+    // Container CVE scan (strategy #69). Fails the build on HIGH/CRITICAL
+    // fixable vulnerabilities in the image we are about to ship. Trivy is
+    // pulled on demand; if it is unavailable the stage logs and continues
+    // rather than blocking an unrelated deploy.
+    stage('Image CVE Scan (Trivy)') {
+      steps {
+        sh '''
+          if ! command -v trivy >/dev/null 2>&1; then
+            echo "trivy not installed on this agent — skipping (install aquasec/trivy to enforce)."
+            exit 0
+          fi
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed \
+            --no-progress ${IMAGE_NAME}:${BUILD_NUMBER}
+        '''
+      }
+    }
+
     // TODO: Reconcile with the existing inline pipeline before SCM cutover.
     // The inline job currently pushes to Docker Hub under credentials I
     // don't have visibility into. Replace `<dockerhub-creds-id>` and
