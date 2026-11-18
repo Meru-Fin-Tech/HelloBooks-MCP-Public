@@ -25,6 +25,7 @@
  */
 
 import express, { type Request, type Response } from 'express';
+import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -224,6 +225,11 @@ async function handleMcpRequest(req: Request, res: Response): Promise<void> {
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1); // accurate req.ip behind a load balancer
+// gzip/brotli responses (strategy #78). Big payloads shrink dramatically — the
+// all-countries voice bundle (~700KB) and the 187-country country_support /
+// catalog.json compress ~70-80%. Honors the client's Accept-Encoding and skips
+// already-small or already-compressed bodies.
+app.use(compression());
 app.use(express.json({ limit: '256kb' })); // requests are tiny — cap aggressively
 
 // ---------------------------------------------------------------------------
