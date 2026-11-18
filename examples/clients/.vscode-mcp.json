@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "hellobooks": {
+      "type": "http",
+      "url": "https://agents.hellobooks.ai/mcp"
+    }
+  }
+}

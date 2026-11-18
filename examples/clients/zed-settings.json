@@ -1,0 +1,9 @@
+{
+  "context_servers": {
+    "hellobooks": {
+      "source": "custom",
+      "command": null,
+      "url": "https://agents.hellobooks.ai/mcp"
+    }
+  }
+}
