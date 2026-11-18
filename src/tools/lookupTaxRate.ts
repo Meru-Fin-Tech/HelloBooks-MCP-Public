@@ -10,7 +10,7 @@
  */
 
 import { z } from 'zod';
-import { TAX_RATES, TAX_RATE_DISCLAIMER, type TaxRate } from '../data/taxRates.js';
+import { TAX_RATES, TAX_RATE_DISCLAIMER, TAX_RATES_LAST_REVIEWED, type TaxRate } from '../data/taxRates.js';
 import type { CountryCode } from '../data/plans.js';
 
 export const lookupTaxRateSchema = {
@@ -56,7 +56,7 @@ export function lookupTaxRate(args: LookupTaxRateArgs) {
         disclaimer: TAX_RATE_DISCLAIMER,
       };
     }
-    return { match, score: 100, disclaimer: TAX_RATE_DISCLAIMER };
+    return { match, score: 100, lastReviewed: TAX_RATES_LAST_REVIEWED, disclaimer: TAX_RATE_DISCLAIMER };
   }
 
   if (!args.country) {
@@ -105,6 +105,7 @@ export function lookupTaxRate(args: LookupTaxRateArgs) {
   return {
     match: best,
     score: bestScore,
+    lastReviewed: TAX_RATES_LAST_REVIEWED,
     disclaimer: TAX_RATE_DISCLAIMER,
   };
 }

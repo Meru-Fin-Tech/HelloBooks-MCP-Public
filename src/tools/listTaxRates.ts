@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { TAX_RATES, TAX_RATE_DISCLAIMER, type TaxRate } from '../data/taxRates.js';
+import { TAX_RATES, TAX_RATE_DISCLAIMER, TAX_RATES_LAST_REVIEWED, type TaxRate } from '../data/taxRates.js';
 import type { CountryCode } from '../data/plans.js';
 
 export const listTaxRatesSchema = {
@@ -34,6 +34,7 @@ export function listTaxRates(args: ListTaxRatesArgs) {
   return {
     rates: results,
     count: results.length,
+    lastReviewed: TAX_RATES_LAST_REVIEWED,
     disclaimer: TAX_RATE_DISCLAIMER,
   };
 }

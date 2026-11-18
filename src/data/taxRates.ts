@@ -568,3 +568,11 @@ export const TAX_RATE_DISCLAIMER =
   'Public statutory reference only. Rates rotate when budgets change — always confirm ' +
   'against the linked ``source`` URL before quoting figures to a user. This catalog ' +
   'contains no customer data.';
+
+/**
+ * ISO date the tax-rate table was last reviewed against the authority sources.
+ * Surfaced on list_tax_rates / lookup_tax_rate so agents can judge freshness
+ * (each row also carries its own `effectiveFrom` + `source`). Bump this in the
+ * monthly data review (docs/DATA_REVIEW.md).
+ */
+export const TAX_RATES_LAST_REVIEWED = '2026-11-18';
