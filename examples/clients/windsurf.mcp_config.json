@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "hellobooks": {
+      "serverUrl": "https://agents.hellobooks.ai/mcp"
+    }
+  }
+}

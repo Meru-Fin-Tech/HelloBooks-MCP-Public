@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hellobooks": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://agents.hellobooks.ai/mcp"]
+    }
+  }
+}
