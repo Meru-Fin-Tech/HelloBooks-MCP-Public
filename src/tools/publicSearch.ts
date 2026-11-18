@@ -22,6 +22,7 @@ import { featureSearch } from './featureSearch.js';
 import {
   buildDocumentIndex,
   documentIdForHit,
+  withUtm,
   type PublicDocument,
 } from '../lib/documents/index.js';
 
@@ -80,7 +81,8 @@ export function publicSearch(args: { query: string; limit?: number }): {
     const doc = index.get(docId);
     if (!doc) continue; // ranked something the index does not expose — skip it
     seen.add(docId);
-    results.push({ id: doc.id, title: doc.title, url: doc.url });
+    // UTM-tag the citation so an MCP-sourced click is attributable (#98).
+    results.push({ id: doc.id, title: doc.title, url: withUtm(doc.url) });
     if (results.length >= limit) break;
   }
   return { results };
@@ -93,5 +95,6 @@ export function publicFetch(args: { id: string }): PublicDocument {
       `Unknown document id "${args.id}". Call \`search\` first and fetch one of the ids it returns.`,
     );
   }
-  return doc;
+  // UTM-tag the citation URL so an MCP-sourced click is attributable (#98).
+  return { ...doc, url: withUtm(doc.url) };
 }

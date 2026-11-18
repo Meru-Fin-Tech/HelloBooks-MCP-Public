@@ -70,6 +70,27 @@ function isOwnUrl(candidate: string | undefined): boolean {
   }
 }
 
+/**
+ * Tag a citation URL with UTM params so clicks an agent surfaces from a `fetch`
+ * are attributable to the MCP in analytics (strategy #98). Applied ONLY to our
+ * own hellobooks.ai pages — never to vendor or authority (`source`) URLs, and
+ * never overwriting existing query params.
+ */
+export function withUtm(url: string): string {
+  if (!isOwnUrl(url)) return url;
+  try {
+    const u = new URL(url);
+    if (!u.searchParams.has('utm_source')) {
+      u.searchParams.set('utm_source', 'mcp');
+      u.searchParams.set('utm_medium', 'ai_agent');
+      u.searchParams.set('utm_campaign', 'public_mcp');
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export interface PublicDocument {
   /** `<source>:<rest>` — stable across deploys, safe to cite. */
   id: string;
