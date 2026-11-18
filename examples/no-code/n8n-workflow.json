@@ -1,0 +1,56 @@
+{
+  "name": "HelloBooks MCP — recommend_plan",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://agents.hellobooks.ai/mcp",
+        "serverTransport": "httpStreamable",
+        "authentication": "none",
+        "operation": "executeTool",
+        "toolName": "recommend_plan",
+        "toolParameters": "={\n  \"country\": \"IN\"\n}"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "HelloBooks MCP: recommend_plan",
+      "type": "n8n-nodes-base.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        880,
+        300
+      ],
+      "notes": "Public read-only HelloBooks MCP. No auth. If your n8n version names the transport field differently, set it to HTTP Streamable; if the node type is missing, add an 'MCP Client' node by hand pointing at the endpoint above."
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "HelloBooks MCP: recommend_plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {}
+}
