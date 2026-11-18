@@ -1,0 +1,46 @@
+# SCHEDULED voice-KB refresh (strategy #92).
+#
+# The per-country voice packs rebuild from the live pricing feed automatically,
+# so this is belt-and-suspenders: it force-refreshes the KB after pricing is most
+# likely to have changed (start of month) by POSTing /kb/refresh. The endpoint is
+# a no-op (404) unless HELLOBOOKS_KB_REFRESH_TOKEN is set on the server, and it
+# requires the matching bearer token here.
+#
+# Install (a human with `workflow` scope must do this — the Claude Code OAuth
+# token cannot write under .github/workflows/):
+#   mkdir -p .github/workflows
+#   git mv docs/refresh-voice-kb.yml.example .github/workflows/refresh-voice-kb.yml
+#   # add the repo secret KB_REFRESH_TOKEN (= the server's HELLOBOOKS_KB_REFRESH_TOKEN)
+#   git commit -m "ci: install scheduled voice-KB refresh"
+#   git push
+
+name: refresh-voice-kb
+
+on:
+  schedule:
+    - cron: '7 4 1 * *' # 04:07 UTC on the 1st of each month
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force voice-KB refresh
+        env:
+          KB_REFRESH_TOKEN: ${{ secrets.KB_REFRESH_TOKEN }}
+          MCP_BASE_URL: ${{ vars.HELLOBOOKS_MCP_BASE_URL || 'https://agents.hellobooks.ai' }}
+        run: |
+          if [ -z "$KB_REFRESH_TOKEN" ]; then
+            echo "KB_REFRESH_TOKEN secret not set — skipping."
+            exit 0
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $KB_REFRESH_TOKEN" \
+            "$MCP_BASE_URL/kb/refresh")
+          echo "kb/refresh -> HTTP $code"
+          # 200 = refreshed, 404 = token not configured server-side (still fine),
+          # 401 = wrong token (fail so it gets noticed).
+          if [ "$code" = "401" ]; then exit 1; fi

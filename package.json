@@ -29,6 +29,7 @@
     "audit:public-data": "node --import tsx scripts/audit-public-data.ts",
     "check:deadline-drift": "node --import tsx scripts/check-deadline-drift.ts",
     "check:source-urls": "node --import tsx scripts/check-source-urls.ts",
+    "check:cross-repo-mirror": "node --import tsx scripts/check-cross-repo-mirror.ts",
     "sync:discovered-articles": "node --import tsx scripts/sync-discovered-articles.ts",
     "report:ga4": "node --import tsx scripts/ga4-report.ts"
   },
