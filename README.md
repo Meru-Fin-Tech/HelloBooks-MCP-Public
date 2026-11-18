@@ -132,6 +132,34 @@ MCP config (e.g. `.cursor/mcp.json` or `.vscode/mcp.json`):
 { "mcpServers": { "hellobooks": { "url": "https://agents.hellobooks.ai/mcp" } } }
 ```
 
+**LlamaIndex** — `llama-index-tools-mcp`:
+
+```python
+from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
+
+tools = McpToolSpec(client=BasicMCPClient("https://agents.hellobooks.ai/mcp")).to_tool_list()
+```
+
+**CrewAI** — via `crewai-tools` `MCPServerAdapter`:
+
+```python
+from crewai_tools import MCPServerAdapter
+
+with MCPServerAdapter({"url": "https://agents.hellobooks.ai/mcp", "transport": "streamable-http"}) as tools:
+    ...  # give `tools` to a CrewAI Agent
+```
+
+**AutoGen** — `autogen-ext` MCP tools: load with `mcp_server_tools(StreamableHttpServerParams(url="https://agents.hellobooks.ai/mcp"))`.
+
+**n8n / Make / Zapier** — add an *MCP Client* node (n8n) or a custom MCP connection pointing at
+`https://agents.hellobooks.ai/mcp` (no credentials). Use it in a no-code flow to answer
+pricing/compliance questions or enrich records.
+
+**Voice agents (Vapi / Retell / ElevenLabs)** — these don't call the MCP mid-call; instead load
+the precompiled per-country voice pack once into the system prompt:
+`GET https://agents.hellobooks.ai/kb/voice.txt?country=IN` (≈850–1,350 tokens). See
+[Voice knowledge pack](#voice-knowledge-pack-for-ai-phone-agents).
+
 All reads are public and read-only; no API key is required for any of these.
 
 ## Tools

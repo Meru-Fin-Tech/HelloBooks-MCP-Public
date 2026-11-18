@@ -139,6 +139,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}/pricing`,
   },
   {
+    name: 'get_sandbox_info',
+    title: 'Try it / sandbox & API',
+    summary:
+      'How to try or connect HelloBooks from an AI agent: the no-auth public MCP (works today) and the OAuth company API with an India sandbox and the authenticated MCP for a customer’s own books.',
+    category: 'integrations',
+    marketingUrl: `${MARKETING_BASE_URL}/mcp`,
+  },
+  {
     name: 'onboarding_support',
     title: 'Onboarding & support',
     summary:
