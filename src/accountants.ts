@@ -27,7 +27,7 @@ export const accountantSchema = z.object({
 export type Accountant = z.infer<typeof accountantSchema>;
 const feedSchema = z.object({
   firms: z.array(accountantSchema), updatedAt: text,
-  taxonomies: z.record(z.unknown()).optional(),
+  taxonomies: z.record(z.string(), z.unknown()).optional(),
   _meta: z.object({ complete: z.literal(true), dataSource: z.literal('live'), firmCount: z.number().int().nonnegative() }),
 });
 export interface DirectorySnapshot {
