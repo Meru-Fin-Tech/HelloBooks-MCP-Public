@@ -224,7 +224,7 @@ const FETCH_OUTPUT_SCHEMA = {
   title: z.string(),
   text: z.string(),
   url: z.string(),
-  metadata: z.record(z.string()),
+  metadata: z.record(z.string(), z.string()),
 };
 
 /**
