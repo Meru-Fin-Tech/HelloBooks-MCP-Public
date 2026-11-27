@@ -77,6 +77,7 @@ test('TOOL_CATALOG covers every public MCP tool in the discovery surface', () =>
     'list_feature_categories',
     'list_articles',
     'list_videos',
+    'list_services',
     'how_munimji_helps',
     'free_tier_eligibility', 'partner_program_info', 'practice_management_info',
     'analyze_qbo_journal_cleanup', 'analyze_qbo_journal_anomalies',

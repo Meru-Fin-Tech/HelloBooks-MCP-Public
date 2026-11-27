@@ -77,6 +77,6 @@ export function listPlans(args: ListPlansArgs) {
     pricingFallback,
     ...getPricingMeta(),
     source: 'https://hellobooks.ai/pricing',
-    note: 'Prices are list prices. The 8 priced regions return local currency rows. Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`; local books still use that country currency. Discounts and promotions may apply at checkout. `dataSource` is "live-feed" when prices were fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
+    note: 'Prices are list prices. The 8 priced regions return list-price rows: USD everywhere except India (INR, excluding GST). Supported countries without a separate price table return the USD/default list price with `pricingCountry=US`; local books still use that country currency. Discounts and promotions may apply at checkout. `dataSource` is "live-feed" when prices were fetched from hellobooks.ai/api/feed/pricing.json, or "static-fallback" when served from the baked catalog.',
   };
 }

@@ -53,7 +53,7 @@ export interface Plan {
   /** Annual ledger transaction cap; absent means this catalog does not publish a cap. */
   /** Lifetime ledger transaction cap (Free plan: 200 in total, never resets). */
   lifetimeTransactionLimit?: number;
-  /** Annual ledger transaction cap (Starter: 200 per year); absent means this catalog does not publish a cap. */
+  /** Annual ledger transaction cap. No current plan publishes one (Starter is unlimited since 2026-11-27); kept optional for older feeds. */
   annualTransactionLimit?: number;
   features: string[];
   /**
@@ -73,7 +73,6 @@ export const FREE_AI_CREDITS_NOTE =
 export const FREE_TRANSACTION_LIMIT = 200;
 /** @deprecated Kept for back-compat; Free is a lifetime total, not annual. Use FREE_TRANSACTION_LIMIT. */
 export const FREE_ANNUAL_TRANSACTION_LIMIT = FREE_TRANSACTION_LIMIT;
-export const STARTER_ANNUAL_TRANSACTION_LIMIT = 200;
 
 const FREE_FEATURES = [
   '2 users · 1 live bank feed',
@@ -91,17 +90,17 @@ const FREE_FEATURES = [
 // decision 2026-09-02). Limits are the live ledger's (Users 5, BankConnections
 // 3, Entities 1); it does NOT carry multi-currency, multi-entity or API access,
 // all of which stay Pro/Business.
+// Updated 2026-11-27 from Web-Fire pricingConfig.ts: Starter transactions are
+// UNLIMITED (Auth-V3 STARTER TransactionsLifetime: null). The old "200 per
+// year" line understated the plan. Only what Starter ADDS to Free is listed.
 const STARTER_FEATURES = [
   'Everything in Free, plus:',
-  'AI auto-categorization (95%+ accuracy)',
-  'Up to 200 transactions per year',
+  'Unlimited transactions',
   'Up to 5 users',
   '3 bank connections',
-  'Invoices, bills & quotes included',
-  'AP/AR aging reports',
-  'P&L, Balance Sheet, Cash Flow',
+  'AI auto-categorization (95%+ accuracy)',
+  'Recurring invoices',
   'Export to Excel',
-  'Full mobile app (iOS & Android)',
 ];
 
 // Scale — the top rung, for groups running manufacturing / warehouse depth.
@@ -110,23 +109,21 @@ const SCALE_FEATURES = [
   'Manufacturing: BOM, work orders, MRP & job work',
   'Warehouse depth: bins, waves, cross-dock & cycle counts',
   'Lot, batch & serial traceability with FEFO picking',
-  'Multi-country statutory filing & consolidation',
+  'Multi-country statutory filing & consolidation across subscribed entities',
   'Higher API rate limits',
   'Custom development — see below',
   'Named implementation lead',
 ];
 
+// Pro now builds on Starter. API access and multi-entity moved to Business, and
+// GST filing / Tally are India-only bullets (see INDIA_* below) — a US card must
+// not advertise GST. Mirrors Web-Fire pricingConfig.ts (2026-11-27).
 const PRO_FEATURES = [
-  '15,000 AI credits / month',
-  'AI auto-categorization (95%+ accuracy)',
+  'Everything in Starter, plus:',
   'Unlimited bank connections',
   'Unlimited users + roles',
-  'Multi-entity management',
-  'API access',
   'AI Analysis & Comparative View on every report',
   'Recurring invoices, bills & approvals',
-  'GST filing (GSTR-1, 3B, 9) + e-invoicing',
-  'Tally sync',
   'Multi-currency with auto FX',
   'Remove "Powered by" badge',
   'Priority email support',
@@ -134,15 +131,96 @@ const PRO_FEATURES = [
 
 const BUSINESS_FEATURES = [
   'Everything in Pro, plus:',
-  '50,000 AI credits to get started',
   'Advanced inventory: lot/batch + multi-warehouse allocations',
   'Cohort, retention & CFO analytics',
   'Audit log + advanced role-based access',
   'Sandbox environment',
-  'Higher API rate limits',
-  'Priority phone support',
+  'Multi-entity management across subscribed entities',
+  'API access',
   'Dedicated success manager',
 ];
+
+// Regions without a live bank-feed provider (Auth-V3 bankFeedProvider: only
+// US, GB, CA + the Plaid EU set have feeds). They run on bank statement import.
+const FREE_USERS_FEED_LINE = '2 users · 1 live bank feed';
+const BANK_FEED_LINE = /bank (feed|connection)/i;
+const FEED_REGIONS: ReadonlySet<string> = new Set(['US', 'CA', 'GB']);
+function withoutFeedClaims(country: string, features: string[]): string[] {
+  if (FEED_REGIONS.has(country)) return features;
+  return features
+    .map((f) => (f === FREE_USERS_FEED_LINE ? '2 users · bank statement import with AI matching' : f))
+    .filter((f) => !BANK_FEED_LINE.test(f));
+}
+
+// India's Free card leads with GST filing; Tally is included on Free.
+const INDIA_FREE_FEATURES = [
+  'Unlimited GST filing — GSTR-1 & GSTR-3B',
+  'GSTR-2B reconciliation with ITC tracking',
+  '2 users · 1 GSTIN',
+  'Up to 200 transactions',
+  'Free AI credits to get started',
+  'Invoices, bills & quotes included',
+  'Tally sync',
+  'AP/AR aging · P&L · Balance Sheet · Cash Flow',
+  'Full mobile app (iOS & Android)',
+  'Robust email support',
+  '"Powered by HelloBooks" badge on invoices',
+];
+// India doesn't sell Starter, so Pro points at Free and carries over Starter's adds.
+const INDIA_PRO_FEATURES = [
+  'Everything in Free, plus:',
+  'Unlimited transactions',
+  'AI auto-categorization (95%+ accuracy)',
+  'Export to Excel',
+  'Unlimited users + roles',
+  'AI Analysis & Comparative View on every report',
+  'Recurring invoices, bills & approvals',
+  'GSTR-9 generated ready to file + IRN e-invoicing',
+  'Every GSTIN of one legal entity',
+  'Multi-currency with auto FX',
+  'Remove "Powered by" badge',
+  'Priority email support',
+];
+
+// Each market's own tax job, listed on Free (every paid rung inherits it).
+const LOCAL_TAX_LINES: Partial<Record<CountryCode, string[]>> = {
+  US: ['Multi-state sales tax with nexus alerts', '1099 contractor tracking + 1099-NEC/MISC prep'],
+  GB: ['MTD-ready VAT return preparation (HMRC filing coming soon)', 'CIS deductions + CIS300 return filed to HMRC'],
+  CA: ['GST/HST, PST & QST tracked per line', 'GST/HST and T4 return preparation'],
+  AU: ['BAS GST return preparation with Simpler BAS codes'],
+  AE: ['5% VAT with FTA-compliant tax invoices', '9% Corporate Tax computation'],
+};
+
+// US-only free services (decision 2026-10-09): free customization on every
+// subscription; free onboarding support from Pro up.
+const FREE_ONBOARDING_BULLET = 'Free onboarding support';
+const FREE_CUSTOMIZATION_BULLET = 'Free customization — email us your requirements';
+
+function freeFor(country: CountryCode): string[] {
+  if (country === 'IN') return withoutFeedClaims('IN', INDIA_FREE_FEATURES);
+  const base = withoutFeedClaims(country, FREE_FEATURES);
+  return [base[0], ...(LOCAL_TAX_LINES[country] ?? []), ...base.slice(1)];
+}
+
+/** Region-specific bullets, keyed by priced country, for one plan. */
+function featuresByCountryFor(
+  plan: 'free' | 'starter' | 'pro' | 'business' | 'scale',
+  base: string[],
+): Partial<Record<CountryCode, string[]>> {
+  const out: Partial<Record<CountryCode, string[]>> = {};
+  for (const r of REGIONS) {
+    let f: string[];
+    if (plan === 'free') f = freeFor(r.country);
+    else if (plan === 'pro' && r.country === 'IN') f = withoutFeedClaims('IN', INDIA_PRO_FEATURES);
+    else f = withoutFeedClaims(r.country, base);
+    if (r.country === 'US') {
+      const onboarding = plan === 'pro' || plan === 'business' || plan === 'scale';
+      f = [...f, ...(onboarding ? [FREE_ONBOARDING_BULLET] : []), FREE_CUSTOMIZATION_BULLET];
+    }
+    out[r.country] = f;
+  }
+  return out;
+}
 
 // Partner Program — `cpa` plan id (kept for federation contract; see Web-Fire
 // pricingConfig.ts v3 / PR #514, 2026-06-12). Free to join. Partners resell
@@ -187,7 +265,7 @@ interface RegionConfig {
   currency: CurrencyCode;
   symbol: string;
   /**
-   * Starter is US-only on the marketing site today. Scale is sold in US and India. `undefined`
+   * Starter is sold in every USD-ladder market (US, CA, GB, AU, AE, SG, NZ) but not India. Scale is sold in all eight priced regions. `undefined`
    * means "not sold in this region" — Web-Fire's buildPlans() expresses the
    * same thing as `available: Boolean(cfg.starter)`. Do NOT invent a local
    * price to fill the gap; that is a pricing decision, not a data fix.
@@ -195,7 +273,7 @@ interface RegionConfig {
   starter?: { monthly: number; annual: number };
   pro: { monthly: number; annual: number; anchor: number };
   business: { monthly: number; annual: number; anchor: number };
-  /** US-only today — see `starter` above. */
+  /** Sold in all 8 priced regions today — see `starter` above. */
   scale?: { monthly: number; annual: number };
   /**
    * Partner Program is free to join globally; the cpa fields are zeroed but
@@ -224,50 +302,40 @@ interface RegionConfig {
 // others — an India reprice must be its own change.
 //
 // Credit packs are NOT part of the v4 reprice and are unchanged.
+// v12 (Web-Fire 2026-11-23, #1370): CA, GB, AU, AE, SG and NZ moved onto the US
+// five-tier ladder IN USD. Auth-V3 has no PricingByCountry override for them, so
+// checkout always debited the US USD list; the old C$22.99 / £14.99 / A$30 /
+// AED 65 / S$26 / NZ$32 figures were never charged. They now show (and are
+// charged) exactly the US list. A local-currency list for ~236 countries exists
+// on the site (#1395, localPriceLists.ts) but every `billingLive` switch is OFF,
+// so it is NOT published here.
+//
+// v11 (2026-10-28): India's strikethrough anchors (₹999 / ₹3,999) removed — never
+// charged. India prices themselves are unchanged and exclude GST. India does not
+// sell Starter (a ₹199 Starter exists only in the switched-off local lists).
+const US_LADDER = {
+  starter:  { monthly: 14.99, annual:   149 },
+  pro:      { monthly: 39.99, annual:   399,  anchor: 0 },
+  business: { monthly: 79.99, annual:   799,  anchor: 0 },
+  scale:    { monthly:   199, annual:  1990 },
+  cpa:      { monthly:     0, annual:     0,  perClient: 0 },
+  packs: { boost: 4.99, power: 12.99, mega: 29.99, ultra: 69.99 },
+};
+
 const REGIONS: RegionConfig[] = [
-  { country: 'US', currency: 'USD', symbol: '$',
-    starter:  { monthly: 14.99, annual:   149 },
-    pro:      { monthly: 39.99, annual:   399,  anchor: 0 },
-    business: { monthly: 79.99, annual:   799,  anchor: 0 },
-    scale:    { monthly:   199, annual:  1990 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 4.99, power: 12.99, mega: 29.99, ultra: 69.99 } },
+  { country: 'US', currency: 'USD', symbol: '$', ...US_LADDER },
   { country: 'IN', currency: 'INR', symbol: '₹',
-    pro:      { monthly:   499, annual:  4999,  anchor:   999 },
-    business: { monthly:  1999, annual: 19999,  anchor:  3999 },
+    pro:      { monthly:   499, annual:  4999,  anchor: 0 },
+    business: { monthly:  1999, annual: 19999,  anchor: 0 },
     scale:    { monthly:  4999, annual: 49999 },
     cpa:      { monthly:     0, annual:     0,  perClient: 0 },
     packs: { boost: 249, power: 699, mega: 1999, ultra: 4999 } },
-  { country: 'CA', currency: 'CAD', symbol: 'C$',
-    pro:      { monthly: 22.99, annual:   229,  anchor: 0 },
-    business: { monthly: 91.99, annual:   919,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
-  { country: 'GB', currency: 'GBP', symbol: '£',
-    pro:      { monthly: 14.99, annual:   149,  anchor: 0 },
-    business: { monthly: 59.99, annual:   599,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 3.99, power: 10.49, mega: 23.99, ultra: 55.99 } },
-  { country: 'AU', currency: 'AUD', symbol: 'A$',
-    pro:      { monthly:    30, annual:   300,  anchor: 0 },
-    business: { monthly:   120, annual:  1200,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 7.49, power: 19.49, mega: 44.99, ultra: 104.99 } },
-  { country: 'AE', currency: 'AED', symbol: 'AED ',
-    pro:      { monthly:    65, annual:   650,  anchor: 0 },
-    business: { monthly:   260, annual:  2600,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 18, power: 48, mega: 110, ultra: 257 } },
-  { country: 'SG', currency: 'SGD', symbol: 'S$',
-    pro:      { monthly:    26, annual:   260,  anchor: 0 },
-    business: { monthly:   104, annual:  1040,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 6.49, power: 16.99, mega: 38.99, ultra: 90.99 } },
-  { country: 'NZ', currency: 'NZD', symbol: 'NZ$',
-    pro:      { monthly:    32, annual:   320,  anchor: 0 },
-    business: { monthly:   128, annual:  1280,  anchor: 0 },
-    cpa:      { monthly:     0, annual:     0,  perClient: 0 },
-    packs: { boost: 7.99, power: 20.99, mega: 47.99, ultra: 111.99 } },
+  { country: 'CA', currency: 'USD', symbol: '$', ...US_LADDER },
+  { country: 'GB', currency: 'USD', symbol: '$', ...US_LADDER },
+  { country: 'AU', currency: 'USD', symbol: '$', ...US_LADDER },
+  { country: 'AE', currency: 'USD', symbol: '$', ...US_LADDER },
+  { country: 'SG', currency: 'USD', symbol: '$', ...US_LADDER },
+  { country: 'NZ', currency: 'USD', symbol: '$', ...US_LADDER },
 ];
 
 type RegionalPaidPlan = 'starter' | 'pro' | 'business' | 'scale' | 'cpa';
@@ -329,6 +397,7 @@ export const PLANS: Plan[] = [
     aiCreditsNote: FREE_AI_CREDITS_NOTE,
     lifetimeTransactionLimit: FREE_TRANSACTION_LIMIT,
     features: FREE_FEATURES,
+    featuresByCountry: featuresByCountryFor('free', FREE_FEATURES),
     prices: freePrices(),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
@@ -337,9 +406,9 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     tagline: 'A first paid step — more users and bank feeds',
     monthlyAiCredits: 7500,
-    annualTransactionLimit: STARTER_ANNUAL_TRANSACTION_LIMIT,
     features: STARTER_FEATURES,
-    // US-only today: pricesFor() returns a single US entry. See RegionConfig.
+    featuresByCountry: featuresByCountryFor('starter', STARTER_FEATURES),
+    // Every USD-ladder market; omitted in India. See RegionConfig.
     prices: pricesFor('starter'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
@@ -349,6 +418,7 @@ export const PLANS: Plan[] = [
     tagline: 'AI-powered automation for growing businesses',
     monthlyAiCredits: 15000,
     features: PRO_FEATURES,
+    featuresByCountry: featuresByCountryFor('pro', PRO_FEATURES),
     prices: pricesFor('pro'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
@@ -358,6 +428,7 @@ export const PLANS: Plan[] = [
     tagline: 'Heavier ops + analytics for multi-entity & inventory-led businesses',
     monthlyAiCredits: 50000,
     features: BUSINESS_FEATURES,
+    featuresByCountry: featuresByCountryFor('business', BUSINESS_FEATURES),
     prices: pricesFor('business'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },
@@ -367,7 +438,8 @@ export const PLANS: Plan[] = [
     tagline: 'For groups that outgrow standard accounting software',
     monthlyAiCredits: 150000,
     features: SCALE_FEATURES,
-    // US-only today: pricesFor() returns a single US entry. See RegionConfig.
+    featuresByCountry: featuresByCountryFor('scale', SCALE_FEATURES),
+    // All 8 priced regions. See RegionConfig.
     prices: pricesFor('scale'),
     publicSignupUrl: 'https://hellobooks.ai/pricing',
   },

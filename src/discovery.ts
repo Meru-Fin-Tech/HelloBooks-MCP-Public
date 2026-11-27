@@ -275,6 +275,14 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     marketingUrl: `${MARKETING_BASE_URL}`,
   },
   {
+    name: 'list_services',
+    title: 'List done-for-you services',
+    summary:
+      'Fixed-price done-for-you bookkeeping, tax-return, UK compliance, UAE VAT / corporate-tax and CPA-staffing services by market (US, UK, CA, AE, NZ, AU). Separate from the software plans.',
+    category: 'pricing',
+    marketingUrl: `${MARKETING_BASE_URL}/bookkeeping-services`,
+  },
+  {
     name: 'how_munimji_helps',
     title: 'How HelloBooks & Munimji help your business',
     summary:

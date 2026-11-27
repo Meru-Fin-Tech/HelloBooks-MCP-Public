@@ -52,6 +52,7 @@ import {
 import { PAYMENT_METHODS, HELLOBOOKS_USE_CASES } from './data/paymentMethods.js';
 import { getArticles } from './articlesFeed.js';
 import { VIDEOS, YOUTUBE_CHANNEL } from './data/videos.js';
+import { servicesCatalog } from './tools/listServices.js';
 
 const MARKETING_BASE_URL = 'https://hellobooks.ai';
 
@@ -225,6 +226,17 @@ export const CATALOG_FEEDS: readonly CatalogFeedDescriptor[] = [
     build: () => ({
       count: VIDEOS.length,
       data: { videos: VIDEOS, channel: YOUTUBE_CHANNEL },
+    }),
+  },
+  {
+    slug: 'services',
+    title: 'Done-for-you services',
+    description:
+      'Fixed-price done-for-you bookkeeping, tax-return, UK compliance, UAE VAT / corporate-tax and CPA-staffing services by market. Separate from the software plans.',
+    marketingUrl: `${MARKETING_BASE_URL}/bookkeeping-services`,
+    build: () => ({
+      count: Object.keys(servicesCatalog().bookkeeping).length,
+      data: servicesCatalog(),
     }),
   },
   {

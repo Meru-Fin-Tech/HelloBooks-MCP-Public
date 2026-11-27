@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { listPlans } from '../src/tools/listPlans.js';
 import { listCreditPacks } from '../src/tools/listCreditPacks.js';
 import { listVideos } from '../src/tools/listVideos.js';
+import { listServices } from '../src/tools/listServices.js';
 import { listIntegrations } from '../src/tools/listIntegrations.js';
 import { countrySupport } from '../src/tools/countrySupport.js';
 import { complianceCapabilities } from '../src/tools/complianceCapabilities.js';
@@ -53,13 +54,13 @@ test('list_plans returns all 8 tiers when unfiltered (incl. add-ons)', () => {
       assert.equal(p.prices.length, 1, `${p.plan} should be USD-only`);
       assert.equal(p.prices[0].currency, 'USD');
     } else if (p.plan === 'starter') {
-      // US-only on the marketing site today — priced in exactly one market.
-      assert.equal(p.prices.length, 1, `${p.plan} should be US-only`);
-      assert.equal(p.prices[0].country, 'US');
-      assert.equal(p.prices[0].currency, 'USD');
+      // Sold in the 7 USD-ladder markets (all but India) since Web-Fire v12, 2026-11-23.
+      assert.equal(p.prices.length, 7, `${p.plan} should be the 7 USD markets`);
+      assert.ok(!p.prices.some((price) => price.country === 'IN'));
+      assert.ok(p.prices.every((price) => price.currency === 'USD'));
     } else if (p.plan === 'scale') {
-      // Sold in US and IN today.
-      assert.equal(p.prices.length, 2, `${p.plan} should be US and IN`);
+      // Sold in all 8 priced regions: USD ladder + India in INR.
+      assert.equal(p.prices.length, 8, `${p.plan} should be sold in all 8 regions`);
       assert.ok(p.prices.some((price) => price.country === 'US' && price.currency === 'USD'));
       assert.ok(p.prices.some((price) => price.country === 'IN' && price.currency === 'INR'));
     } else {
@@ -72,8 +73,8 @@ test('list_plans Starter and Scale carry the US five-rung ladder prices', () => 
   const starter = listPlans({ plan: 'starter' }).plans[0];
   assert.equal(starter.name, 'Starter');
   assert.equal(starter.monthlyAiCredits, 7_500);
-  assert.equal(starter.annualTransactionLimit, 200);
-  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.equal(starter.annualTransactionLimit, undefined);
+  assert.ok(starter.features.some((feature) => /^unlimited transactions$/i.test(feature)));
   assert.equal(starter.prices[0].monthly, 14.99);
   assert.equal(starter.prices[0].annual, 149);
 
@@ -88,15 +89,16 @@ test('list_plans Starter and Scale carry the US five-rung ladder prices', () => 
   assert.equal(inPrice?.annual, 49999);
 });
 
-test('list_plans never prices Starter outside the US, and Scale outside US and IN', () => {
+test('list_plans never prices Starter in India; CA/GB/AU/AE/SG/NZ carry the US USD ladder', () => {
   // Regression guard: a region-limited tier must return NO price for unpriced markets
-  for (const country of ['IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ'] as const) {
-    const r = listPlans({ country, plan: 'starter' });
-    assert.equal(r.plans[0].prices.length, 0, `starter must not be priced in ${country}`);
-  }
+  assert.equal(listPlans({ country: 'IN', plan: 'starter' }).plans[0].prices.length, 0);
   for (const country of ['CA', 'GB', 'AU', 'AE', 'SG', 'NZ'] as const) {
-    const r = listPlans({ country, plan: 'scale' });
-    assert.equal(r.plans[0].prices.length, 0, `scale must not be priced in ${country}`);
+    for (const [plan, monthly] of [['starter', 14.99], ['scale', 199]] as const) {
+      const r = listPlans({ country, plan });
+      assert.equal(r.plans[0].prices.length, 1, `${plan} must be priced in ${country}`);
+      assert.equal(r.plans[0].prices[0].currency, 'USD');
+      assert.equal(r.plans[0].prices[0].monthly, monthly);
+    }
   }
   const inScale = listPlans({ country: 'IN', plan: 'scale' });
   assert.equal(inScale.plans[0].prices.length, 1);
@@ -110,12 +112,13 @@ test('list_plans Pro + Business mirror Web-Fire pricingConfig.ts in all 8 region
   const expected: Record<string, { pro: number; business: number }> = {
     US: { pro: 39.99, business: 79.99 },
     IN: { pro: 499, business: 1999 },
-    CA: { pro: 22.99, business: 91.99 },
-    GB: { pro: 14.99, business: 59.99 },
-    AU: { pro: 30, business: 120 },
-    AE: { pro: 65, business: 260 },
-    SG: { pro: 26, business: 104 },
-    NZ: { pro: 32, business: 128 },
+    // v12 (2026-11-23): these six sit on the US USD ladder.
+    CA: { pro: 39.99, business: 79.99 },
+    GB: { pro: 39.99, business: 79.99 },
+    AU: { pro: 39.99, business: 79.99 },
+    AE: { pro: 39.99, business: 79.99 },
+    SG: { pro: 39.99, business: 79.99 },
+    NZ: { pro: 39.99, business: 79.99 },
   };
   for (const plan of ['pro', 'business'] as const) {
     const r = listPlans({ plan });
@@ -139,19 +142,16 @@ test('list_plans publishes Free lifetime and Starter annual transaction caps sep
 
   const starter = listPlans({ plan: 'starter' }).plans[0];
   assert.equal(starter.monthlyAiCredits, 7_500);
-  assert.equal(starter.annualTransactionLimit, 200);
-  assert.ok(starter.features.some((feature) => /up to 200 transactions per year/i.test(feature)));
+  assert.equal(starter.annualTransactionLimit, undefined, 'Starter is unlimited since 2026-11-27');
+  assert.ok(starter.features.some((feature) => /^unlimited transactions$/i.test(feature)));
 });
 
-test('list_plans anchor prices are gone outside India (Web-Fire #672)', () => {
+test('list_plans anchor prices are gone everywhere (Web-Fire #672, v11)', () => {
   for (const plan of ['pro', 'business'] as const) {
     const r = listPlans({ plan });
     for (const p of r.plans[0].prices) {
-      if (p.country === 'IN') {
-        assert.ok(p.anchorMonthly > 0, 'IN keeps its anchor by founder decision 2026-07-29');
-      } else {
-        assert.equal(p.anchorMonthly, 0, `${p.country}: ${plan} must not advertise a permanent "was" price`);
-      }
+      // India's anchors (999 / 3,999) were also removed on 2026-10-28 (v11).
+      assert.equal(p.anchorMonthly, 0, `${p.country}: ${plan} must not advertise a permanent "was" price`);
     }
   }
 });
@@ -172,16 +172,14 @@ test('list_plans cpa plan id resolves to the free Partner Program', () => {
 test('list_plans country filter narrows to that country only', () => {
   const r = listPlans({ country: 'AU' });
   for (const p of r.plans) {
-    // Add-ons are USD-only, and Starter/Scale are US-only, so an AU filter
-    // zeroes all of them out.
-    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon'
-        || p.plan === 'starter' || p.plan === 'scale') {
+    // Add-ons are US-only, so an AU filter zeroes them out.
+    if (p.plan === 'warehouse-addon' || p.plan === 'manufacturing-addon') {
       assert.equal(p.prices.length, 0);
       continue;
     }
     assert.equal(p.prices.length, 1);
     assert.equal(p.prices[0].country, 'AU');
-    assert.equal(p.prices[0].currency, 'AUD');
+    assert.equal(p.prices[0].currency, 'USD'); // AU is on the US USD ladder since 2026-11-23
   }
 });
 
@@ -344,7 +342,7 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   assert.equal(us?.symbol, '$');
   // a region absent from the feed falls back to the baked price
   const ca = pro.prices.find((pr) => pr.country === 'CA');
-  assert.equal(ca?.monthly, 22.99);
+  assert.equal(ca?.monthly, 39.99);
   // features come from the feed
   assert.deepEqual(pro.features, ['Feed-sourced Pro feature']);
   // perClient is vestigial post-Web-Fire #514 — the federation no longer
@@ -354,11 +352,11 @@ test('feedToPlans overlays feed prices + features onto the baked catalog', () =>
   assert.equal(cpaUs?.perClient, undefined);
 });
 
-test('feedToPlans never spreads a US-only tier across other markets', () => {
+test('feedToPlans never spreads a tier into a market that does not sell it', () => {
   // Regression guard for the baked.prices[0] fallback. Starter is in the feed
-  // at top level and in the US region only — exactly the live feed's shape.
-  // The other seven countries have no feed tier AND no baked price, so they
-  // must be OMITTED. The old `bakedPrice ?? baked.prices[0]` returned the US
+  // at top level and in the US region only. India has no feed tier AND no baked
+  // price (Starter is not sold there), so it must be OMITTED; the six other USD
+  // markets fall back to their own baked USD-ladder price. The old `bakedPrice ?? baked.prices[0]` returned the US
   // entry for them, publishing $14.99 as the price in India, Canada and the
   // UK in USD.
   const starterTier = {
@@ -381,13 +379,10 @@ test('feedToPlans never spreads a US-only tier across other markets', () => {
 
   const starter = feedToPlans(feed).find((p) => p.plan === 'starter');
   assert.ok(starter);
-  assert.equal(starter.prices.length, 1, 'Starter must be priced in the US only');
-  assert.equal(starter.prices[0].country, 'US');
-  assert.equal(starter.prices[0].monthly, 14.99);
-  for (const country of ['IN', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']) {
-    assert.equal(starter.prices.find((pr) => pr.country === country), undefined,
-      `${country} must not carry a Starter price`);
-  }
+  assert.equal(starter.prices.length, 7, 'Starter is sold in the 7 USD markets, not India');
+  assert.equal(starter.prices.find((pr) => pr.country === 'US')?.monthly, 14.99);
+  assert.equal(starter.prices.find((pr) => pr.country === 'IN'), undefined,
+    'IN must not carry a Starter price');
 });
 
 test('feedToPlans keeps add-on plans that are not in the pricing feed', () => {
@@ -410,8 +405,8 @@ test('feedToCreditPacks overlays feed prices, falling back per slot', () => {
   assert.ok(boost);
   // US boost from the feed
   assert.equal(boost.prices.find((pr) => pr.country === 'US')?.price, 3.33);
-  // CA boost not in the feed -> baked $... value retained
-  assert.equal(boost.prices.find((pr) => pr.country === 'CA')?.price, 6.49);
+  // CA boost not in the feed -> baked value retained (US USD pack since 2026-11-23)
+  assert.equal(boost.prices.find((pr) => pr.country === 'CA')?.price, 4.99);
   // power pack absent from the fixture -> all baked
   const power = packs.find((p) => p.id === 'power');
   assert.equal(power?.prices.find((pr) => pr.country === 'US')?.price, 12.99);
@@ -466,6 +461,67 @@ test('list_videos featuredOnly drops non-featured videos', () => {
 test('list_videos query matches title + description', () => {
   const r = listVideos({ query: 'demo' });
   assert.ok(r.count > 0);
+});
+
+test('list_videos serves the 193-video registry with real dates and watch pages', () => {
+  const all = listVideos({ limit: 200 });
+  assert.ok(all.total >= 190, `expected the full registry, got ${all.total}`);
+  const withMeta = all.videos.filter((v) => v.uploadDate && v.duration && v.watchPageUrl);
+  assert.ok(withMeta.length >= 190);
+  for (const v of withMeta) {
+    assert.match(v.uploadDate!, /^\d{4}-\d{2}-\d{2}$/);
+    assert.match(v.duration!, /^PT/);
+    assert.match(v.watchPageUrl!, /^https:\/\/hellobooks\.ai\/videos\/[a-z0-9-]+$/);
+  }
+  const ids = new Set(all.videos.map((v) => v.id));
+  assert.equal(ids.size, all.videos.length, 'no duplicate video ids');
+});
+
+test('list_videos caps the default response and reports the full total', () => {
+  const r = listVideos({});
+  assert.equal(r.count, 25);
+  assert.ok(r.total > r.count);
+  assert.equal(listVideos({ limit: 3 }).videos.length, 3);
+});
+
+test('list_videos query also matches the topic label', () => {
+  const r = listVideos({ query: '1099', limit: 200 });
+  assert.ok(r.total > 0);
+});
+
+test('list_services overview covers all six markets; NZ and AU are bookkeeping-only', () => {
+  const r = listServices({}) as { markets: { market: string; tax: { available: boolean }; staffing: { available: boolean } }[] };
+  assert.deepEqual(r.markets.map((m) => m.market), ['US', 'UK', 'CA', 'AE', 'NZ', 'AU']);
+  for (const m of r.markets.filter((x) => x.market === 'NZ' || x.market === 'AU')) {
+    assert.equal(m.tax.available, false, `${m.market} has no tax service`);
+    assert.equal(m.staffing.available, false, `${m.market} has no staffing`);
+  }
+});
+
+test('list_services bookkeeping prices match the marketing site (2026-11-24 owner-approved)', () => {
+  const price = (market: 'US' | 'UK' | 'AU' | 'NZ' | 'AE') => {
+    const r = listServices({ market, service: 'bookkeeping' }) as {
+      bookkeeping: Record<string, { plans: { id: string; monthly: { amount: number } }[] }>;
+    };
+    return r.bookkeeping[market].plans.map((p) => p.monthly.amount);
+  };
+  assert.deepEqual(price('US'), [250, 500, 900, 1500]);
+  assert.deepEqual(price('UK'), [200, 400, 700, 1200]);
+  assert.deepEqual(price('NZ'), [200, 400, 700, 1200]);
+  assert.deepEqual(price('AU'), [350, 700, 1200, 2000]);
+  assert.deepEqual(price('AE'), [750, 1500, 2750, 4500]);
+});
+
+test('list_services tax: US 1040 is fixed $299, other returns start at $999; none in AU', () => {
+  const us = listServices({ market: 'US', service: 'tax' }) as {
+    tax: { US: { returns: { id: string; price: { amount: number } }[] } };
+  };
+  const by = Object.fromEntries(us.tax.US.returns.map((r) => [r.id, r.price.amount]));
+  assert.equal(by['1040'], 299);
+  assert.equal(by['1120'], 999);
+  const au = listServices({ market: 'AU', service: 'tax' }) as { tax: object; taxNote?: string };
+  assert.deepEqual(au.tax, {});
+  assert.match(au.taxNote ?? '', /not offered/);
 });
 
 test('list_integrations filters by category + country', () => {

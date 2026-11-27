@@ -32,6 +32,7 @@ export { listCreditPacks } from './tools/listCreditPacks.js';
 import { freeTierEligibility, freeTierEligibilitySchema } from './tools/freeTierEligibility.js';
 export { freeTierEligibility } from './tools/freeTierEligibility.js';
 import { partnerProgramInfo, partnerProgramInfoSchema } from './tools/partnerProgramInfo.js';
+import { listServices, listServicesSchema } from './tools/listServices.js';
 export { partnerProgramInfo } from './tools/partnerProgramInfo.js';
 import { practiceManagementInfo, practiceManagementInfoSchema } from './tools/practiceManagementInfo.js';
 export { practiceManagementInfo } from './tools/practiceManagementInfo.js';
@@ -108,7 +109,7 @@ import { listAccountants, listAccountantsSchema, getAccountant } from './account
 import { listApiCatalog, apiCatalogSchema } from './apiCatalog.js';
 
 const SERVER_NAME = 'hellobooks-public';
-export const SERVER_VERSION = '1.6.0';
+export const SERVER_VERSION = '1.7.0';
 
 /** Every tool on this server is a read-only public-data lookup. */
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
@@ -305,7 +306,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_plans',
-    'List HelloBooks pricing plans with monthly + annual prices. The 8 priced regions return local currency prices (USD, INR, CAD, GBP, AUD, AED, SGD, NZD); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata while local books use the country currency. Covers the five-rung ladder — Free / Starter / Pro / Business / Scale — plus the free Partner Program (`cpa` plan id) and two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance (monthly on paid plans; Free gets one-time starting credits that never refill — see aiCreditsNote), feature bullets, public signup URL, and live-feed/static-fallback provenance. Filter by `plan` (free / starter / pro / business / scale / cpa) or any supported `country` ISO code. HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
+    'List HelloBooks pricing plans with monthly + annual prices. The 8 priced regions return list prices — US dollars for every region except India, which is priced in INR (excluding GST); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata while local books use the country currency. Covers the five-rung ladder — Free / Starter / Pro / Business / Scale — plus the free Partner Program (`cpa` plan id) and two per-entity stackable add-ons (Warehouse, Manufacturing). Returns AI credit allowance (monthly on paid plans; Free gets one-time starting credits that never refill — see aiCreditsNote), feature bullets, public signup URL, and live-feed/static-fallback provenance. Filter by `plan` (free / starter / pro / business / scale / cpa) or any supported `country` ISO code. HelloCPA Practice Management is a separate product on practice.hellobooks.ai — call `practice_management_info`, NOT this tool.',
     listPlansSchema,
     READ_ONLY,
     async (args, extra) => runTool('list_plans', args, extra, () => listPlans(args)),
@@ -353,7 +354,7 @@ export function createServer(): McpServer {
 
   server.tool(
     'list_credit_packs',
-    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return local currency prices; other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any paid plan; Free users cannot buy packs and should upgrade for more AI credits. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
+    'List HelloBooks AI credit packs — one-time pay-as-you-go top-ups (Boost 5,000, Power 15,000, Mega 50,000, Ultra 150,000 credits). The 8 priced regions return list prices (USD, except India in INR); other supported country hubs return the USD/default list price with pricingCountry=US fallback metadata. Credit packs stack on any paid plan; Free users cannot buy packs and should upgrade for more AI credits. Use this when a user asks how to buy more AI credits or top up after exhausting a plan allowance. Filter by `id` (boost / power / mega / ultra) or any supported `country` ISO code.',
     listCreditPacksSchema,
     READ_ONLY,
     async (args, extra) =>
@@ -367,6 +368,15 @@ export function createServer(): McpServer {
     READ_ONLY,
     async (args, extra) =>
       runTool('free_tier_eligibility', args, extra, () => freeTierEligibility(args)),
+  );
+
+  server.tool(
+    'list_services',
+    'List HelloBooks done-for-you services — sold separately from the software plans in list_plans. Fixed-price monthly bookkeeping plans (Starter / Standard / Plus / VIP) in the US, UK, Canada, UAE, New Zealand and Australia; US tax-return preparation (from $299 salary-only 1040, from $999 for other returns) and UK Self Assessment / CT600 packages with MTD VAT and payroll add-ons; UAE VAT and corporate-tax packages; and dedicated CPA-firm staffing (US, UK, CA). New Zealand and Australia are bookkeeping-only; India is not served. Call with no args for a per-market overview, or with `market` and/or `service` (bookkeeping | tax | staffing) for full plans, inclusions and prices. Use this when a user asks about hiring HelloBooks to do their bookkeeping, tax return, VAT or corporate tax filing, or staff a CPA firm.',
+    listServicesSchema,
+    READ_ONLY,
+    async (args, extra) =>
+      runTool('list_services', args, extra, () => listServices(args)),
   );
 
   server.tool(
