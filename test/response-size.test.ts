@@ -23,6 +23,7 @@ import { listTaxRates } from '../src/tools/listTaxRates.js';
 import { localPaymentMethods } from '../src/tools/paymentMethods.js';
 import { listCompetitors } from '../src/tools/listCompetitors.js';
 import { listVideos } from '../src/tools/listVideos.js';
+import { listServices } from '../src/tools/listServices.js';
 
 process.env.HELLOBOOKS_MCP_DISABLE_PRICING_FEED = '1';
 process.env.HELLOBOOKS_MCP_DISABLE_ARTICLES_FEED = '1';
@@ -46,6 +47,7 @@ const GENERAL_TOOLS: Array<[string, () => unknown]> = [
   ['local_payment_methods', () => localPaymentMethods({})],
   ['list_competitors', () => listCompetitors({})],
   ['list_videos', () => listVideos({})],
+  ['list_services', () => listServices({})],
 ];
 
 for (const [name, run] of GENERAL_TOOLS) {

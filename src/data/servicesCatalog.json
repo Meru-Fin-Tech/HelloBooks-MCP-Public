@@ -1,0 +1,1322 @@
+{
+ "checkedAgainst": "Web-Fire src/lib/servicesOffers.ts @ origin/main 2026-11-27",
+ "note": "Fixed monthly prices for done-for-you services. Tax-return prices are starting prices; the final quote follows document review. Prices are per month unless the `per` field says otherwise.",
+ "markets": {
+  "US": "United States (USD)",
+  "UK": "United Kingdom (GBP)",
+  "CA": "Canada (CAD)",
+  "AE": "United Arab Emirates (AED)",
+  "NZ": "New Zealand (NZD)",
+  "AU": "Australia (AUD)"
+ },
+ "bookkeepingOnlyMarkets": [
+  "NZ",
+  "AU"
+ ],
+ "bookkeeping": {
+  "US": {
+   "pageUrl": "https://hellobooks.ai/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 250,
+      "currency": "USD"
+     },
+     "monthlyLabel": "$250",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 500,
+      "currency": "USD"
+     },
+     "monthlyLabel": "$500",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Payroll-ready records for your payroll provider",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 900,
+      "currency": "USD"
+     },
+     "monthlyLabel": "$900",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "Sales tax, VAT or GST/HST working papers",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 1500,
+      "currency": "USD"
+     },
+     "monthlyLabel": "$1,500",
+     "includes": [
+      "Everything in Plus",
+      "Controller review and a board-ready monthly pack",
+      "Budget vs actual and tax planning",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  },
+  "UK": {
+   "pageUrl": "https://hellobooks.ai/uk/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 200,
+      "currency": "GBP"
+     },
+     "monthlyLabel": "£200",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 400,
+      "currency": "GBP"
+     },
+     "monthlyLabel": "£400",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Payroll-ready records for your payroll provider",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 700,
+      "currency": "GBP"
+     },
+     "monthlyLabel": "£700",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "Sales tax, VAT or GST/HST working papers",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 1200,
+      "currency": "GBP"
+     },
+     "monthlyLabel": "£1,200",
+     "includes": [
+      "Everything in Plus",
+      "Controller review and a board-ready monthly pack",
+      "Budget vs actual and tax planning",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  },
+  "CA": {
+   "pageUrl": "https://hellobooks.ai/ca/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 250,
+      "currency": "CAD"
+     },
+     "monthlyLabel": "C$250",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 500,
+      "currency": "CAD"
+     },
+     "monthlyLabel": "C$500",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Payroll-ready records for your payroll provider",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 900,
+      "currency": "CAD"
+     },
+     "monthlyLabel": "C$900",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "Sales tax, VAT or GST/HST working papers",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 1500,
+      "currency": "CAD"
+     },
+     "monthlyLabel": "C$1,500",
+     "includes": [
+      "Everything in Plus",
+      "Controller review and a board-ready monthly pack",
+      "Budget vs actual and tax planning",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  },
+  "AE": {
+   "pageUrl": "https://hellobooks.ai/uae/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 750,
+      "currency": "AED"
+     },
+     "monthlyLabel": "AED 750",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 1500,
+      "currency": "AED"
+     },
+     "monthlyLabel": "AED 1,500",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Payroll-ready records for your payroll provider",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 2750,
+      "currency": "AED"
+     },
+     "monthlyLabel": "AED 2,750",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "Working papers your accountant needs for VAT",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 4500,
+      "currency": "AED"
+     },
+     "monthlyLabel": "AED 4,500",
+     "includes": [
+      "Everything in Plus",
+      "Controller review and a board-ready monthly pack",
+      "Budget vs actual reporting",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  },
+  "NZ": {
+   "pageUrl": "https://hellobooks.ai/nz/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 200,
+      "currency": "NZD"
+     },
+     "monthlyLabel": "NZ$200",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 400,
+      "currency": "NZD"
+     },
+     "monthlyLabel": "NZ$400",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Payroll-ready records for your payroll provider",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 700,
+      "currency": "NZD"
+     },
+     "monthlyLabel": "NZ$700",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "Working papers your accountant needs for GST",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 1200,
+      "currency": "NZD"
+     },
+     "monthlyLabel": "NZ$1,200",
+     "includes": [
+      "Everything in Plus",
+      "Controller review and a board-ready monthly pack",
+      "Budget vs actual reporting",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  },
+  "AU": {
+   "pageUrl": "https://hellobooks.ai/au/bookkeeping-services",
+   "plans": [
+    {
+     "id": "starter",
+     "name": "Starter",
+     "forWho": "Freelancers and new businesses with a few transactions a month",
+     "monthly": {
+      "amount": 350,
+      "currency": "AUD"
+     },
+     "monthlyLabel": "A$350",
+     "includes": [
+      "We check and categorise your transactions every month",
+      "Bank and card accounts reconciled",
+      "Tax-ready books at year end",
+      "A quarterly call to walk you through the numbers"
+     ]
+    },
+    {
+     "id": "standard",
+     "name": "Standard",
+     "forWho": "Small businesses that want the books closed every month",
+     "monthly": {
+      "amount": 700,
+      "currency": "AUD"
+     },
+     "monthlyLabel": "A$700",
+     "includes": [
+      "Monthly bookkeeping and month-end close",
+      "Bank, card and payment-app reconciliation",
+      "Monthly profit and loss and balance sheet",
+      "Wages and super recorded in your books each month",
+      "A named bookkeeper you can email"
+     ]
+    },
+    {
+     "id": "plus",
+     "name": "Plus",
+     "forWho": "Growing businesses that need a senior accountant’s eye",
+     "monthly": {
+      "amount": 1200,
+      "currency": "AUD"
+     },
+     "monthlyLabel": "A$1,200",
+     "includes": [
+      "Everything in Standard",
+      "Senior accountant review every month",
+      "Cash-flow review and a 13-week forecast",
+      "GST coded and reconciled, with working papers for your BAS agent",
+      "A monthly review call"
+     ]
+    },
+    {
+     "id": "vip",
+     "name": "VIP",
+     "forWho": "Owners who want controller-level reporting and one point of contact",
+     "monthly": {
+      "amount": 2000,
+      "currency": "AUD"
+     },
+     "monthlyLabel": "A$2,000",
+     "includes": [
+      "Everything in Plus",
+      "Financial controller review and a board-ready monthly pack",
+      "Budget vs actual reporting, with notes for your accountant",
+      "A dedicated lead as your one point of contact"
+     ]
+    }
+   ]
+  }
+ },
+ "taxReturns": {
+  "US": {
+   "pageUrl": "https://hellobooks.ai/tax-return-filing-services",
+   "returns": [
+    {
+     "id": "1040",
+     "form": "Form 1040 (salary income)",
+     "forWho": "Individuals with W-2 income",
+     "price": {
+      "amount": 299,
+      "currency": "USD"
+     },
+     "priceLabel": "$299",
+     "pricing": "fixed"
+    },
+    {
+     "id": "1040-sch",
+     "form": "Form 1040 with Schedule C, D or E",
+     "forWho": "Sole proprietors, investors and landlords",
+     "price": {
+      "amount": 999,
+      "currency": "USD"
+     },
+     "priceLabel": "$999",
+     "pricing": "from"
+    },
+    {
+     "id": "1065",
+     "form": "Form 1065",
+     "forWho": "Partnerships and multi-member LLCs",
+     "price": {
+      "amount": 999,
+      "currency": "USD"
+     },
+     "priceLabel": "$999",
+     "pricing": "from"
+    },
+    {
+     "id": "1120",
+     "form": "Form 1120 or 1120-S",
+     "forWho": "C corporations and S corporations",
+     "price": {
+      "amount": 999,
+      "currency": "USD"
+     },
+     "priceLabel": "$999",
+     "pricing": "from"
+    },
+    {
+     "id": "990",
+     "form": "Form 990",
+     "forWho": "Nonprofits",
+     "price": {
+      "amount": 999,
+      "currency": "USD"
+     },
+     "priceLabel": "$999",
+     "pricing": "from"
+    }
+   ],
+   "additionalSchedule": {
+    "amount": 150,
+    "currency": "USD"
+   },
+   "additionalScheduleLabel": "$150"
+  },
+  "UK": {
+   "pageUrl": "https://hellobooks.ai/uk/tax-return-filing-services",
+   "returns": [
+    {
+     "id": "sa-personal",
+     "form": "Self Assessment (SA100)",
+     "forWho": "Employees, pensioners and directors with income outside PAYE, savings or dividends",
+     "price": {
+      "amount": 149,
+      "currency": "GBP"
+     },
+     "priceLabel": "£149",
+     "includes": [
+      "SA100 tax return",
+      "Tax calculation checked before you approve",
+      "Payments on account explained"
+     ]
+    },
+    {
+     "id": "sa-business",
+     "form": "Self Assessment with self-employment or property (SA103 / SA105)",
+     "forWho": "Sole traders, freelancers and landlords",
+     "price": {
+      "amount": 199,
+      "currency": "GBP"
+     },
+     "priceLabel": "£199",
+     "includes": [
+      "SA100 with self-employment or property pages",
+      "Allowable expenses reviewed",
+      "Class 4 National Insurance or rental profit worked out"
+     ]
+    },
+    {
+     "id": "sa800",
+     "form": "Partnership tax return (SA800)",
+     "forWho": "Business partnerships",
+     "price": {
+      "amount": 349,
+      "currency": "GBP"
+     },
+     "priceLabel": "£349",
+     "includes": [
+      "SA800 partnership return",
+      "Each partner’s share of profit worked out",
+      "Figures ready for each partner’s own return"
+     ]
+    },
+    {
+     "id": "ltd-ct600",
+     "form": "Limited company accounts and CT600",
+     "forWho": "Micro and small limited companies",
+     "price": {
+      "amount": 599,
+      "currency": "GBP"
+     },
+     "priceLabel": "£599",
+     "includes": [
+      "Year-end statutory accounts filed at Companies House",
+      "CT600 Corporation Tax return and computations",
+      "A call to walk you through the accounts"
+     ]
+    },
+    {
+     "id": "charity-cic",
+     "form": "Charity or CIC year-end accounts",
+     "forWho": "Small charities and community interest companies",
+     "price": {
+      "amount": 699,
+      "currency": "GBP"
+     },
+     "priceLabel": "£699",
+     "includes": [
+      "Year-end accounts in the format your regulator expects",
+      "CIC34 community interest report, or accounts ready for your independent examiner",
+      "CT600 where the organisation must file one"
+     ]
+    }
+   ],
+   "additionalSchedule": {
+    "amount": 199,
+    "currency": "GBP"
+   },
+   "additionalScheduleLabel": "£199",
+   "complianceAddons": [
+    {
+     "id": "vat-return",
+     "name": "VAT return (Making Tax Digital)",
+     "forWho": "VAT-registered businesses filing quarterly",
+     "price": {
+      "amount": 99,
+      "currency": "GBP"
+     },
+     "per": "quarter",
+     "priceLabel": "£99 a quarter",
+     "includes": [
+      "VAT return prepared from your books",
+      "Figures checked against your bank records",
+      "Filed under Making Tax Digital after you approve"
+     ]
+    },
+    {
+     "id": "mtd-itsa-update",
+     "name": "MTD for Income Tax quarterly update",
+     "forWho": "Sole traders and landlords who must send quarterly updates",
+     "price": {
+      "amount": 60,
+      "currency": "GBP"
+     },
+     "per": "quarter",
+     "priceLabel": "£60 a quarter",
+     "includes": [
+      "Income and expenses summarised each quarter",
+      "Quarterly update sent after you approve"
+     ]
+    },
+    {
+     "id": "payroll",
+     "name": "Monthly payroll and RTI",
+     "forWho": "Employers with up to five employees",
+     "price": {
+      "amount": 40,
+      "currency": "GBP"
+     },
+     "per": "month",
+     "priceLabel": "£40 a month",
+     "includes": [
+      "Payslips every pay day",
+      "RTI submissions (FPS and EPS) to HMRC",
+      "P60s at year end and P45s for leavers"
+     ]
+    },
+    {
+     "id": "confirmation-statement",
+     "name": "Confirmation statement",
+     "forWho": "Any limited company, once a year",
+     "price": {
+      "amount": 49,
+      "currency": "GBP"
+     },
+     "per": "year",
+     "priceLabel": "£49 a year",
+     "includes": [
+      "Company details checked with you",
+      "Statement filed at Companies House (the Companies House fee is charged on top)"
+     ]
+    },
+    {
+     "id": "ltd-dormant",
+     "name": "Dormant company accounts",
+     "forWho": "Limited companies that did not trade during the year",
+     "price": {
+      "amount": 99,
+      "currency": "GBP"
+     },
+     "per": "year",
+     "priceLabel": "£99 a year",
+     "includes": [
+      "Dormant accounts filed at Companies House",
+      "A check that the company really was dormant"
+     ]
+    }
+   ],
+   "payrollExtraEmployee": {
+    "amount": 6,
+    "currency": "GBP"
+   }
+  },
+  "AE": {
+   "pageUrl": "https://hellobooks.ai/uae/vat-corporate-tax-services",
+   "packages": [
+    {
+     "id": "vat-return",
+     "name": "VAT return filing",
+     "forWho": "VAT-registered businesses filing quarterly",
+     "price": {
+      "amount": 750,
+      "currency": "AED"
+     },
+     "per": "quarter",
+     "startingPrice": false,
+     "priceLabel": "AED 750",
+     "includes": [
+      "Sales and purchases reconciled to your books for the quarter",
+      "Output and input VAT checked against your tax invoices",
+      "VAT 201 return prepared box by box, with working papers",
+      "Ready to submit before the deadline, with the payment amount"
+     ]
+    },
+    {
+     "id": "vat-registration",
+     "name": "VAT registration",
+     "forWho": "Businesses at or near the registration threshold",
+     "price": {
+      "amount": 1000,
+      "currency": "AED"
+     },
+     "per": "one-time",
+     "startingPrice": false,
+     "priceLabel": "AED 1,000",
+     "includes": [
+      "Taxable turnover checked against the mandatory and voluntary thresholds",
+      "Documents collected and the EmaraTax application prepared",
+      "Answers to any FTA clarification requests drafted for you"
+     ]
+    },
+    {
+     "id": "ct-registration",
+     "name": "Corporate tax registration",
+     "forWho": "Companies and free zone entities that need a corporate tax TRN",
+     "price": {
+      "amount": 500,
+      "currency": "AED"
+     },
+     "per": "one-time",
+     "startingPrice": false,
+     "priceLabel": "AED 500",
+     "includes": [
+      "Your registration deadline worked out from your licence",
+      "Documents collected and the EmaraTax application prepared",
+      "Your first tax period and return due date confirmed in writing"
+     ]
+    },
+    {
+     "id": "ct-return",
+     "name": "Corporate tax return",
+     "forWho": "Mainland companies and free zone entities, one tax period",
+     "price": {
+      "amount": 1500,
+      "currency": "AED"
+     },
+     "per": "year",
+     "startingPrice": true,
+     "priceLabel": "AED 1,500",
+     "includes": [
+      "Accounting profit adjusted to taxable income",
+      "Small Business Relief and free zone treatment checked where they apply",
+      "Corporate tax return prepared, with a computation you can keep on file"
+     ]
+    },
+    {
+     "id": "e-invoicing-readiness",
+     "name": "E-invoicing readiness review",
+     "forWho": "Businesses that must go live on e-invoicing in 2027",
+     "price": {
+      "amount": 2500,
+      "currency": "AED"
+     },
+     "per": "one-time",
+     "startingPrice": false,
+     "priceLabel": "AED 2,500",
+     "includes": [
+      "Your invoices checked for the fields e-invoicing will require",
+      "Customer and supplier TRNs and VAT treatment checked",
+      "A written list of what to fix before your go-live date"
+     ]
+    }
+   ]
+  }
+ },
+ "cpaStaffing": {
+  "hoursPerWeek": {
+   "partTime": 20,
+   "fullTime": 40
+  },
+  "markets": {
+   "US": {
+    "pageUrl": "https://hellobooks.ai/accounting-staff-for-cpa-firms",
+    "roles": [
+     {
+      "id": "accountant",
+      "role": "Accountant",
+      "partTime": {
+       "amount": 1105,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 2080,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,105",
+      "fullTimeLabel": "$2,080"
+     },
+     {
+      "id": "senior-accountant",
+      "role": "Senior Accountant",
+      "partTime": {
+       "amount": 1365,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 2600,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,365",
+      "fullTimeLabel": "$2,600"
+     },
+     {
+      "id": "senior-payroll",
+      "role": "Senior Payroll Associate",
+      "partTime": {
+       "amount": 1365,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 2600,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,365",
+      "fullTimeLabel": "$2,600"
+     },
+     {
+      "id": "senior-audit",
+      "role": "Senior Audit Associate",
+      "partTime": {
+       "amount": 1690,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 3250,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,690",
+      "fullTimeLabel": "$3,250"
+     },
+     {
+      "id": "junior-tax-preparer",
+      "role": "Junior Tax Return Preparer",
+      "partTime": {
+       "amount": 1430,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 2730,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,430",
+      "fullTimeLabel": "$2,730"
+     },
+     {
+      "id": "senior-tax-preparer",
+      "role": "Senior Tax Return Preparer",
+      "partTime": {
+       "amount": 1690,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 3250,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,690",
+      "fullTimeLabel": "$3,250"
+     },
+     {
+      "id": "tax-reviewer",
+      "role": "Tax Return Reviewer / Supervisor",
+      "partTime": {
+       "amount": 1950,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 3640,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,950",
+      "fullTimeLabel": "$3,640"
+     },
+     {
+      "id": "tax-accountant",
+      "role": "Tax Accountant",
+      "partTime": {
+       "amount": 1950,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 3640,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$1,950",
+      "fullTimeLabel": "$3,640"
+     },
+     {
+      "id": "controller",
+      "role": "CFO Associate / Controller",
+      "partTime": {
+       "amount": 2080,
+       "currency": "USD"
+      },
+      "fullTime": {
+       "amount": 3900,
+       "currency": "USD"
+      },
+      "partTimeLabel": "$2,080",
+      "fullTimeLabel": "$3,900"
+     }
+    ],
+    "hourly": [
+     {
+      "id": "accountant",
+      "role": "Accountant",
+      "perHour": {
+       "amount": 17,
+       "currency": "USD"
+      },
+      "perHourLabel": "$17"
+     },
+     {
+      "id": "senior-accountant",
+      "role": "Senior Accountant",
+      "perHour": {
+       "amount": 20,
+       "currency": "USD"
+      },
+      "perHourLabel": "$20"
+     },
+     {
+      "id": "senior-payroll",
+      "role": "Senior Payroll Associate",
+      "perHour": {
+       "amount": 20,
+       "currency": "USD"
+      },
+      "perHourLabel": "$20"
+     },
+     {
+      "id": "senior-audit",
+      "role": "Senior Audit Associate",
+      "perHour": {
+       "amount": 24,
+       "currency": "USD"
+      },
+      "perHourLabel": "$24"
+     },
+     {
+      "id": "controller",
+      "role": "CFO Associate / Controller",
+      "perHour": {
+       "amount": 29,
+       "currency": "USD"
+      },
+      "perHourLabel": "$29"
+     }
+    ]
+   },
+   "UK": {
+    "pageUrl": "https://hellobooks.ai/accounting-staff-for-cpa-firms",
+    "roles": [
+     {
+      "id": "bookkeeper",
+      "role": "Bookkeeper",
+      "partTime": {
+       "amount": 845,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1560,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£845",
+      "fullTimeLabel": "£1,560"
+     },
+     {
+      "id": "senior-accountant",
+      "role": "Senior Accountant",
+      "partTime": {
+       "amount": 975,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1820,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£975",
+      "fullTimeLabel": "£1,820"
+     },
+     {
+      "id": "senior-payroll",
+      "role": "Senior Payroll Associate",
+      "partTime": {
+       "amount": 975,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1820,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£975",
+      "fullTimeLabel": "£1,820"
+     },
+     {
+      "id": "senior-audit",
+      "role": "Senior Audit Associate",
+      "partTime": {
+       "amount": 1040,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1950,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,040",
+      "fullTimeLabel": "£1,950"
+     },
+     {
+      "id": "junior-tax-preparer",
+      "role": "Junior Tax Preparer (Self Assessment)",
+      "partTime": {
+       "amount": 1000,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1880,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,000",
+      "fullTimeLabel": "£1,880"
+     },
+     {
+      "id": "senior-tax-preparer",
+      "role": "Senior Tax Preparer (Self Assessment and CT600)",
+      "partTime": {
+       "amount": 1040,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 1950,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,040",
+      "fullTimeLabel": "£1,950"
+     },
+     {
+      "id": "tax-reviewer",
+      "role": "Tax Reviewer / Supervisor",
+      "partTime": {
+       "amount": 1200,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 2200,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,200",
+      "fullTimeLabel": "£2,200"
+     },
+     {
+      "id": "tax-accountant",
+      "role": "Tax Accountant",
+      "partTime": {
+       "amount": 1200,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 2200,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,200",
+      "fullTimeLabel": "£2,200"
+     },
+     {
+      "id": "controller",
+      "role": "CFO Associate / Controller",
+      "partTime": {
+       "amount": 1300,
+       "currency": "GBP"
+      },
+      "fullTime": {
+       "amount": 2340,
+       "currency": "GBP"
+      },
+      "partTimeLabel": "£1,300",
+      "fullTimeLabel": "£2,340"
+     }
+    ],
+    "hourly": []
+   },
+   "CA": {
+    "pageUrl": "https://hellobooks.ai/accounting-staff-for-cpa-firms",
+    "roles": [
+     {
+      "id": "accountant",
+      "role": "Accountant",
+      "partTime": {
+       "amount": 1105,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 2080,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,105",
+      "fullTimeLabel": "C$2,080"
+     },
+     {
+      "id": "senior-accountant",
+      "role": "Senior Accountant",
+      "partTime": {
+       "amount": 1365,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 2600,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,365",
+      "fullTimeLabel": "C$2,600"
+     },
+     {
+      "id": "senior-payroll",
+      "role": "Senior Payroll Associate",
+      "partTime": {
+       "amount": 1365,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 2600,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,365",
+      "fullTimeLabel": "C$2,600"
+     },
+     {
+      "id": "senior-audit",
+      "role": "Senior Audit Associate",
+      "partTime": {
+       "amount": 1690,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 3250,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,690",
+      "fullTimeLabel": "C$3,250"
+     },
+     {
+      "id": "junior-tax-preparer",
+      "role": "Junior Tax Return Preparer",
+      "partTime": {
+       "amount": 1430,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 2730,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,430",
+      "fullTimeLabel": "C$2,730"
+     },
+     {
+      "id": "senior-tax-preparer",
+      "role": "Senior Tax Return Preparer",
+      "partTime": {
+       "amount": 1690,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 3250,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,690",
+      "fullTimeLabel": "C$3,250"
+     },
+     {
+      "id": "tax-reviewer",
+      "role": "Tax Return Reviewer / Supervisor",
+      "partTime": {
+       "amount": 1950,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 3640,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,950",
+      "fullTimeLabel": "C$3,640"
+     },
+     {
+      "id": "tax-accountant",
+      "role": "Tax Accountant",
+      "partTime": {
+       "amount": 1950,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 3640,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$1,950",
+      "fullTimeLabel": "C$3,640"
+     },
+     {
+      "id": "controller",
+      "role": "CFO Associate / Controller",
+      "partTime": {
+       "amount": 2080,
+       "currency": "CAD"
+      },
+      "fullTime": {
+       "amount": 3900,
+       "currency": "CAD"
+      },
+      "partTimeLabel": "C$2,080",
+      "fullTimeLabel": "C$3,900"
+     }
+    ],
+    "hourly": [
+     {
+      "id": "accountant",
+      "role": "Accountant",
+      "perHour": {
+       "amount": 17,
+       "currency": "CAD"
+      },
+      "perHourLabel": "C$17"
+     },
+     {
+      "id": "senior-accountant",
+      "role": "Senior Accountant",
+      "perHour": {
+       "amount": 20,
+       "currency": "CAD"
+      },
+      "perHourLabel": "C$20"
+     },
+     {
+      "id": "senior-payroll",
+      "role": "Senior Payroll Associate",
+      "perHour": {
+       "amount": 20,
+       "currency": "CAD"
+      },
+      "perHourLabel": "C$20"
+     },
+     {
+      "id": "senior-audit",
+      "role": "Senior Audit Associate",
+      "perHour": {
+       "amount": 24,
+       "currency": "CAD"
+      },
+      "perHourLabel": "C$24"
+     },
+     {
+      "id": "controller",
+      "role": "CFO Associate / Controller",
+      "perHour": {
+       "amount": 29,
+       "currency": "CAD"
+      },
+      "perHourLabel": "C$29"
+     }
+    ]
+   }
+  },
+  "extendedShiftFullTimeAddOn": {
+   "amount": 260,
+   "currency": "USD"
+  },
+  "cpaFirmWholesaleReturnRates": [
+   {
+    "id": "1040",
+    "form": "Form 1040 (salary income)",
+    "price": {
+     "amount": 98,
+     "currency": "USD"
+    },
+    "priceLabel": "$98"
+   },
+   {
+    "id": "1040-sch",
+    "form": "Form 1040 with Schedule C, D or E",
+    "price": {
+     "amount": 150,
+     "currency": "USD"
+    },
+    "priceLabel": "$150"
+   },
+   {
+    "id": "1065",
+    "form": "Form 1065 (books clean-up not included)",
+    "price": {
+     "amount": 163,
+     "currency": "USD"
+    },
+    "priceLabel": "$163"
+   },
+   {
+    "id": "1120",
+    "form": "Form 1120 or 1120-S (books clean-up not included)",
+    "price": {
+     "amount": 215,
+     "currency": "USD"
+    },
+    "priceLabel": "$215"
+   },
+   {
+    "id": "990",
+    "form": "Form 990",
+    "price": {
+     "amount": 247,
+     "currency": "USD"
+    },
+    "priceLabel": "$247"
+   }
+  ]
+ },
+ "notOffered": [
+  "Australia: bookkeeping only — no BAS, tax return or payroll services.",
+  "New Zealand: bookkeeping only — no tax packages or staffing.",
+  "India: done-for-you services are not offered."
+ ]
+}

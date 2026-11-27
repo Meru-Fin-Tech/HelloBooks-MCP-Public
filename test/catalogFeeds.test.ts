@@ -39,6 +39,7 @@ const EXPECTED_SLUGS = [
   'payment-methods',
   'articles',
   'videos',
+  'services',
   'free-tier-thresholds',
   'partner-program',
   'practice-management',

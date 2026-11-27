@@ -63,27 +63,23 @@ test('the GST provider is never named', () => {
   }
 });
 
-// Pinned literally, not read from billingParity: a region leaves this list only
-// when Auth-V3 starts charging its local price, and that should fail here first.
-const CHARGED_USD_TODAY = ['CA', 'GB', 'AU', 'AE', 'SG', 'NZ'];
+// Pinned literally, not read from billingParity. Empty since 2026-11-27: CA, GB,
+// AU, AE, SG and NZ are priced IN USD on the US ladder (Web-Fire v12), so the
+// price shown is the price charged. A region returns here only if a local price
+// is advertised before Auth-V3 charges it.
+const CHARGED_USD_TODAY: string[] = [];
 
-test('regions charged in USD say so on every paid plan', () => {
+test('no region advertises a price other than what checkout charges', () => {
   assert.deepEqual([...BILLED_IN_USD_DESPITE_LOCAL_PRICE], CHARGED_USD_TODAY);
-  for (const c of CHARGED_USD_TODAY) {
-    const p = buildVoicePack(c);
-    for (const plan of p.plans.filter((pl) => pl.monthly > 0)) {
-      assert.match(plan.chargedAs ?? '', /US\$/, `${c} ${plan.plan} must disclose the USD charge`);
-    }
-    assert.ok(p.guardrails.some((g) => /US-dollar amount/.test(g)), c);
-  }
   // Billing-backed regions carry no disclosure.
-  for (const c of ['IN', 'US']) {
+  for (const c of ['IN', 'US', 'CA', 'GB', 'AU', 'AE', 'SG', 'NZ']) {
     assert.ok(buildVoicePack(c).plans.every((pl) => pl.chargedAs === undefined), c);
   }
 });
 
 test('Starter is not offered where it is not sold', () => {
   assert.ok(buildVoicePack('US').plans.some((p) => p.plan === 'starter'));
+  assert.ok(buildVoicePack('GB').plans.some((p) => p.plan === 'starter'));
   assert.ok(!buildVoicePack('IN').plans.some((p) => p.plan === 'starter'));
 });
 
